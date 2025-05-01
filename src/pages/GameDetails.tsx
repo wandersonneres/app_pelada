@@ -43,9 +43,9 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Game, Team, Player, Match } from '../types';
+import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
 import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaUserPlus, FaUserMinus, FaRandom, FaTrophy, FaTrash, FaExchangeAlt, FaEdit, FaCheck, FaEye, FaSignOutAlt, FaEllipsisV } from 'react-icons/fa';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { PlayerSwapModal } from '../components/PlayerSwapModal';
@@ -223,30 +223,24 @@ export function GameDetails() {
     return () => unsubscribe();
   }, [id, navigate, toast]);
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
+  const formatDate = (date: Date | Timestamp) => {
+    return convertTimestampToDate(date).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
     });
   };
 
-  const formatArrivalTime = (date: Date | undefined | { seconds: number; nanoseconds: number }) => {
+  const formatArrivalTime = (date: Date | Timestamp | undefined) => {
     if (!date) return '--:--';
     try {
-      let d: Date;
-      if ('seconds' in date) {
-        // É um Timestamp do Firestore
-        d = new Date(date.seconds * 1000);
-      } else {
-        d = new Date(date);
-      }
+      const d = convertTimestampToDate(date);
       if (isNaN(d.getTime())) return '--:--';
       return d.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
         hour12: false
-    });
+      });
     } catch {
       return '--:--';
     }
@@ -473,8 +467,8 @@ export function GameDetails() {
       if (!game.matches || game.matches.length === 0) {
         // Ordena os jogadores por ordem de chegada
         const sortedPlayers = [...game.players].sort((a, b) => {
-          const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-          const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+          const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+          const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
           return timeA.getTime() - timeB.getTime();
         });
 
@@ -532,8 +526,8 @@ export function GameDetails() {
 
           // Ordena os jogadores restantes por ordem de chegada
           const jogadoresRestantesOrdenados = jogadoresRestantes.sort((a, b) => {
-            const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-            const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
             return timeA.getTime() - timeB.getTime();
           });
 
@@ -670,8 +664,8 @@ export function GameDetails() {
                 }
 
                 // Em caso de empate, quem chegou mais tarde sai primeiro
-                const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-                const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+                const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+                const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
                 return timeB.getTime() - timeA.getTime();
               });
 
@@ -703,8 +697,8 @@ export function GameDetails() {
               }
 
               // Terceiro critério: Quem chegou primeiro entra primeiro
-              const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-              const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+              const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+              const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
                 return timeA.getTime() - timeB.getTime();
             });
 
@@ -787,8 +781,8 @@ export function GameDetails() {
                 return aConsecutiveMatches - bConsecutiveMatches;
               }
 
-              const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-              const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+              const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+              const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
               return timeA.getTime() - timeB.getTime();
             });
 
@@ -858,8 +852,8 @@ export function GameDetails() {
             }
 
             // Em caso de empate, quem chegou primeiro entra primeiro
-            const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-            const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
             return timeA.getTime() - timeB.getTime();
           });
 
@@ -1124,8 +1118,8 @@ export function GameDetails() {
     try {
       // Ordena os jogadores por ordem de chegada atual
       const sortedPlayers = [...game.players].sort((a, b) => {
-        const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-        const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+        const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+        const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
         return timeA.getTime() - timeB.getTime();
       });
 
@@ -1204,8 +1198,8 @@ export function GameDetails() {
           }
 
           // Terceiro critério: Quem chegou primeiro entra primeiro
-          const timeA = a.arrivalTime ? new Date(a.arrivalTime) : new Date();
-          const timeB = b.arrivalTime ? new Date(b.arrivalTime) : new Date();
+          const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
+          const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
           return timeA.getTime() - timeB.getTime();
         });
 
@@ -1394,8 +1388,8 @@ export function GameDetails() {
                       <VStack align="stretch" spacing={2}>
                         {game.players
                           .sort((a, b) => {
-                            const timeA = a.arrivalTime ? new Date(a.arrivalTime).getTime() : 0;
-                            const timeB = b.arrivalTime ? new Date(b.arrivalTime).getTime() : 0;
+                            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
+                            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
                             return timeA - timeB;
                           })
                           .map((player, index) => (

@@ -28,7 +28,7 @@ import {
 } from '@chakra-ui/react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Game } from '../types';
+import { Game, convertTimestampToDate } from '../types';
 import { FaPlus, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEye } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -52,7 +52,9 @@ export function Home() {
       const gamesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        date: doc.data().date.toDate(),
+        date: convertTimestampToDate(doc.data().date),
+        createdAt: convertTimestampToDate(doc.data().createdAt),
+        updatedAt: convertTimestampToDate(doc.data().updatedAt),
       })) as Game[];
 
       setGames(gamesData);
@@ -170,7 +172,7 @@ export function Home() {
                   <Flex direction="column" gap={2}>
                     <Flex align="center">
                       <FaCalendarAlt style={{ marginRight: '8px', color: '#3182CE' }} />
-                      <Text fontWeight="medium" fontSize={{ base: 'sm', md: 'md' }}>{formatDate(game.date)}</Text>
+                      <Text fontWeight="medium" fontSize={{ base: 'sm', md: 'md' }}>{formatDate(convertTimestampToDate(game.date))}</Text>
                     </Flex>
 
                     <Flex align="center">
@@ -224,7 +226,7 @@ export function Home() {
           <Tbody>
             {allGames.map((game) => (
               <Tr key={game.id} _hover={{ bg: 'gray.50' }} cursor="pointer" onClick={() => navigate(`/game/${game.id}`)}>
-                <Td fontSize={{ base: 'xs', md: 'sm' }}>{formatDate(game.date)}</Td>
+                <Td fontSize={{ base: 'xs', md: 'sm' }}>{formatDate(convertTimestampToDate(game.date))}</Td>
                 <Td fontSize={{ base: 'xs', md: 'sm' }}>{game.location}</Td>
                 <Td>
                   <Badge colorScheme={getStatusColor(game.status)} fontSize={{ base: 'xs', md: 'sm' }}>

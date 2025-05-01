@@ -14,7 +14,7 @@ import {
   Spinner,
   Center,
 } from '@chakra-ui/react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game } from '../types';
 
@@ -32,15 +32,23 @@ export function EditGame() {
   });
 
   useEffect(() => {
-    const fetchGame = async () => {
-      if (!id) return;
+    if (!id) {
+      navigate('/');
+      return;
+    }
 
-      try {
-        const docRef = doc(db, 'games', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const gameData = { id: docSnap.id, ...docSnap.data() } as Game;
+    const unsubscribe = onSnapshot(
+      doc(db, 'games', id),
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          const gameData = {
+            id: doc.id,
+            ...data,
+            date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
+          } as Game;
           setGame(gameData);
           
           // Tratamento seguro da data
@@ -67,28 +75,29 @@ export function EditGame() {
         } else {
           toast({
             title: 'Erro',
-            description: 'Pelada não encontrada.',
+            description: 'Jogo não encontrado.',
             status: 'error',
             duration: 3000,
             isClosable: true,
           });
           navigate('/');
         }
-      } catch (error) {
-        console.error('Erro ao buscar pelada:', error);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Erro ao buscar jogo:', error);
         toast({
           title: 'Erro',
-          description: 'Ocorreu um erro ao buscar os dados da pelada.',
+          description: 'Ocorreu um erro ao carregar o jogo.',
           status: 'error',
           duration: 3000,
           isClosable: true,
         });
-      } finally {
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchGame();
+    return () => unsubscribe();
   }, [id, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {

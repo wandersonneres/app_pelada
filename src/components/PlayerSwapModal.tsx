@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -13,9 +12,7 @@ import {
   Text,
   useColorModeValue,
   Avatar,
-  Flex,
 } from '@chakra-ui/react';
-import { FaExchangeAlt } from 'react-icons/fa';
 import { Player } from '../types';
 
 interface PlayerSwapModalProps {
