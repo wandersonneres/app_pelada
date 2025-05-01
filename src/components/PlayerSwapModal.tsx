@@ -5,13 +5,15 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  VStack,
   Button,
-  Divider,
-  Box,
+  VStack,
   Text,
-  useColorModeValue,
   Avatar,
+  Badge,
+  Box,
+  SimpleGrid,
+  useColorModeValue,
+  Divider,
 } from '@chakra-ui/react';
 import { Player } from '../types';
 

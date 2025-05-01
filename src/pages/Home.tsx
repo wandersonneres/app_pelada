@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -29,7 +29,7 @@ import {
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, convertTimestampToDate } from '../types';
-import { FaPlus, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEye } from 'react-icons/fa';
+import { FaPlus, FaCalendarAlt, FaMapMarkerAlt, FaEye } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

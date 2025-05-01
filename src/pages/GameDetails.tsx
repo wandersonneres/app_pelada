@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -11,9 +11,7 @@ import {
   Spinner,
   Center,
   Badge,
-  Divider,
   Avatar,
-  AvatarGroup,
   IconButton,
   Input,
   FormControl,
@@ -43,14 +41,14 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
-import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaUserPlus, FaUserMinus, FaRandom, FaTrophy, FaTrash, FaExchangeAlt, FaEdit, FaCheck, FaEye, FaSignOutAlt, FaEllipsisV } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaUserPlus, FaRandom, FaTrophy, FaTrash, FaExchangeAlt, FaEdit, FaCheck, FaEye, FaEllipsisV } from 'react-icons/fa';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { PlayerSwapModal } from '../components/PlayerSwapModal';
 
-const AddPlayerModal = React.memo(({ 
+const AddPlayerModal = memo(({ 
   isOpen, 
   onClose, 
   onAddPlayer, 

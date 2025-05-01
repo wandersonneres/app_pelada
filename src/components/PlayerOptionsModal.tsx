@@ -5,13 +5,16 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  VStack,
   Button,
-  SimpleGrid,
+  VStack,
+  Text,
+  Select,
+  FormControl,
+  FormLabel,
+  useColorModeValue,
   Divider,
   Box,
-  Text,
-  useColorModeValue,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { FaUserMinus } from 'react-icons/fa';
 import { Player } from '../types';

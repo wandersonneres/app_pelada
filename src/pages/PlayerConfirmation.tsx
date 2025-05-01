@@ -50,6 +50,7 @@ export function PlayerConfirmation() {
         email: '',
         confirmed: true,
         arrivalTime: new Date(),
+        position: 'meio',
       };
 
       await updateDoc(doc(db, 'games', id), {
