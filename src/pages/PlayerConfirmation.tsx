@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { doc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Game, Player } from '../types';
+import { Game, Player, convertTimestampToDate } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FaCheck, FaTimes } from 'react-icons/fa';
@@ -91,7 +91,7 @@ export function PlayerConfirmation() {
       <VStack spacing={8} align="stretch">
         <Box>
           <Heading size="lg">
-            {format(game.date, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+            {format(convertTimestampToDate(game.date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
           </Heading>
           <Text fontSize="xl" color="gray.600">
             {game.location}
@@ -145,7 +145,7 @@ export function PlayerConfirmation() {
                 <Box flex={1}>
                   <Text fontWeight="bold">{player.name}</Text>
                   <Text fontSize="sm" color="gray.500">
-                    Confirmado em {format(player.arrivalTime!, 'HH:mm', { locale: ptBR })}
+                    Confirmado em {format(convertTimestampToDate(player.arrivalTime!), 'HH:mm', { locale: ptBR })}
                   </Text>
                 </Box>
                 <Badge colorScheme={player.confirmed ? 'green' : 'red'}>

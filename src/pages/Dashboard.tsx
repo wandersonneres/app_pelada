@@ -49,6 +49,10 @@ export function Dashboard() {
     navigate('/new-game');
   };
 
+  const handleDeleteGame = (gameId: string) => {
+    // Implemente a lógica para deletar um jogo
+  };
+
   return (
     <Box minH="100vh" bg={bg}>
       <Container maxW="container.xl" py={8}>
@@ -74,9 +78,7 @@ export function Dashboard() {
                 <GameCard
                   key={game.id}
                   game={game}
-                  onGameUpdate={() => {
-                    // A atualização é automática através do onSnapshot
-                  }}
+                  onDelete={handleDeleteGame}
                 />
               ))}
             </SimpleGrid>
