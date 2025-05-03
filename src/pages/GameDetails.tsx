@@ -40,13 +40,22 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
+  Icon,
 } from '@chakra-ui/react';
 import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
-import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaUserPlus, FaRandom, FaTrophy, FaTrash, FaExchangeAlt, FaEdit, FaCheck, FaEye, FaEllipsisV } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaUserPlus, FaRandom, FaTrophy, FaTrash, FaExchangeAlt, FaEdit, FaCheck, FaEye, FaEllipsisV, FaFutbol, FaMedal, FaRunning } from 'react-icons/fa';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { PlayerSwapModal } from '../components/PlayerSwapModal';
+import { StarIcon } from '@chakra-ui/icons';
+import { StarRating } from '../components/StarRating';
+import { TacticalView } from '../components/TacticalView';
+import { MatchTimer } from '../components/MatchTimer';
+import { PlayerList } from '../components/PlayerList';
+import { GameAnalytics } from '../components/GameAnalytics';
+import { MatchScore } from '../components/MatchScore';
+import { generateRandomPlayers } from '../utils/mockPlayers';
 
 const AddPlayerModal = memo(({ 
   isOpen, 
@@ -56,19 +65,27 @@ const AddPlayerModal = memo(({
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  onAddPlayer: (name: string, position: 'defesa' | 'meio' | 'ataque') => void; 
+  onAddPlayer: (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => void; 
   isJoining: boolean;
 }) => {
   const [playerName, setPlayerName] = useState('');
   const [playerPosition, setPlayerPosition] = useState<'defesa' | 'meio' | 'ataque'>('meio');
+  const [playerSkillLevel, setPlayerSkillLevel] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [playerAgeGroup, setPlayerAgeGroup] = useState<'15-20' | '21-30' | '31-40' | '41-50' | '+50'>('21-30');
+
+  const handleStarClick = useCallback((level: number) => {
+    setPlayerSkillLevel(level as 1 | 2 | 3 | 4 | 5);
+  }, []);
 
   const handleSubmit = useCallback(() => {
     if (playerName.trim()) {
-      onAddPlayer(playerName.trim(), playerPosition);
+      onAddPlayer(playerName.trim(), playerPosition, playerSkillLevel, playerAgeGroup);
       setPlayerName('');
       setPlayerPosition('meio');
+      setPlayerSkillLevel(3);
+      setPlayerAgeGroup('21-30');
     }
-  }, [playerName, playerPosition, onAddPlayer]);
+  }, [playerName, playerPosition, playerSkillLevel, playerAgeGroup, onAddPlayer]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -89,14 +106,80 @@ const AddPlayerModal = memo(({
 
             <FormControl>
               <FormLabel>Posição</FormLabel>
-              <Select
-                value={playerPosition}
-                onChange={(e) => setPlayerPosition(e.target.value as 'defesa' | 'meio' | 'ataque')}
-              >
-                <option value="defesa">Defesa</option>
-                <option value="meio">Meio</option>
-                <option value="ataque">Ataque</option>
-              </Select>
+              <SimpleGrid columns={3} spacing={2}>
+                <Button
+                  onClick={() => setPlayerPosition('defesa')}
+                  colorScheme={playerPosition === 'defesa' ? 'yellow' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  Defesa
+                </Button>
+                <Button
+                  onClick={() => setPlayerPosition('meio')}
+                  colorScheme={playerPosition === 'meio' ? 'blue' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  Meio
+                </Button>
+                <Button
+                  onClick={() => setPlayerPosition('ataque')}
+                  colorScheme={playerPosition === 'ataque' ? 'red' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  Ataque
+                </Button>
+              </SimpleGrid>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Nível de Habilidade</FormLabel>
+              <StarRating
+                value={playerSkillLevel}
+                onChange={handleStarClick}
+                size="md"
+                showLabel={true}
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Faixa Etária</FormLabel>
+              <SimpleGrid columns={2} spacing={2}>
+                <Button
+                  onClick={() => setPlayerAgeGroup('15-20')}
+                  colorScheme={playerAgeGroup === '15-20' ? 'blue' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  15-20 anos
+                </Button>
+                <Button
+                  onClick={() => setPlayerAgeGroup('21-30')}
+                  colorScheme={playerAgeGroup === '21-30' ? 'blue' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  21-30 anos
+                </Button>
+                <Button
+                  onClick={() => setPlayerAgeGroup('31-40')}
+                  colorScheme={playerAgeGroup === '31-40' ? 'blue' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  31-40 anos
+                </Button>
+                <Button
+                  onClick={() => setPlayerAgeGroup('41-50')}
+                  colorScheme={playerAgeGroup === '41-50' ? 'blue' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  41-50 anos
+                </Button>
+                <Button
+                  onClick={() => setPlayerAgeGroup('+50')}
+                  colorScheme={playerAgeGroup === '+50' ? 'blue' : 'gray'}
+                  size={{ base: 'sm', md: 'md' }}
+                >
+                  +50 anos
+                </Button>
+              </SimpleGrid>
             </FormControl>
 
             <Flex justify="flex-end" width="full">
@@ -161,8 +244,17 @@ export function GameDetails() {
         if (foundBreak) break;
         consecutiveCount++;
       } else {
-        // Se o jogador não está na partida, marca que encontrou uma quebra
-        foundBreak = true;
+        // Se o jogador não está na partida atual, verifica se tem próxima partida
+        const nextMatch = game.matches[i + 1];
+        
+        // Se não tem próxima partida ou o jogador não está nela,
+        // então ele realmente ficou uma partida fora e quebramos a sequência
+        if (!nextMatch || !nextMatch.teams.some(team => 
+          team.players.some(p => p.id === playerId)
+        )) {
+          foundBreak = true;
+        }
+        // Se tem próxima partida e o jogador está nela, continuamos contando
       }
     }
 
@@ -283,22 +375,41 @@ export function GameDetails() {
     }
   };
 
-  const handleJoinGame = useCallback(async (name: string, position: 'defesa' | 'meio' | 'ataque') => {
+  const handleJoinGame = useCallback(async (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => {
     if (!game || !id || !name.trim()) return;
 
     try {
       setIsJoining(true);
+      
+      // Pega o último horário de chegada dos jogadores existentes
+      const lastArrivalTime = game.players.length > 0 
+        ? Math.max(...game.players.map(p => 
+            p.arrivalTime ? convertTimestampToDate(p.arrivalTime).getTime() : 0
+          ))
+        : new Date().getTime();
+
+      // Define o horário do novo jogador como 1 minuto após o último
+      const newArrivalTime = new Date(lastArrivalTime + 60000);
+
       const newPlayer: Player = {
         id: Math.random().toString(36).substr(2, 9),
         name: name.trim(),
         email: '',
         confirmed: true,
-        arrivalTime: new Date(),
+        arrivalTime: Timestamp.fromDate(newArrivalTime),
         position,
+        skillLevel,
+        ageGroup,
       };
 
-      await updateDoc(doc(db, 'games', id), {
-        players: arrayUnion(newPlayer),
+      // Adiciona o novo jogador à lista existente
+      const updatedPlayers = [...game.players, newPlayer];
+
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
+        players: updatedPlayers,
+        updatedAt: serverTimestamp(),
       });
       toast({
         title: 'Sucesso',
@@ -327,7 +438,9 @@ export function GameDetails() {
 
     try {
       const updatedPlayers = game.players.filter(p => p.id !== playerId);
-      await updateDoc(doc(db, 'games', id), {
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
         players: updatedPlayers,
         updatedAt: serverTimestamp(),
       });
@@ -357,7 +470,9 @@ export function GameDetails() {
     try {
       setIsLeaving(true);
       const updatedPlayers = game.players.filter(p => p.id !== playerId);
-      await updateDoc(doc(db, 'games', id), {
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
         players: updatedPlayers,
       });
       toast({
@@ -386,7 +501,9 @@ export function GameDetails() {
 
     try {
       setIsDeleting(true);
-      await deleteDoc(doc(db, 'games', id));
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await deleteDoc(gameRef);
       
       toast({
         title: 'Pelada excluída!',
@@ -417,7 +534,9 @@ export function GameDetails() {
 
     try {
       const updatedMatches = game.matches.filter(match => match.id !== matchId);
-      await updateDoc(doc(db, 'games', id), {
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
         matches: updatedMatches,
         currentMatch: null,
         status: 'waiting',
@@ -444,146 +563,47 @@ export function GameDetails() {
   };
 
   const generateTeams = async () => {
-    if (!game || !id || game.players.length < 4) {
-      toast({
-        title: 'Erro',
-        description: 'É necessário pelo menos 4 jogadores para gerar os times.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
+    if (!game || !id) return;
 
     try {
       setIsGeneratingTeams(true);
+      const lastMatch = game.matches[game.matches.length - 1];
+      let waitingList = game.waitingList || [];
 
-      let availablePlayers: Player[] = [];
-      let winningTeam: Team | null = null;
+      if (!lastMatch) {
+        // Primeira partida: pega os primeiros 18 jogadores por ordem de chegada e balanceia os times
+        const playersForFirstMatch = [...game.players]
+          .sort((a, b) => {
+            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
+            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
+            return timeA - timeB;
+          })
+          .slice(0, 18);
 
-      // Se for a primeira partida, usa os primeiros 18 jogadores
-      if (!game.matches || game.matches.length === 0) {
-        // Ordena os jogadores por ordem de chegada
-        const sortedPlayers = [...game.players].sort((a, b) => {
-          const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-          const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-          return timeA.getTime() - timeB.getTime();
-        });
-
-        // Pega os primeiros 18 jogadores
-        const first18Players = sortedPlayers.slice(0, 18);
-
-        // Inicializa os times
-        let teamA: Player[] = [];
-        let teamB: Player[] = [];
-
-        // Função para distribuir jogadores mantendo o equilíbrio
-        const distributePlayers = () => {
-          // Limpa os times
-          teamA = [];
-          teamB = [];
-
-          // Agrupa jogadores por posição
-          const defesa = first18Players.filter(p => p.position === 'defesa');
-          const meio = first18Players.filter(p => p.position === 'meio');
-          const ataque = first18Players.filter(p => p.position === 'ataque');
-
-          // Calcula quantos jogadores de cada posição cada time deve ter
-          const totalDefesa = defesa.length;
-          const totalMeio = meio.length;
-          const totalAtaque = ataque.length;
-
-          // Distribui defensores
-          const defesaPorTime = Math.floor(totalDefesa / 2);
-          const defesaRestante = totalDefesa % 2;
-
-          // Distribui meio-campistas
-          const meioPorTime = Math.floor(totalMeio / 2);
-          const meioRestante = totalMeio % 2;
-
-          // Distribui atacantes
-          const ataquePorTime = Math.floor(totalAtaque / 2);
-          const ataqueRestante = totalAtaque % 2;
-
-          // Distribui os jogadores de cada posição
-          teamA.push(...defesa.slice(0, defesaPorTime));
-          teamB.push(...defesa.slice(defesaPorTime, defesaPorTime * 2));
-
-          teamA.push(...meio.slice(0, meioPorTime));
-          teamB.push(...meio.slice(meioPorTime, meioPorTime * 2));
-
-          teamA.push(...ataque.slice(0, ataquePorTime));
-          teamB.push(...ataque.slice(ataquePorTime, ataquePorTime * 2));
-
-          // Distribui os jogadores restantes de cada posição
-          const jogadoresRestantes = [
-            ...defesa.slice(defesaPorTime * 2),
-            ...meio.slice(meioPorTime * 2),
-            ...ataque.slice(ataquePorTime * 2)
-          ];
-
-          // Ordena os jogadores restantes por ordem de chegada
-          const jogadoresRestantesOrdenados = jogadoresRestantes.sort((a, b) => {
-            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-            return timeA.getTime() - timeB.getTime();
+        if (playersForFirstMatch.length < 4) {
+          toast({
+            title: 'Erro',
+            description: 'É necessário pelo menos 4 jogadores para gerar os times.',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
           });
-
-          // Distribui os jogadores restantes alternadamente
-          jogadoresRestantesOrdenados.forEach((player, index) => {
-            if (index % 2 === 0) {
-              teamA.push(player);
-            } else {
-              teamB.push(player);
-            }
-          });
-
-          // Se algum time tiver menos de 9 jogadores, completa com os jogadores restantes
-          if (teamA.length < 9 || teamB.length < 9) {
-            const remainingPlayers = first18Players.filter(
-              p => !teamA.includes(p) && !teamB.includes(p)
-            );
-
-            const remainingForA = 9 - teamA.length;
-            const remainingForB = 9 - teamB.length;
-
-            teamA.push(...remainingPlayers.slice(0, remainingForA));
-            teamB.push(...remainingPlayers.slice(remainingForA, remainingForA + remainingForB));
-          }
-
-          // Se ainda assim não tiver 9 jogadores em cada time, redistribui
-          if (teamA.length !== 9 || teamB.length !== 9) {
-            teamA = first18Players.slice(0, 9);
-            teamB = first18Players.slice(9, 18);
-          }
-        };
-
-        // Tenta distribuir os jogadores
-        distributePlayers();
-
-        // Verifica se a distribuição está equilibrada
-        const teamAPositions = {
-          defesa: teamA.filter(p => p.position === 'defesa').length,
-          meio: teamA.filter(p => p.position === 'meio').length,
-          ataque: teamA.filter(p => p.position === 'ataque').length
-        };
-
-        const teamBPositions = {
-          defesa: teamB.filter(p => p.position === 'defesa').length,
-          meio: teamB.filter(p => p.position === 'meio').length,
-          ataque: teamB.filter(p => p.position === 'ataque').length
-        };
-
-        // Se a diferença entre as posições for muito grande, tenta reequilibrar
-        const maxDifference = 1;
-        const needsRebalance = 
-          Math.abs(teamAPositions.defesa - teamBPositions.defesa) > maxDifference ||
-          Math.abs(teamAPositions.meio - teamBPositions.meio) > maxDifference ||
-          Math.abs(teamAPositions.ataque - teamBPositions.ataque) > maxDifference;
-
-        if (needsRebalance) {
-          distributePlayers();
+          return;
         }
+
+        // Balanceia os times apenas na primeira partida
+        const { teamA, teamB } = findBalancedTeams(playersForFirstMatch);
+
+        // Jogadores que não estão jogando vão para a lista de espera
+        const playingIds = [...teamA, ...teamB].map(p => p.id);
+        waitingList = game.players
+          .filter(p => !playingIds.includes(p.id))
+          .sort((a, b) => {
+            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
+            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
+            return timeA - timeB;
+          })
+          .map(p => p.id);
 
         const teams: Team[] = [
           {
@@ -622,284 +642,109 @@ export function GameDetails() {
           matches: arrayUnion(newMatch),
           currentMatch: newMatch.id,
           status: 'in_progress',
+          waitingList,
           updatedAt: serverTimestamp(),
         });
+
       } else {
-        // Pega a última partida
-        const lastMatch = game.matches[game.matches.length - 1];
+        // Partidas subsequentes
+        const winnerTeam = lastMatch.teams.find(t => t.id === lastMatch.winner);
+        const loserTeam = lastMatch.teams.find(t => t.id !== lastMatch.winner);
         
-        // Se a última partida tiver um vencedor, mantém esse time
-        if (lastMatch.winner) {
-          winningTeam = lastMatch.teams.find(team => team.id === lastMatch.winner) || null;
+        if (!winnerTeam || !loserTeam) {
+          toast({
+            title: 'Erro',
+            description: 'Não foi possível identificar os times da última partida.',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
+          });
+          return;
         }
 
-        // Pega os jogadores que ainda não jogaram na última partida
-        const lastMatchPlayers = lastMatch.teams.flatMap(team => team.players);
-        const remainingPlayers = game.players.filter(
-          player => !lastMatchPlayers.some(p => p.id === player.id)
-        );
+        // 1. Primeiro adiciona o time perdedor na lista de espera
+        const loserPlayers = loserTeam.players.sort((a, b) => {
+          // Primeiro critério: Quem jogou menos partidas consecutivas vai primeiro
+          const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
+          const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
 
-        // Se tiver time vencedor, mantém ele e pega os próximos jogadores
-        if (winningTeam) {
-          const nextPlayers = [...winningTeam.players];
-
-          // Se não tiver 9 jogadores suficientes, pega os próximos da lista completa
-          if (nextPlayers.length < 9) {
-            // Pega o time perdedor da última partida
-            const losingTeam = lastMatch.teams.find(team => team.id !== lastMatch.winner);
-            if (!losingTeam) return;
-
-            // Ordena os jogadores do time perdedor por número de partidas consecutivas
-            const sortedLosingTeamPlayers = [...losingTeam.players]
-              .filter(player => !nextPlayers.some(np => np.id === player.id))
-              .sort((a, b) => {
-                const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
-                const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
-
-                // Quem jogou MAIS partidas consecutivas sai primeiro
-                if (aConsecutiveMatches !== bConsecutiveMatches) {
-                  return bConsecutiveMatches - aConsecutiveMatches;
-                }
-
-                // Em caso de empate, quem chegou mais tarde sai primeiro
-                const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-                const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-                return timeB.getTime() - timeA.getTime();
-              });
-
-            // Pega os jogadores que não estão no time vencedor nem nos próximos jogadores
-            const waitingPlayers = game.players
-              .filter(p => !winningTeam!.players.some(wp => wp.id === p.id))
-              .filter(p => !nextPlayers.some(np => np.id === p.id));
-
-            // Ordena os jogadores da lista de espera por tempo de espera
-            const sortedWaitingPlayers = [...waitingPlayers].sort((a, b) => {
-              // Primeiro critério: Quem está há mais tempo na lista de espera entra primeiro
-              const aLastMatchIndex = game.matches.findLastIndex((match: Match) => 
-                match.teams.some((team: Team) => team.players.some((p: Player) => p.id === a.id))
-              );
-              const bLastMatchIndex = game.matches.findLastIndex((match: Match) => 
-                match.teams.some((team: Team) => team.players.some((p: Player) => p.id === b.id))
-              );
-
-              if (aLastMatchIndex !== bLastMatchIndex) {
-                return aLastMatchIndex - bLastMatchIndex;
-              }
-
-              // Segundo critério: Quem jogou menos partidas consecutivas entra primeiro
-              const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
-              const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
-
-              if (aConsecutiveMatches !== bConsecutiveMatches) {
-                return aConsecutiveMatches - bConsecutiveMatches;
-              }
-
-              // Terceiro critério: Quem chegou primeiro entra primeiro
-              const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-              const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-                return timeA.getTime() - timeB.getTime();
-            });
-
-            const additionalPlayers = sortedWaitingPlayers.slice(0, 9 - nextPlayers.length);
-            const newTeamPlayers = [...nextPlayers, ...additionalPlayers];
-
-            // Garante que o time branco sempre seja o primeiro
-            const teams: Team[] = winningTeam.id === 'teamA' ? [
-              {
-                ...winningTeam,
-                id: 'teamA',
-                name: 'Time Branco',
-              },
-              {
-                id: 'teamB',
-                name: 'Time Laranja',
-                players: newTeamPlayers,
-                score: 0,
-                formation: {
-                  defesa: newTeamPlayers.filter(p => p.position === 'defesa'),
-                  meio: newTeamPlayers.filter(p => p.position === 'meio'),
-                  ataque: newTeamPlayers.filter(p => p.position === 'ataque'),
-                },
-              },
-            ] : [
-              {
-                id: 'teamA',
-                name: 'Time Branco',
-                players: newTeamPlayers,
-                score: 0,
-                formation: {
-                  defesa: newTeamPlayers.filter(p => p.position === 'defesa'),
-                  meio: newTeamPlayers.filter(p => p.position === 'meio'),
-                  ataque: newTeamPlayers.filter(p => p.position === 'ataque'),
-                },
-              },
-              {
-                ...winningTeam,
-                id: 'teamB',
-                name: 'Time Laranja',
-              },
-            ];
-
-            const newMatch: Match = {
-              id: Math.random().toString(36).substr(2, 9),
-              teams,
-              status: 'in_progress',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-
-            await updateDoc(doc(db, 'games', id), {
-              matches: arrayUnion(newMatch),
-              currentMatch: newMatch.id,
-              status: 'in_progress',
-              updatedAt: serverTimestamp(),
-            });
-          } else {
-            // Se já tiver 9 jogadores, gera o time normalmente
-            const waitingPlayers = game.players
-              .filter(p => !winningTeam!.players.some(wp => wp.id === p.id));
-
-            // Ordena os jogadores da lista de espera
-            const sortedWaitingPlayers = [...waitingPlayers].sort((a, b) => {
-              const aLastMatchIndex = game.matches.findLastIndex((match: Match) => 
-                match.teams.some((team: Team) => team.players.some((p: Player) => p.id === a.id))
-              );
-              const bLastMatchIndex = game.matches.findLastIndex((match: Match) => 
-                match.teams.some((team: Team) => team.players.some((p: Player) => p.id === b.id))
-              );
-
-              if (aLastMatchIndex !== bLastMatchIndex) {
-                return aLastMatchIndex - bLastMatchIndex;
-              }
-
-              const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
-              const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
-
-              if (aConsecutiveMatches !== bConsecutiveMatches) {
-                return aConsecutiveMatches - bConsecutiveMatches;
-              }
-
-              const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-              const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-              return timeA.getTime() - timeB.getTime();
-            });
-
-            const newTeamPlayers = sortedWaitingPlayers.slice(0, 9);
-
-            // Garante que o time branco sempre seja o primeiro
-            const teams: Team[] = winningTeam.id === 'teamA' ? [
-              {
-                ...winningTeam,
-                id: 'teamA',
-                name: 'Time Branco',
-              },
-              {
-                id: 'teamB',
-                name: 'Time Laranja',
-                players: newTeamPlayers,
-                score: 0,
-                formation: {
-                  defesa: newTeamPlayers.filter(p => p.position === 'defesa'),
-                  meio: newTeamPlayers.filter(p => p.position === 'meio'),
-                  ataque: newTeamPlayers.filter(p => p.position === 'ataque'),
-                },
-              },
-            ] : [
-              {
-                id: 'teamA',
-                name: 'Time Branco',
-                players: newTeamPlayers,
-                score: 0,
-                formation: {
-                  defesa: newTeamPlayers.filter(p => p.position === 'defesa'),
-                  meio: newTeamPlayers.filter(p => p.position === 'meio'),
-                  ataque: newTeamPlayers.filter(p => p.position === 'ataque'),
-                },
-              },
-              {
-                ...winningTeam,
-                id: 'teamB',
-                name: 'Time Laranja',
-              },
-            ];
-
-            const newMatch: Match = {
-              id: Math.random().toString(36).substr(2, 9),
-              teams,
-              status: 'in_progress',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-
-            await updateDoc(doc(db, 'games', id), {
-              matches: arrayUnion(newMatch),
-              currentMatch: newMatch.id,
-              status: 'in_progress',
-              updatedAt: serverTimestamp(),
-            });
+          if (aConsecutiveMatches !== bConsecutiveMatches) {
+            return aConsecutiveMatches - bConsecutiveMatches; // Ordem crescente (menos partidas primeiro)
           }
-        } else {
-          // Se não tiver time vencedor, pega os próximos jogadores da lista
-          const sortedPlayers = [...game.players].sort((a, b) => {
-            const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
-            const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
 
-            // Quem jogou MENOS partidas consecutivas entra primeiro
-            if (aConsecutiveMatches !== bConsecutiveMatches) {
-              return aConsecutiveMatches - bConsecutiveMatches;
-            }
+          // Segundo critério: Ordem de chegada
+          const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
+          const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
+          return timeA - timeB;
+        });
+        
+        // 2. Adiciona os IDs dos jogadores do time perdedor ao final da lista de espera
+        waitingList = [...waitingList, ...loserPlayers.map(p => p.id)];
 
-            // Em caso de empate, quem chegou primeiro entra primeiro
-            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-            return timeA.getTime() - timeB.getTime();
+        // 3. Pega os próximos 9 jogadores da lista de espera
+        const nextTeamIds = waitingList.slice(0, 9);
+        if (nextTeamIds.length < 4) {
+          toast({
+            title: 'Erro',
+            description: 'Não há jogadores suficientes na lista de espera.',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
           });
-
-          const teams: Team[] = [
-            {
-              id: 'teamA',
-              name: 'Time Branco',
-              players: sortedPlayers.slice(0, 9),
-              score: 0,
-              formation: {
-                defesa: sortedPlayers.slice(0, 9).filter(p => p.position === 'defesa'),
-                meio: sortedPlayers.slice(0, 9).filter(p => p.position === 'meio'),
-                ataque: sortedPlayers.slice(0, 9).filter(p => p.position === 'ataque'),
-              },
-            },
-            {
-              id: 'teamB',
-              name: 'Time Laranja',
-              players: sortedPlayers.slice(9, 18),
-              score: 0,
-              formation: {
-                defesa: sortedPlayers.slice(9, 18).filter(p => p.position === 'defesa'),
-                meio: sortedPlayers.slice(9, 18).filter(p => p.position === 'meio'),
-                ataque: sortedPlayers.slice(9, 18).filter(p => p.position === 'ataque'),
-              },
-            },
-          ];
-
-          const newMatch: Match = {
-            id: Math.random().toString(36).substr(2, 9),
-            teams,
-            status: 'in_progress',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          await updateDoc(doc(db, 'games', id), {
-            matches: arrayUnion(newMatch),
-            currentMatch: newMatch.id,
-            status: 'in_progress',
-            updatedAt: serverTimestamp(),
-          });
+          return;
         }
+
+        // 4. Remove esses jogadores da lista de espera
+        waitingList = waitingList.slice(9);
+
+        // 5. Monta os times
+        const nextTeamPlayers = nextTeamIds.map(pid => game.players.find(p => p.id === pid)).filter(Boolean) as Player[];
+
+        const teams: Team[] = [
+          {
+            id: 'teamA',
+            name: 'Time Branco',
+            players: winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers,
+            score: 0,
+            formation: {
+              defesa: (winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'defesa'),
+              meio: (winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'meio'),
+              ataque: (winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'ataque'),
+            },
+          },
+          {
+            id: 'teamB',
+            name: 'Time Laranja',
+            players: winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers,
+            score: 0,
+            formation: {
+              defesa: (winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'defesa'),
+              meio: (winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'meio'),
+              ataque: (winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'ataque'),
+            },
+          },
+        ];
+
+        const newMatch: Match = {
+          id: Math.random().toString(36).substr(2, 9),
+          teams,
+          status: 'in_progress',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await updateDoc(doc(db, 'games', id), {
+          matches: arrayUnion(newMatch),
+          currentMatch: newMatch.id,
+          status: 'in_progress',
+          waitingList,
+          updatedAt: serverTimestamp(),
+        });
       }
 
       toast({
         title: 'Times gerados!',
-        description: 'Os times foram formados com sucesso.',
+        description: 'Os times foram gerados com sucesso.',
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -918,6 +763,86 @@ export function GameDetails() {
     }
   };
 
+  // Função auxiliar para encontrar times balanceados (usada apenas na primeira partida)
+  const findBalancedTeams = (players: Player[]) => {
+    let bestTeamA: Player[] = [];
+    let bestTeamB: Player[] = [];
+    let bestScoreDiff = Infinity;
+
+    // Tenta diferentes combinações para encontrar o melhor equilíbrio
+    for (let i = 0; i < 100; i++) {
+      const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
+      const teamA = shuffledPlayers.slice(0, Math.ceil(shuffledPlayers.length / 2));
+      const teamB = shuffledPlayers.slice(Math.ceil(shuffledPlayers.length / 2));
+
+      if (!isPositionDistributionValid(teamA, teamB)) continue;
+
+      const scoreA = calculateTeamScore(teamA);
+      const scoreB = calculateTeamScore(teamB);
+      const scoreDiff = Math.abs(scoreA - scoreB);
+
+      if (scoreDiff < bestScoreDiff) {
+        bestScoreDiff = scoreDiff;
+        bestTeamA = teamA;
+        bestTeamB = teamB;
+      }
+    }
+
+    return { teamA: bestTeamA, teamB: bestTeamB };
+  };
+
+  // Funções auxiliares para o balanceamento
+  const calculateTeamScore = (players: Player[]) => {
+    return players.reduce((sum, player) => sum + calculatePlayerScore(player), 0);
+  };
+
+  const calculatePlayerScore = (player: Player) => {
+    const ageValue = getAgeValue(player.ageGroup);
+    const positionValue = getPositionValue(player.position);
+    const skillValue = player.skillLevel;
+    
+    return (skillValue * 0.6) + (ageValue * 0.3) + (positionValue * 0.1);
+  };
+
+  const getAgeValue = (ageGroup: string) => {
+    switch (ageGroup) {
+      case '15-20': return 17.5;
+      case '21-30': return 25.5;
+      case '31-40': return 35.5;
+      case '41-50': return 45.5;
+      case '+50': return 55;
+      default: return 25.5;
+    }
+  };
+
+  const getPositionValue = (position: string) => {
+    switch (position) {
+      case 'defesa': return 1;
+      case 'meio': return 2;
+      case 'ataque': return 3;
+      default: return 2;
+    }
+  };
+
+  const isPositionDistributionValid = (teamA: Player[], teamB: Player[]) => {
+    const distA = calculatePositionDistribution(teamA);
+    const distB = calculatePositionDistribution(teamB);
+    
+    const maxDiff = 1;
+    
+    return Math.abs(distA.defesa - distB.defesa) <= maxDiff &&
+           Math.abs(distA.meio - distB.meio) <= maxDiff &&
+           Math.abs(distA.ataque - distB.ataque) <= maxDiff;
+  };
+
+  const calculatePositionDistribution = (players: Player[]) => {
+    return {
+      defesa: players.filter(p => p.position === 'defesa').length,
+      meio: players.filter(p => p.position === 'meio').length,
+      ataque: players.filter(p => p.position === 'ataque').length
+    };
+  };
+
   const finishMatch = async (matchId: string, winnerTeamId: string) => {
     if (!game || !id) return;
 
@@ -934,7 +859,9 @@ export function GameDetails() {
         return match;
       });
 
-      await updateDoc(doc(db, 'games', id), {
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
         matches: updatedMatches,
         currentMatch: null,
         updatedAt: serverTimestamp(),
@@ -963,6 +890,7 @@ export function GameDetails() {
     if (!game || !id) return;
 
     try {
+      const gameRef = doc(db, 'games', id as string);
       const updatedMatches = game.matches.map(match => {
         if (match.id === matchId) {
           const updatedTeams = match.teams.map(team => {
@@ -991,7 +919,8 @@ export function GameDetails() {
         return match;
       });
 
-      await updateDoc(doc(db, 'games', id), {
+      if (!id) return;
+      await updateDoc(gameRef, {
         matches: updatedMatches,
         updatedAt: serverTimestamp(),
       });
@@ -1046,6 +975,7 @@ export function GameDetails() {
         return match;
       });
 
+      if (!id) return;
       await updateDoc(doc(db, 'games', id), {
         matches: updatedMatches,
         updatedAt: serverTimestamp(),
@@ -1086,7 +1016,9 @@ export function GameDetails() {
         return player;
       });
 
-      await updateDoc(doc(db, 'games', id), {
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
         players: updatedPlayers,
         updatedAt: serverTimestamp(),
       });
@@ -1116,9 +1048,9 @@ export function GameDetails() {
     try {
       // Ordena os jogadores por ordem de chegada atual
       const sortedPlayers = [...game.players].sort((a, b) => {
-        const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime) : new Date();
-        const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime) : new Date();
-        return timeA.getTime() - timeB.getTime();
+        const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
+        const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
+        return timeA - timeB;
       });
 
       // Encontra o jogador que está sendo movido
@@ -1131,14 +1063,27 @@ export function GameDetails() {
       // Insere o jogador na nova posição
       playersWithoutMoved.splice(newPosition - 1, 0, playerToMove);
 
-      // Mantém os horários originais de chegada
-      const updatedPlayers = playersWithoutMoved.map(player => ({
-          ...player,
-        // Preserva o horário original de chegada
-        arrivalTime: player.arrivalTime
-      }));
+      // Atualiza os horários de chegada para refletir a nova ordem
+      const updatedPlayers = playersWithoutMoved.map((player, index) => {
+        // Se for o primeiro jogador, mantém o horário original
+        if (index === 0) {
+          return player;
+        }
+        
+        // Para os demais, define um horário 1 minuto após o jogador anterior
+        const previousPlayer = playersWithoutMoved[index - 1];
+        const previousTime = previousPlayer.arrivalTime ? convertTimestampToDate(previousPlayer.arrivalTime) : new Date();
+        const newTime = new Date(previousTime.getTime() + 60000); // Adiciona 1 minuto
 
-      await updateDoc(doc(db, 'games', id), {
+        return {
+          ...player,
+          arrivalTime: Timestamp.fromDate(newTime)
+        };
+      });
+
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
         players: updatedPlayers,
         updatedAt: serverTimestamp(),
       });
@@ -1221,6 +1166,182 @@ export function GameDetails() {
     }
     
     return { players: [], playersOut: [], playersIn: [] };
+  };
+
+  const handleUpdateSkillLevel = async (playerId: string, skillLevel: 1 | 2 | 3 | 4 | 5) => {
+    if (!game || !id) return;
+
+    try {
+      const updatedPlayers = game.players.map(player => {
+        if (player.id === playerId) {
+          return { ...player, skillLevel };
+        }
+        return player;
+      });
+
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
+        players: updatedPlayers,
+        updatedAt: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Nível de habilidade atualizado!',
+        description: 'O nível de habilidade do jogador foi atualizado com sucesso.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar nível de habilidade:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao atualizar o nível de habilidade do jogador.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleUpdateAgeGroup = async (playerId: string, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => {
+    if (!game || !id) return;
+
+    try {
+      const updatedPlayers = game.players.map(player => {
+        if (player.id === playerId) {
+          return { ...player, ageGroup };
+        }
+        return player;
+      });
+
+      if (!id) return;
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
+        players: updatedPlayers,
+        updatedAt: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Faixa etária atualizada!',
+        description: 'A faixa etária do jogador foi atualizada com sucesso.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar faixa etária:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao atualizar a faixa etária do jogador.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleGoalScored = async (matchId: string, teamId: string, scorerId: string, assisterId?: string) => {
+    if (!game || !id) return;
+
+    try {
+      if (typeof id !== 'string') {
+        throw new Error('ID do jogo inválido');
+      }
+
+      const gameRef = doc(db, 'games', id);
+      const goalData: any = {
+        id: Math.random().toString(36).substr(2, 9),
+        matchId,
+        teamId,
+        scorerId,
+        timestamp: new Date()
+      };
+
+      if (assisterId) {
+        goalData.assisterId = assisterId;
+      }
+
+      const updatedMatches = game.matches.map(match => {
+        if (match.id === matchId) {
+          const updatedTeams = match.teams.map(team => {
+            if (team.id === teamId) {
+              return {
+                ...team,
+                score: (team.score || 0) + 1
+              };
+            }
+            return team;
+          });
+
+          return {
+            ...match,
+            goals: match.goals ? [...match.goals, goalData] : [goalData],
+            teams: updatedTeams,
+            updatedAt: new Date()
+          };
+        }
+        return match;
+      });
+
+      if (!id) return;
+      await updateDoc(gameRef, {
+        matches: updatedMatches,
+        updatedAt: serverTimestamp()
+      });
+
+      toast({
+        title: 'Gol registrado!',
+        description: 'O gol foi registrado com sucesso.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Erro ao registrar gol:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao registrar o gol.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const getSkillLevelIcon = (level: number) => {
+    switch (level) {
+      case 1:
+        return <Icon as={FaRunning} color="gray.400" />;
+      case 2:
+        return <Icon as={FaRunning} color="blue.400" />;
+      case 3:
+        return <Icon as={FaFutbol} color="green.400" />;
+      case 4:
+        return <Icon as={FaMedal} color="yellow.400" />;
+      case 5:
+        return <Icon as={FaMedal} color="orange.400" />;
+      default:
+        return <Icon as={FaRunning} color="gray.400" />;
+    }
+  };
+
+  const getSkillLevelText = (level: number) => {
+    switch (level) {
+      case 1:
+        return 'Iniciante';
+      case 2:
+        return 'Amador';
+      case 3:
+        return 'Intermediário';
+      case 4:
+        return 'Avançado';
+      case 5:
+        return 'Profissional';
+      default:
+        return 'Não definido';
+    }
   };
 
   if (isLoading) {
@@ -1356,6 +1477,7 @@ export function GameDetails() {
         <TabList>
           <Tab>Jogadores</Tab>
           <Tab>Partidas</Tab>
+          <Tab>Análises</Tab>
         </TabList>
 
         <TabPanels>
@@ -1363,97 +1485,111 @@ export function GameDetails() {
             <Box bg="white" borderRadius="lg" shadow="sm" p={{ base: 3, md: 4 }}>
               <Flex justify="space-between" align="center" mb={4}>
                 <Heading size={{ base: 'sm', md: 'md' }}>Ordem de Chegada</Heading>
-                {game.status !== 'finished' && (
-                  <Button
-                    colorScheme="blue"
-                    size={{ base: 'sm', md: 'md' }}
-                    onClick={onOpen}
-                    display={{ base: 'flex', md: 'inline-flex' }}
-                    px={{ base: 2, md: 4 }}
-                  >
-                    <FaUserPlus />
-                    <Text display={{ base: 'none', md: 'block' }} ml={2}>
-                      Adicionar Jogador
-                </Text>
-                  </Button>
-                )}
+                <HStack>
+                  {/* Botão para gerar 18 jogadores aleatórios */}
+                  <IconButton
+                    aria-label="Gerar 18 jogadores"
+                    icon={<FaUsers />}
+                    colorScheme="purple"
+                    size="sm"
+                    onClick={async () => {
+                      if (!id) return;
+                      try {
+                        const randomPlayers = generateRandomPlayers(18);
+                        await updateDoc(doc(db, 'games', id), {
+                          players: randomPlayers,
+                          waitingList: randomPlayers.slice(9).map(p => p.id)
+                        });
+                        toast({
+                          title: 'Jogadores adicionados!',
+                          description: '18 jogadores aleatórios foram adicionados com sucesso.',
+                          status: 'success',
+                          duration: 3000,
+                          isClosable: true,
+                        });
+                      } catch (error) {
+                        console.error('Erro ao adicionar jogadores:', error);
+                        toast({
+                          title: 'Erro',
+                          description: 'Ocorreu um erro ao adicionar os jogadores.',
+                          status: 'error',
+                          duration: 3000,
+                          isClosable: true,
+                        });
+                      }
+                    }}
+                  />
+
+                  {/* Botão para adicionar um jogador fictício */}
+                  <IconButton
+                    aria-label="Adicionar jogador fictício"
+                    icon={<FaUserPlus />}
+                    colorScheme="purple"
+                    size="sm"
+                    onClick={async () => {
+                      if (!id) return;
+                      try {
+                        const randomPlayer = generateRandomPlayers(1)[0];
+                        await updateDoc(doc(db, 'games', id), {
+                          players: arrayUnion(randomPlayer),
+                          waitingList: game.waitingList ? [...game.waitingList, randomPlayer.id] : [randomPlayer.id],
+                        });
+                        toast({
+                          title: 'Jogador adicionado!',
+                          description: 'Jogador fictício adicionado com sucesso.',
+                          status: 'success',
+                          duration: 3000,
+                          isClosable: true,
+                        });
+                      } catch (error) {
+                        console.error('Erro ao adicionar jogador:', error);
+                        toast({
+                          title: 'Erro',
+                          description: 'Ocorreu um erro ao adicionar o jogador.',
+                          status: 'error',
+                          duration: 3000,
+                          isClosable: true,
+                        });
+                      }
+                    }}
+                  />
+
+                  {game.status !== 'finished' && (
+                    <Button
+                      colorScheme="blue"
+                      size={{ base: 'sm', md: 'md' }}
+                      onClick={onOpen}
+                      display={{ base: 'flex', md: 'inline-flex' }}
+                      px={{ base: 2, md: 4 }}
+                    >
+                      <FaUserPlus />
+                      <Text display={{ base: 'none', md: 'block' }} ml={2}>
+                        Adicionar Jogador
+                      </Text>
+                    </Button>
+                  )}
+                </HStack>
               </Flex>
 
               <Box mb={6}>
                 {game.players && game.players.length > 0 ? (
                   <VStack align="stretch" spacing={3}>
                     <Box mt={4}>
-                      <VStack align="stretch" spacing={2}>
-                        {game.players
-                          .sort((a, b) => {
-                            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
-                            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
-                            return timeA - timeB;
-                          })
-                          .map((player, index) => (
-                            <Box 
-                              key={index} 
-                              p={{ base: 3, md: 4 }} 
-                              bg="gray.50" 
-                              borderRadius="md"
-                              _hover={{ bg: 'gray.100' }}
-                              transition="all 0.2s"
-                            >
-                              <Flex align="center" justify="space-between">
-                                <Flex align="center" gap={3}>
-                                  <Text 
-                                    fontWeight="bold" 
-                                    fontSize={{ base: 'sm', md: 'md' }}
-                                    color="gray.500"
-                                  >
-                                    {index + 1}º
-                                  </Text>
-                                  <Avatar 
-                                    size={{ base: 'sm', md: 'md' }} 
-                                    name={player.name} 
-                                    bg={getPositionColor(player.position)} 
-                                  />
-                                  <Box textAlign="left">
-                                    <Text 
-                                      fontWeight="medium" 
-                                      fontSize={{ base: 'sm', md: 'md' }}
-                                      lineHeight="short"
-                                    >
-                                      {player.name}
-                                    </Text>
-                                    <Text 
-                                      fontSize="xs"
-                                      color="gray.500"
-                                      textTransform="capitalize"
-                                    >
-                                      {player.position}
-                                    </Text>
-                                  </Box>
-                              </Flex>
-                                <Flex align="center" gap={2}>
-                                  <Text 
-                                    fontSize={{ base: 'xs', md: 'sm' }}
-                                    color="gray.500"
-                                  >
-                                    {formatArrivalTime(player.arrivalTime)}
-                                </Text>
-                                  <IconButton
-                                    aria-label="Opções do jogador"
-                                    icon={<FaEllipsisV />}
-                                    size={{ base: 'sm', md: 'md' }}
-                                    variant="ghost"
-                                    onClick={() => {
-                                      if (player) {
-                                        setSelectedPlayer(player);
-                                        setIsPlayerOptionsOpen(true);
-                                      }
-                                    }}
-                                  />
-                            </Flex>
-                              </Flex>
-                            </Box>
-                          ))}
-                      </VStack>
+                      <PlayerList
+                        players={game.players.sort((a, b) => {
+                          const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
+                          const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
+                          return timeA - timeB;
+                        })}
+                        onPlayerOptions={(player) => {
+                          setSelectedPlayer(player);
+                          setIsPlayerOptionsOpen(true);
+                        }}
+                        goals={game.matches.flatMap(m => m.goals || [])}
+                        variant="arrival"
+                        showOrder={true}
+                        formatArrivalTime={formatArrivalTime}
+                      />
                     </Box>
                   </VStack>
                 ) : (
@@ -1465,7 +1601,7 @@ export function GameDetails() {
             </Box>
           </TabPanel>
 
-          <TabPanel>
+          <TabPanel px={0}>
             <Box>
               {game.matches && game.matches.length > 0 ? (
                 <VStack spacing={6} align="stretch">
@@ -1498,130 +1634,127 @@ export function GameDetails() {
                           </Flex>
                         </Flex>
 
+                        {/* Placar quando a partida estiver finalizada */}
+                        {match.status === 'finished' && (
+                          <MatchScore match={match} />
+                        )}
+
+                        {/* Timer e Placar */}
+                        {match.status === 'in_progress' && (
+                          <MatchTimer
+                            teamA={match.teams[0]}
+                            teamB={match.teams[1]}
+                            isFirstMatch={game.matches.length === 1}
+                            onGoalScored={(teamId, scorerId, assisterId) => 
+                              handleGoalScored(match.id, teamId, scorerId, assisterId)
+                            }
+                          />
+                        )}
+
+                        {/* Visualização Tática */}
+                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mb={4}>
+                          {match.teams.map((team) => (
+                            <Box key={team.id}>
+                              <TacticalView
+                                team={team}
+                                formation={team.formation?.tactical || '4-3-2'}
+                                goals={match.goals}
+                                teamColor={team.id === 'teamA' ? 'gray.600' : 'orange.500'}
+                                onFormationChange={async (newFormation) => {
+                                  try {
+                                    const updatedTeams = match.teams.map(t => {
+                                      if (t.id === team.id) {
+                                        return {
+                                          ...t,
+                                          formation: {
+                                            ...t.formation,
+                                            tactical: newFormation
+                                          }
+                                        };
+                                      }
+                                      return t;
+                                    });
+
+                                    const updatedMatches = game.matches.map(m => {
+                                      if (m.id === match.id) {
+                                        return {
+                                          ...m,
+                                          teams: updatedTeams
+                                        };
+                                      }
+                                      return m;
+                                    });
+
+                                    if (!id) return;
+                                    const gameRef = doc(db, 'games', id);
+                                    await updateDoc(gameRef, {
+                                      matches: updatedMatches
+                                    });
+                                  } catch (error) {
+                                    console.error('Erro ao atualizar formação:', error);
+                                    toast({
+                                      title: 'Erro',
+                                      description: 'Ocorreu um erro ao atualizar a formação.',
+                                      status: 'error',
+                                      duration: 3000,
+                                      isClosable: true,
+                                    });
+                                  }
+                                }}
+                              />
+                                  </Box>
+                          ))}
+                        </SimpleGrid>
+
+                        {/* Lista de Jogadores */}
                         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                           {match.teams.map((team) => (
-                            <Card 
-                              key={team.id} 
-                              bg={team.id === 'teamA' ? 'white' : 'orange.50'}
-                              borderWidth="1px"
-                              borderColor={team.id === 'teamA' ? 'gray.200' : 'orange.200'}
-                            >
-                              <CardBody>
-                                <Heading size={{ base: 'sm', md: 'md' }} mb={4}>
-                                  {team.name}
-                                </Heading>
-                                <VStack align="stretch" spacing={4}>
-                                  <Box>
-                                    <Text fontWeight="bold" mb={2} fontSize={{ base: 'sm', md: 'md' }}>Defesa</Text>
-                                    <VStack align="stretch" spacing={2}>
-                                      {team.formation?.defesa.map((player, index) => {
-                                        const { players } = getPlayersNotInNextMatch(match);
-                                        const isNotInNextMatch = players.some(p => p.id === player.id);
-                                        return (
-                                        <Flex key={index} align="center" justify="space-between">
-                                          <Flex align="center">
-                                              <Avatar size={{ base: 'xs', md: 'sm' }} name={player.name} mr={2} bg={getPositionColor(player.position)} />
-                                              <Text 
-                                                color={isNotInNextMatch ? "red.500" : "inherit"}
-                                                fontSize={{ base: 'sm', md: 'md' }}
-                                              >
-                                                {player.name}
-                                              </Text>
-                                          </Flex>
-                                          {match.status === 'in_progress' && (
-                                            <IconButton
-                                              aria-label="Trocar jogador"
-                                              icon={<FaExchangeAlt />}
-                                              size={{ base: 'xs', md: 'sm' }}
-                                              variant="ghost"
-                                              onClick={() => {
-                                                setSelectedPlayer(player);
-                                                setSelectedTeam(team);
-                                                setSelectedMatchForSwap(match);
-                                                setIsPlayerSwapOpen(true);
-                                              }}
-                                            />
-                                          )}
-                                        </Flex>
-                                        );
-                                      })}
-                                    </VStack>
-                                  </Box>
-                                  <Box>
-                                    <Text fontWeight="bold" mb={2} fontSize={{ base: 'sm', md: 'md' }}>Meio</Text>
-                                    <VStack align="stretch" spacing={2}>
-                                      {team.formation?.meio.map((player, index) => {
-                                        const { players } = getPlayersNotInNextMatch(match);
-                                        const isNotInNextMatch = players.some(p => p.id === player.id);
-                                        return (
-                                        <Flex key={index} align="center" justify="space-between">
-                                          <Flex align="center">
-                                              <Avatar size={{ base: 'xs', md: 'sm' }} name={player.name} mr={2} bg={getPositionColor(player.position)} />
-                                              <Text 
-                                                color={isNotInNextMatch ? "red.500" : "inherit"}
-                                                fontSize={{ base: 'sm', md: 'md' }}
-                                              >
-                                                {player.name}
-                                              </Text>
-                                          </Flex>
-                                          {match.status === 'in_progress' && (
-                                            <IconButton
-                                              aria-label="Trocar jogador"
-                                              icon={<FaExchangeAlt />}
-                                              size={{ base: 'xs', md: 'sm' }}
-                                              variant="ghost"
-                                              onClick={() => {
-                                                setSelectedPlayer(player);
-                                                setSelectedTeam(team);
-                                                setSelectedMatchForSwap(match);
-                                                setIsPlayerSwapOpen(true);
-                                              }}
-                                            />
-                                          )}
-                                        </Flex>
-                                        );
-                                      })}
-                                    </VStack>
-                                  </Box>
-                                  <Box>
-                                    <Text fontWeight="bold" mb={2} fontSize={{ base: 'sm', md: 'md' }}>Ataque</Text>
-                                    <VStack align="stretch" spacing={2}>
-                                      {team.formation?.ataque.map((player, index) => {
-                                        const { players } = getPlayersNotInNextMatch(match);
-                                        const isNotInNextMatch = players.some(p => p.id === player.id);
-                                        return (
-                                        <Flex key={index} align="center" justify="space-between">
-                                          <Flex align="center">
-                                              <Avatar size={{ base: 'xs', md: 'sm' }} name={player.name} mr={2} bg={getPositionColor(player.position)} />
-                                              <Text 
-                                                color={isNotInNextMatch ? "red.500" : "inherit"}
-                                                fontSize={{ base: 'sm', md: 'md' }}
-                                              >
-                                                {player.name}
-                                              </Text>
-                                          </Flex>
-                                          {match.status === 'in_progress' && (
-                                            <IconButton
-                                              aria-label="Trocar jogador"
-                                              icon={<FaExchangeAlt />}
-                                              size={{ base: 'xs', md: 'sm' }}
-                                              variant="ghost"
-                                              onClick={() => {
-                                                setSelectedPlayer(player);
-                                                setSelectedTeam(team);
-                                                setSelectedMatchForSwap(match);
-                                                setIsPlayerSwapOpen(true);
-                                              }}
-                                            />
-                                          )}
-                                        </Flex>
-                                        );
-                                      })}
-                                    </VStack>
-                                  </Box>
-                                </VStack>
-                              </CardBody>
-                            </Card>
+                            <Box key={team.id}>
+                              <Text fontWeight="bold" mb={2} fontSize={{ base: 'sm', md: 'md' }}>
+                                {team.name}
+                              </Text>
+                              <VStack align="stretch" spacing={2}>
+                                {team.players.sort((a, b) => {
+                                  // Primeiro por posição (defesa -> meio -> ataque)
+                                  const positionOrder = { defesa: 1, meio: 2, ataque: 3 };
+                                  if (positionOrder[a.position] !== positionOrder[b.position]) {
+                                    return positionOrder[a.position] - positionOrder[b.position];
+                                  }
+                                  
+                                  // Depois por idade (mais novo -> mais velho)
+                                  const ageOrder = {
+                                    '15-20': 1,
+                                    '21-30': 2,
+                                    '31-40': 3,
+                                    '41-50': 4,
+                                    '+50': 5
+                                  };
+                                  if (ageOrder[a.ageGroup] !== ageOrder[b.ageGroup]) {
+                                    return ageOrder[a.ageGroup] - ageOrder[b.ageGroup];
+                                  }
+                                  
+                                  // Por fim por habilidade (menos habilidoso -> mais habilidoso)
+                                  return a.skillLevel - b.skillLevel;
+                                }).map((player) => (
+                                  <PlayerList
+                                    key={player.id}
+                                    players={[player]}
+                                    goals={match.goals}
+                                    showStats={true}
+                                    showOrder={false}
+                                    variant="lineup"
+                                    teamColor={team.id === 'teamA' ? 'gray.600' : 'orange.500'}
+                                    onPlayerOptions={match.status === 'in_progress' ? (player) => {
+                                      setSelectedPlayer(player);
+                                      setSelectedTeam(team);
+                                      setSelectedMatchForSwap(match);
+                                      setIsPlayerSwapOpen(true);
+                                    } : undefined}
+                                    consecutiveMatches={getConsecutiveMatchesWithoutBreak}
+                                  />
+                                ))}
+                              </VStack>
+                            </Box>
                           ))}
                         </SimpleGrid>
 
@@ -1696,6 +1829,10 @@ export function GameDetails() {
               )}
             </Box>
           </TabPanel>
+
+          <TabPanel px={0}>
+            <GameAnalytics game={game} />
+          </TabPanel>
         </TabPanels>
       </Tabs>
 
@@ -1724,6 +1861,20 @@ export function GameDetails() {
         onUpdateArrivalOrder={(order) => {
           if (selectedPlayer) {
             handleUpdateArrivalOrder(selectedPlayer.id, order);
+            setIsPlayerOptionsOpen(false);
+            setSelectedPlayer(null);
+          }
+        }}
+        onUpdateSkillLevel={(skillLevel) => {
+          if (selectedPlayer) {
+            handleUpdateSkillLevel(selectedPlayer.id, skillLevel);
+            setIsPlayerOptionsOpen(false);
+            setSelectedPlayer(null);
+          }
+        }}
+        onUpdateAgeGroup={(ageGroup) => {
+          if (selectedPlayer) {
+            handleUpdateAgeGroup(selectedPlayer.id, ageGroup);
             setIsPlayerOptionsOpen(false);
             setSelectedPlayer(null);
           }
@@ -1792,12 +1943,6 @@ export function GameDetails() {
                           bg={getPositionColor(player.position)} 
                         />
                         <Text fontWeight="medium">{player.name}</Text>
-                        <Badge 
-                          ml="auto"
-                          colorScheme={getPositionColor(player.position)}
-                        >
-                          {player.position}
-                        </Badge>
                       </Flex>
                     ))}
                     {getPlayersNotInNextMatch(selectedMatch).players.length === 0 && (
@@ -1883,7 +2028,7 @@ export function GameDetails() {
                     {selectedMatch.status === 'finished' && (
                       <Box>
                         <Text fontSize="sm" color="gray.600" mb={2}>
-                          Jogadores que não entraram:
+                          Lista de espera:
                         </Text>
                         <SimpleGrid columns={2} spacing={2}>
                           {game.players

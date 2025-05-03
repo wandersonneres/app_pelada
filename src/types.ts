@@ -8,6 +8,8 @@ export interface Player {
   arrivalTime: Date | Timestamp;
   position: 'defesa' | 'meio' | 'ataque';
   arrivalOrder?: number;
+  skillLevel: 1 | 2 | 3 | 4 | 5;
+  ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50';
 }
 
 export interface Team {
@@ -15,20 +17,30 @@ export interface Team {
   name: string;
   players: Player[];
   score: number;
-  formation?: {
+  formation: {
     defesa: Player[];
     meio: Player[];
     ataque: Player[];
+    tactical?: string; // Formação tática (ex: '3-3-2')
   };
+}
+
+export interface Goal {
+  id: string;
+  scorerId: string;
+  assisterId?: string;
+  timestamp: Date;
 }
 
 export interface Match {
   id: string;
   teams: Team[];
   status: 'waiting' | 'in_progress' | 'finished';
-  createdAt: Date | Timestamp;
-  updatedAt: Date | Timestamp;
   winner?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  goals?: Goal[];
+  duration?: number; // Duração em minutos
 }
 
 export interface Game {
@@ -43,6 +55,7 @@ export interface Game {
   observations?: string;
   createdAt: Date | Timestamp;
   updatedAt: Date | Timestamp;
+  waitingList: string[]; // IDs dos jogadores na lista de espera, em ordem
 }
 
 // Função auxiliar para converter Timestamp do Firestore para Date
