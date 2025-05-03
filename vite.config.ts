@@ -12,6 +12,12 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       input: './index.html',
+      output: {
+        format: 'es',
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
+      }
     }
   },
   base: '/',
