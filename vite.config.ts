@@ -11,16 +11,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
-      input: {
-        main: './index.html',
-      },
-      output: {
-        format: 'es',
-        dir: 'dist',
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]'
-      }
+      input: './index.html',
     }
   },
   base: '/',
