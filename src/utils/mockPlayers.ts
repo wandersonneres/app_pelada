@@ -1,15 +1,15 @@
 import { Player } from '../types';
 
 const nomes = [
-  'Miguel', 'Arthur', 'Gael', 'Théo', 'Heitor', 'Ravi', 'João', 'Pedro', 'Lorenzo', 'Lucas',
-  'Gabriel', 'Matheus', 'Bernardo', 'Noah', 'Davi', 'Samuel', 'Benício', 'Gustavo', 'Rafael',
-  'Nicolas', 'Daniel', 'Felipe', 'Anthony', 'Isaac', 'Lucca', 'Bryan', 'Vicente', 'Eduardo',
-  'Henrique', 'Murilo', 'Leonardo', 'Thomas', 'Cauã', 'Joaquim', 'Bruno', 'Thiago', 'Vitor',
-  'Antônio', 'João Pedro', 'Francisco', 'Enzo', 'Carlos', 'Fernando', 'Augusto', 'André',
-  'Ricardo', 'Roberto', 'Marcos', 'Paulo', 'José', 'Luiz', 'Marcelo', 'Diego', 'Jorge',
-  'Rodrigo', 'Guilherme', 'Anderson', 'Fábio', 'César', 'Alan', 'Alex', 'Alexandre', 'Wesley',
-  'Wagner', 'William', 'Victor', 'Leandro', 'Adriano', 'Alberto', 'Igor', 'Ivan', 'Márcio',
-  'Renato', 'Júlio', 'Ronaldo', 'Douglas', 'Maurício', 'Cláudio', 'Sérgio', 'Rogério'
+  // Nomes de jogadores reais famosos (exemplos)
+  'Pelé', 'Zico', 'Romário', 'Ronaldo', 'Ronaldinho', 'Neymar', 'Kaká', 'Rivaldo', 'Sócrates', 'Garrincha',
+  'Tostão', 'Careca', 'Bebeto', 'Adriano', 'Roberto Carlos', 'Cafu', 'Dida', 'Júlio César', 'Edmundo', 'Jardel',
+  'Fred', 'Gerson', 'Jairzinho', 'Falcão', 'Djalminha', 'Alex', 'Ricardinho', 'Juninho', 'Leonardo', 'Aldair',
+  'Lúcio', 'Juan', 'Thiago Silva', 'David Luiz', 'Daniel Alves', 'Maicon', 'Miranda', 'Felipe Melo', 'Paulinho', 'Casemiro',
+  'Willian', 'Oscar', 'Lucas Moura', 'Gabriel Jesus', 'Richarlison', 'Vinícius Júnior', 'Rodrygo', 'Raphinha', 'Bruno Guimarães', 'Éverton Ribeiro',
+  'Taffarel', 'Marcos', 'Ceni', 'Zé Roberto', 'Emerson', 'Elano', 'Diego', 'Anderson', 'Renato Augusto', 'Douglas Costa',
+  'Hulk', 'Gabigol', 'Pedro', 'Everton Cebolinha', 'Danilo', 'Alex Sandro', 'Renan Lodi', 'Fagner', 'Weverton', 'Ederson',
+  'Alisson', 'Fabinho', 'Arthur', 'Lucas Paquetá', 'Philippe Coutinho', 'Malcom', 'Douglas Luiz', 'Matheus Cunha', 'Antony', 'Bremer'
 ];
 
 const sobrenomes = [
@@ -55,32 +55,18 @@ export function generateRandomPlayers(count: number): Player[] {
 
   const usedNames = new Set<string>();
 
-  // Cria uma distribuição equilibrada de posições
-  const defesaCount = Math.floor(count * 0.3); // 30% defesa
-  const meioCount = Math.floor(count * 0.4);   // 40% meio
-  const ataqueCount = count - defesaCount - meioCount; // resto para ataque
-
-  const positionDistribution = [
-    ...Array(defesaCount).fill('defesa'),
-    ...Array(meioCount).fill('meio'),
-    ...Array(ataqueCount).fill('ataque')
-  ];
-
-  // Embaralha as posições
-  const shuffledPositions = shuffleArray(positionDistribution);
-
   return Array.from({ length: count }, (_, i) => {
     const { nome, sobrenome } = generateUniqueName(usedNames);
-    
     return {
       id: Math.random().toString(36).substr(2, 9),
       name: `${nome} ${sobrenome}`,
       email: '',
       confirmed: true,
-      arrivalTime: new Date(Date.now() + i * 60000), // Incrementa 1 minuto para cada jogador
-      position: shuffledPositions[i] as 'defesa' | 'meio' | 'ataque',
+      arrivalTime: new Date(Date.now() + i * 60000),
+      position: positions[Math.floor(Math.random() * positions.length)],
       skillLevel: skillLevels[Math.floor(Math.random() * skillLevels.length)],
-      ageGroup: ageGroups[Math.floor(Math.random() * ageGroups.length)]
+      ageGroup: ageGroups[Math.floor(Math.random() * ageGroups.length)],
+      arrivalOrder: i + 1
     };
   });
 } 

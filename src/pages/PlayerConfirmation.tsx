@@ -59,6 +59,7 @@ export function PlayerConfirmation() {
         confirmed: true,
         arrivalTime: new Date(),
         position: 'meio',
+        arrivalOrder: game.players.length + 1,
         skillLevel: playerSkillLevel,
         ageGroup: playerAgeGroup,
       };

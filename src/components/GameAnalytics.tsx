@@ -95,9 +95,6 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
   };
 
   const playerStats = calculatePlayerStats();
-  console.log('Player Stats:', playerStats);
-  console.log('Game Matches:', game.matches);
-  console.log('Game Goals:', game.matches.map(m => m.goals));
 
   const totalMatches = game.matches.filter(m => m.status === 'finished').length;
   const totalGoals = game.matches.reduce((sum, match) => {
@@ -106,9 +103,6 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
     }
     return sum;
   }, 0);
-
-  console.log('Total Matches:', totalMatches);
-  console.log('Total Goals:', totalGoals);
 
   const getPositionColor = (position: string) => {
     switch (position) {
@@ -133,7 +127,9 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
         <Stat bg={bgColor} p={4} borderRadius="lg" shadow="sm">
           <StatLabel>Total de Gols</StatLabel>
           <StatNumber>{totalGoals}</StatNumber>
-          <StatHelpText>Média de {(totalGoals / totalMatches).toFixed(1)} por partida</StatHelpText>
+          <StatHelpText>
+            Média de {totalGoals > 0 && totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0.0'} por partida
+          </StatHelpText>
         </Stat>
         <Stat bg={bgColor} p={4} borderRadius="lg" shadow="sm">
           <StatLabel>Total de Jogadores</StatLabel>
@@ -163,7 +159,7 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
                     <Text fontWeight="medium">{player.name}</Text>
                   </Td>
                   <Td>
-                    <Badge colorScheme={getPositionColor(player.position)}>
+                    <Badge colorScheme={getPositionColor(player.position)} fontWeight="medium">
                       {player.position}
                     </Badge>
                   </Td>

@@ -107,26 +107,28 @@ export const PlayerList = ({
           return (
             <Box
               key={player.id}
+              p={{ base: 1, md: 3 }}
               bg={bgColor}
               borderRadius="lg"
               shadow="sm"
               _hover={{ shadow: 'md' }}
               transition="all 0.2s"
             >
-              <Flex align="center" justify="space-between" p={4}>
-                <HStack spacing={4}>
+              <Flex align="center" justify="space-between" p={{ base: 2, md: 4 }}>
+                <HStack spacing={{ base: 2, md: 4 }}>
                   {showOrder && (
                     <Flex
                       align="center"
                       justify="center"
-                      w="32px"
-                      h="32px"
+                      w={{ base: '18px', md: '28px' }}
+                      h={{ base: '18px', md: '28px' }}
                       borderRadius="lg"
                       bg={useColorModeValue('gray.100', 'gray.700')}
                     >
                       <Text
                         color={mutedColor}
-                        fontSize="sm"
+                        //fontSize={{ base: 'xs', md: 'sm' }}
+                        fontSize="xs"
                         fontWeight="medium"
                       >
                         {(index + 1).toString().padStart(2, '0')}
@@ -134,41 +136,52 @@ export const PlayerList = ({
                     </Flex>
                   )}
                   <Avatar
+                    //size={{ base: 'sm', md: 'md' }}
                     size="sm"
                     name={player.name}
                     bg={`${getPositionColor(player.position)}.500`}
                     color="white"
                   />
-                  <VStack align="start" spacing={1}>
+                  <VStack align="start" spacing={1} minW={0}>
                     <Text
                       color={textColor}
                       fontWeight="semibold"
-                      fontSize="md"
+                      fontSize={{ base: 'sm', md: 'md' }}
+                      isTruncated
                     >
                       {player.name}
                     </Text>
-                    <HStack spacing={2} align="center">
+                    <HStack spacing={{ base: 1, md: 2 }} align="center">
                       <Badge
                         colorScheme={getPositionColor(player.position)}
-                        fontSize="xs"
+                        fontSize={{ base: '2xs', md: 'xs' }}
                         textTransform="uppercase"
+                        fontWeight="medium"
                       >
-                        {player.position}
+                        {typeof window !== 'undefined' /*&& window.innerWidth < 768*/
+                          ? player.position === 'defesa'
+                            ? 'DEF'
+                            : player.position === 'meio'
+                              ? 'MEI'
+                              : player.position === 'ataque'
+                                ? 'ATA'
+                                : player.position
+                          : player.position}
                       </Badge>
                       <Text
                         color={mutedColor}
-                        fontSize="xs"
+                        fontSize={{ base: '2xs', md: 'xs' }}
                       >
                         {player.ageGroup}
                       </Text>
-                      <Text color={mutedColor} fontSize="xs">
+                      <Text color={mutedColor} fontSize={{ base: '2xs', md: 'xs' }}>
                         {renderSkillLevel ? renderSkillLevel(player.skillLevel) : (
-                          <HStack spacing={1}>
+                          <HStack spacing={0.5}>
                             {[1, 2, 3, 4, 5].map((l) => (
                               <Icon
                                 key={l}
                                 as={StarIcon}
-                                boxSize={3}
+                                boxSize={{ base: 2, md: 3 }}
                                 color={l <= player.skillLevel ? "yellow.400" : "gray.200"}
                               />
                             ))}
@@ -178,14 +191,13 @@ export const PlayerList = ({
                     </HStack>
                   </VStack>
                 </HStack>
-
-                <HStack spacing={4}>
+                <HStack spacing={{ base: 2, md: 4 }}>
                   {showStats && hasStats && (
-                    <HStack spacing={3}>
+                    <HStack spacing={{ base: 1, md: 3 }}>
                       {stats.goals > 0 && (
                         <HStack spacing={1}>
                           <FaFutbol color={mutedColor} size={14} />
-                          <Text color={mutedColor} fontSize="sm" fontWeight="medium">
+                          <Text color={mutedColor} fontSize={{ base: '2xs', md: 'sm' }} fontWeight="medium">
                             {stats.goals}
                           </Text>
                         </HStack>
@@ -193,14 +205,14 @@ export const PlayerList = ({
                       {stats.assists > 0 && (
                         <HStack spacing={1}>
                           <FaHandsHelping color={mutedColor} size={14} />
-                          <Text color={mutedColor} fontSize="sm" fontWeight="medium">
+                          <Text color={mutedColor} fontSize={{ base: '2xs', md: 'sm' }} fontWeight="medium">
                             {stats.assists}
                           </Text>
                         </HStack>
                       )}
                     </HStack>
                   )}
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize={{ base: '2xs', md: 'sm' }} color="gray.500">
                     {formatArrivalTime(player.arrivalTime)}
                   </Text>
                   {onPlayerOptions && (
@@ -209,7 +221,7 @@ export const PlayerList = ({
                       icon={<FaEllipsisV />}
                       variant="ghost"
                       colorScheme="gray"
-                      size="sm"
+                      size={{ base: 'xs', md: 'sm' }}
                       onClick={() => onPlayerOptions(player)}
                     />
                   )}
@@ -256,12 +268,6 @@ export const PlayerList = ({
               </HStack>
 
               <HStack spacing={3}>
-                <Badge
-                  colorScheme={getPositionColor(player.position)}
-                  fontSize="xs"
-                >
-                  {player.position.substring(0, 3).toUpperCase()}
-                </Badge>
                 {showStats && hasStats && (
                   <HStack spacing={2}>
                     {stats.goals > 0 && (
@@ -282,6 +288,21 @@ export const PlayerList = ({
                     )}
                   </HStack>
                 )}
+                <Badge
+                  colorScheme={getPositionColor(player.position)}
+                  fontSize={{ base: '2xs', md: 'xs' }}
+                  textTransform="uppercase"
+                >
+                  {typeof window !== 'undefined' /*&& window.innerWidth < 768*/
+                    ? player.position === 'defesa'
+                      ? 'DEF'
+                      : player.position === 'meio'
+                        ? 'MEI'
+                        : player.position === 'ataque'
+                          ? 'ATA'
+                          : player.position
+                    : player.position}
+                </Badge>
                 {onPlayerOptions && (
                   <IconButton
                     aria-label="Opções do jogador"

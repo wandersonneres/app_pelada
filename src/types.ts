@@ -7,7 +7,7 @@ export interface Player {
   confirmed: boolean;
   arrivalTime: Date | Timestamp;
   position: 'defesa' | 'meio' | 'ataque';
-  arrivalOrder?: number;
+  arrivalOrder: number;
   skillLevel: 1 | 2 | 3 | 4 | 5;
   ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50';
 }

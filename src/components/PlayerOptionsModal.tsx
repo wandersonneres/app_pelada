@@ -146,18 +146,46 @@ export function PlayerOptionsModal({
 
             <Box>
               <Text fontWeight="medium" mb={2}>Ordem de Chegada</Text>
-              <SimpleGrid columns={3} spacing={2}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((order) => (
-                  <Button
-                    key={order}
-                    onClick={() => onUpdateArrivalOrder(order)}
-                    colorScheme={player.arrivalOrder === order ? 'green' : 'gray'}
-                    size={{ base: 'sm', md: 'md' }}
-                  >
-                    {order}
-                  </Button>
-                ))}
-              </SimpleGrid>
+              <Box
+                maxH="120px"
+                overflowY="auto"
+                p={1}
+                borderRadius="md"
+                borderWidth={0}
+                borderColor={undefined}
+                sx={{
+                  '::-webkit-scrollbar': {
+                    width: '4px',
+                    background: 'transparent',
+                  },
+                  '::-webkit-scrollbar-thumb': {
+                    background: 'rgba(0,0,0,0.08)',
+                    borderRadius: '8px',
+                  },
+                  '::-webkit-scrollbar-thumb:hover': {
+                    background: 'rgba(0,0,0,0.15)',
+                  },
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(0,0,0,0.08) transparent',
+                }}
+              >
+                <SimpleGrid columns={3} spacing={2}>
+                  {[...Array(totalPlayers).keys()].map((i) => {
+                    const order = i + 1;
+                    return (
+                      <Button
+                        key={order}
+                        onClick={() => onUpdateArrivalOrder(order)}
+                        colorScheme={player.arrivalOrder === order ? 'green' : 'gray'}
+                        size={{ base: 'sm', md: 'md' }}
+                        _focus={{ boxShadow: 'none', outline: 'none' }}
+                      >
+                        {order}
+                      </Button>
+                    );
+                  })}
+                </SimpleGrid>
+              </Box>
             </Box>
 
             <Divider />
