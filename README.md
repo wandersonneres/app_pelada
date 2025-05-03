@@ -94,4 +94,41 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes. 
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 🚀 Deploy na Vercel
+
+1. Faça login na sua conta da Vercel
+2. Clique em "New Project"
+3. Importe o repositório do GitHub
+4. Configure as variáveis de ambiente:
+   - VITE_FIREBASE_API_KEY
+   - VITE_FIREBASE_AUTH_DOMAIN
+   - VITE_FIREBASE_PROJECT_ID
+   - VITE_FIREBASE_STORAGE_BUCKET
+   - VITE_FIREBASE_MESSAGING_SENDER_ID
+   - VITE_FIREBASE_APP_ID
+5. Clique em "Deploy"
+
+## 📦 Instalação Local
+
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/app_pelada.git
+
+# Entre no diretório
+cd app_pelada
+
+# Instale as dependências
+npm install
+
+# Crie um arquivo .env com as variáveis de ambiente
+cp .env.example .env
+
+# Inicie o servidor de desenvolvimento
+npm run dev
+```
+
+## 🔧 Configuração
+
+Certifique-se de configurar todas as variáveis de ambiente necessárias no arquivo `.env` ou no painel da Vercel. 
