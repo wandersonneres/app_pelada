@@ -1,4 +1,4 @@
-# App Pelada
+# App Pelada 
 
 Um aplicativo moderno e responsivo para organizar suas peladas (jogos de futebol entre amigos).
 
