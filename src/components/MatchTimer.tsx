@@ -1,18 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  Select,
-  HStack,
-  VStack,
-  IconButton,
-  Badge,
-  useDisclosure,
-  useColorModeValue,
-} from '@chakra-ui/react';
-import { FaPlay, FaPause, FaStop, FaFutbol } from 'react-icons/fa';
+import { Play, Pause, StopCircle, Circle } from 'lucide-react';
 import { Team } from '../types';
 import { GoalScorerModal } from './GoalScorerModal';
 
@@ -30,11 +17,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const bgColor = useColorModeValue('#1a2c38', '#1a2c38');
-  const textColor = useColorModeValue('white', 'white');
-  const borderColor = useColorModeValue('rgba(255,255,255,0.2)', 'rgba(255,255,255,0.2)');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const resetTimer = useCallback(() => {
     setRemainingSeconds(time * 60);
@@ -43,7 +26,6 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-
     if (running && remainingSeconds > 0) {
       interval = setInterval(() => {
         setRemainingSeconds((prev) => prev - 1);
@@ -51,7 +33,6 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
     } else if (remainingSeconds === 0) {
       setRunning(false);
     }
-
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -65,7 +46,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
 
   const handleGoalScored = (team: Team) => {
     setSelectedTeam(team);
-    onOpen();
+    setIsModalOpen(true);
   };
 
   const handleGoalConfirmed = (scorerId: string, assisterId?: string) => {
@@ -77,133 +58,84 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
       }
       onGoalScored(selectedTeam.id, scorerId, assisterId);
     }
+    setIsModalOpen(false);
+    setSelectedTeam(null);
   };
 
   return (
-    <Box
-      bg={bgColor}
-      borderRadius="lg"
-      shadow="sm"
-      mb={4}
-      overflow="hidden"
-    >
-      {/* Placar e Timer */}
-      <Flex
-        w="100%"
-        justify="space-between"
-        align="center"
-        p={4}
-        position="relative"
-      >
+    <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl shadow-lg mb-4 overflow-hidden border border-blue-200">
+      <div className="flex w-full justify-between items-center px-4 py-6 gap-2">
         {/* Time A */}
-        <VStack align="center" w="35%">
-          <Text fontWeight="bold" fontSize="lg" color={textColor}>{teamA.name}</Text>
-          <Text fontSize="6xl" fontWeight="bold" color={textColor}>{scoreA}</Text>
-          <Button
-            leftIcon={<FaFutbol />}
-            colorScheme="whiteAlpha"
-            variant="ghost"
+        <div className="flex flex-col items-center w-1/3">
+          <span className="font-bold text-white text-lg mb-1">{teamA.name}</span>
+          <span className="text-5xl font-extrabold text-white drop-shadow mb-2">{scoreA}</span>
+          <button
+            className={`flex items-center gap-1 px-3 py-1 rounded bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition ${!running ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => handleGoalScored(teamA)}
-            isDisabled={!running}
-            size="sm"
-            color={textColor}
-            _hover={{ bg: 'whiteAlpha.200' }}
+            disabled={!running}
           >
-            Gol
-          </Button>
-        </VStack>
-
+            <Circle className="w-4 h-4" /> Gol
+          </button>
+        </div>
         {/* Timer */}
-        <VStack align="center" w="30%" position="relative">
-          <Box position="absolute" top={-2}>
-            <Select
-              size="xs"
-              value={time}
-              onChange={(e) => {
-                setTime(Number(e.target.value));
-                setRemainingSeconds(Number(e.target.value) * 60);
-              }}
-              isDisabled={running}
-              bg="transparent"
-              color={textColor}
-              border="none"
-              fontSize="xs"
-              _hover={{ bg: 'whiteAlpha.100' }}
-            >
-              <option value={10}>10 min</option>
-              <option value={15}>15 min</option>
-              <option value={20}>20 min</option>
-              <option value={30}>30 min</option>
-            </Select>
-          </Box>
-          <Text 
-            fontSize="5xl" 
-            fontWeight="bold" 
-            fontFamily="mono" 
-            color={textColor}
-            mt={8}
+        <div className="flex flex-col items-center w-1/3 relative">
+          <select
+            className="absolute -top-4 left-15 text-xs bg-white/80 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={time}
+            onChange={e => {
+              setTime(Number(e.target.value));
+              setRemainingSeconds(Number(e.target.value) * 60);
+            }}
+            disabled={running}
           >
-            {formatTime(remainingSeconds)}
-          </Text>
-          <HStack spacing={2} mt={2}>
-            <IconButton
-              aria-label={running ? "Pausar" : "Iniciar"}
-              icon={running ? <FaPause /> : <FaPlay />}
-              colorScheme={running ? "orange" : "green"}
+            <option value={10}>10 min</option>
+            <option value={15}>15 min</option>
+            <option value={20}>20 min</option>
+            <option value={30}>30 min</option>
+          </select>
+          <span className="text-4xl font-mono font-bold text-white mt-4 mb-2">{formatTime(remainingSeconds)}</span>
+          <div className="flex gap-2 mt-1">
+            <button
+              className={`p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition ${running ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}`}
               onClick={() => setRunning(!running)}
-              size="xs"
-              variant="ghost"
-              color={textColor}
-              _hover={{ bg: 'whiteAlpha.200' }}
-            />
-            <IconButton
-              aria-label="Parar"
-              icon={<FaStop />}
-              colorScheme="red"
+              aria-label={running ? 'Pausar' : 'Iniciar'}
+            >
+              {running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            </button>
+            <button
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition bg-red-500 hover:bg-red-600"
               onClick={resetTimer}
-              size="xs"
-              variant="ghost"
-              color={textColor}
-              _hover={{ bg: 'whiteAlpha.200' }}
-            />
-          </HStack>
-          <Badge
-            colorScheme={running ? "green" : remainingSeconds === 0 ? "red" : "yellow"}
-            fontSize="xs"
-            mt={2}
-          >
-            {running ? "Em Andamento" : remainingSeconds === 0 ? "Finalizado" : "Aguardando"}
-          </Badge>
-        </VStack>
-
+              aria-label="Parar"
+            >
+              <StopCircle className="w-5 h-5" />
+            </button>
+          </div>
+          <span className={`mt-2 text-xs font-semibold px-2 py-0.5 rounded ${running ? 'bg-green-500 text-white' : remainingSeconds === 0 ? 'bg-red-500 text-white' : 'bg-yellow-400 text-gray-900'}`}>
+            {running ? 'Em Andamento' : remainingSeconds === 0 ? 'Finalizado' : 'Aguardando'}
+          </span>
+        </div>
         {/* Time B */}
-        <VStack align="center" w="35%">
-          <Text fontWeight="bold" fontSize="lg" color={textColor}>{teamB.name}</Text>
-          <Text fontSize="6xl" fontWeight="bold" color={textColor}>{scoreB}</Text>
-          <Button
-            leftIcon={<FaFutbol />}
-            colorScheme="whiteAlpha"
-            variant="ghost"
+        <div className="flex flex-col items-center w-1/3">
+          <span className="font-bold text-white text-lg mb-1">{teamB.name}</span>
+          <span className="text-5xl font-extrabold text-white drop-shadow mb-2">{scoreB}</span>
+          <button
+            className={`flex items-center gap-1 px-3 py-1 rounded bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition ${!running ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => handleGoalScored(teamB)}
-            isDisabled={!running}
-            size="sm"
-            color={textColor}
-            _hover={{ bg: 'whiteAlpha.200' }}
+            disabled={!running}
           >
-            Gol
-          </Button>
-        </VStack>
-      </Flex>
-
+            <Circle className="w-4 h-4" /> Gol
+          </button>
+        </div>
+      </div>
       {/* Modal de Gols */}
       {selectedTeam && (
         <GoalScorerModal
-          isOpen={isOpen}
-          onClose={onClose}
+          isOpen={isModalOpen}
+          onClose={() => { setIsModalOpen(false); setSelectedTeam(null); }}
           team={selectedTeam}
           onConfirm={handleGoalConfirmed}
         />
       )}
-    </Box>
+    </div>
   );
 }; 

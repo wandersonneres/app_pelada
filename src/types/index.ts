@@ -58,10 +58,24 @@ export interface Game {
 
 export interface User {
   id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  gamesPlayed: number;
-  gamesWon: number;
+  username: string;
+  email?: string;
+  phone?: string;
+  role: 'admin' | 'player';
+  playerInfo?: {
+    name: string;
+    position: 'defesa' | 'meio' | 'ataque';
+    ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50';
+    skillLevel: 1 | 2 | 3 | 4 | 5;
+  };
+  photoURL?: string;
   createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 } 

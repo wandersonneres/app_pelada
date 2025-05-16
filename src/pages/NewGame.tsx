@@ -1,23 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  Container,
-  FormControl,
-  FormLabel,
-  Heading,
-  Textarea,
-  VStack,
-  useToast,
-} from '@chakra-ui/react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Game } from '../types';
+import { FaChevronLeft } from 'react-icons/fa';
 
 export function NewGame() {
   const navigate = useNavigate();
-  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [observations, setObservations] = useState('');
 
@@ -43,57 +31,49 @@ export function NewGame() {
 
       const docRef = await addDoc(collection(db, 'games'), gameData);
       
-      toast({
-        title: 'Pelada criada!',
-        description: 'Sua pelada foi criada com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-
       navigate(`/game/${docRef.id}`);
     } catch (error) {
       console.error('Erro ao criar pelada:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao criar a pelada.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Container maxW="container.md" py={8}>
-      <VStack spacing={8} align="stretch">
-        <Heading size="lg">Nova Pelada</Heading>
-
-        <Box as="form" onSubmit={handleSubmit}>
-          <VStack spacing={4}>
-            <FormControl>
-              <FormLabel>Observações</FormLabel>
-              <Textarea
+    <div className="w-full py-4 sm:py-6">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full hover:bg-gray-100 transition"
+            >
+              <FaChevronLeft className="w-5 h-5 text-gray-500" />
+            </button>
+            <h1 className="text-xl font-bold text-center flex-1">Nova Pelada</h1>
+            <div className="w-8" />
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Observações</label>
+              <textarea
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
                 value={observations}
-                onChange={(e) => setObservations(e.target.value)}
+                onChange={e => setObservations(e.target.value)}
                 placeholder="Adicione observações sobre a pelada (opcional)"
               />
-            </FormControl>
-
-            <Button
+            </div>
+            <button
               type="submit"
-              colorScheme="blue"
-              size="lg"
-              width="full"
-              isLoading={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors disabled:opacity-60"
+              disabled={isLoading}
             >
-              Criar Pelada
-            </Button>
-          </VStack>
-        </Box>
-      </VStack>
-    </Container>
+              {isLoading ? 'Criando...' : 'Criar Pelada'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 } 

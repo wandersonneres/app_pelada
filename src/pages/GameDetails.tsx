@@ -1,54 +1,10 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  Container,
-  Flex,
-  Heading,
-  Text,
-  useToast,
-  Spinner,
-  Center,
-  Badge,
-  Avatar,
-  IconButton,
-  Input,
-  FormControl,
-  FormLabel,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
-  SimpleGrid,
-  Card,
-  CardBody,
-  Select,
-  VStack,
-  HStack,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  Icon,
-} from '@chakra-ui/react';
-import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
-import { FaArrowLeft, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaUserPlus, FaRandom, FaTrophy, FaTrash, FaExchangeAlt, FaEdit, FaCheck, FaEye, FaEllipsisV, FaFutbol, FaMedal, FaRunning } from 'react-icons/fa';
+import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, Eye, Circle, ArrowUpRight, ArrowLeftRight, User, Plus } from 'lucide-react';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
-import { PlayerSwapModal } from '../components/PlayerSwapModal';
-import { StarIcon } from '@chakra-ui/icons';
 import { StarRating } from '../components/StarRating';
 import { TacticalView } from '../components/TacticalView';
 import { MatchTimer } from '../components/MatchTimer';
@@ -56,26 +12,20 @@ import { PlayerList } from '../components/PlayerList';
 import { GameAnalytics } from '../components/GameAnalytics';
 import { MatchScore } from '../components/MatchScore';
 import { generateRandomPlayers } from '../utils/mockPlayers';
+import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const AddPlayerModal = memo(({ 
-  isOpen, 
-  onClose, 
-  onAddPlayer, 
-  isJoining 
-}: { 
+// Novo modal de adicionar jogador com Tailwind
+function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
   isOpen: boolean; 
   onClose: () => void; 
   onAddPlayer: (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => void; 
   isJoining: boolean;
-}) => {
+}) {
   const [playerName, setPlayerName] = useState('');
   const [playerPosition, setPlayerPosition] = useState<'defesa' | 'meio' | 'ataque'>('meio');
   const [playerSkillLevel, setPlayerSkillLevel] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [playerAgeGroup, setPlayerAgeGroup] = useState<'15-20' | '21-30' | '31-40' | '41-50' | '+50'>('21-30');
-
-  const handleStarClick = useCallback((level: number) => {
-    setPlayerSkillLevel(level as 1 | 2 | 3 | 4 | 5);
-  }, []);
 
   const handleSubmit = useCallback(() => {
     if (playerName.trim()) {
@@ -87,142 +37,194 @@ const AddPlayerModal = memo(({
     }
   }, [playerName, playerPosition, playerSkillLevel, playerAgeGroup, onAddPlayer]);
 
+  const handleSkillChange = (value: number) => {
+    setPlayerSkillLevel(value as 1 | 2 | 3 | 4 | 5);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Adicionar Jogador</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody pb={6}>
-          <VStack spacing={4}>
-            <FormControl>
-              <FormLabel>Nome do Jogador</FormLabel>
-              <Input
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Adicionar Jogador</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">×</button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Nome do Jogador</label>
+            <input
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+              onChange={e => setPlayerName(e.target.value)}
                 placeholder="Digite o nome do jogador"
               />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Posição</FormLabel>
-              <SimpleGrid columns={3} spacing={2}>
-                <Button
-                  onClick={() => setPlayerPosition('defesa')}
-                  colorScheme={playerPosition === 'defesa' ? 'yellow' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Posição</label>
+            <div className="grid grid-cols-3 gap-2">
+              {['defesa', 'meio', 'ataque'].map(pos => (
+                <button
+                  key={pos}
+                  type="button"
+                  className={`px-3 py-2 rounded-lg border ${playerPosition === pos ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  onClick={() => setPlayerPosition(pos as any)}
                 >
-                  Defesa
-                </Button>
-                <Button
-                  onClick={() => setPlayerPosition('meio')}
-                  colorScheme={playerPosition === 'meio' ? 'blue' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
+                  {pos.charAt(0).toUpperCase() + pos.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Nível de Habilidade</label>
+            <StarRating value={playerSkillLevel} onChange={handleSkillChange} size="md" showLabel={true} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Faixa Etária</label>
+            <div className="grid grid-cols-2 gap-2">
+              {['15-20', '21-30', '31-40', '41-50', '+50'].map(age => (
+                <button
+                  key={age}
+                  type="button"
+                  className={`px-3 py-2 rounded-lg border ${playerAgeGroup === age ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  onClick={() => setPlayerAgeGroup(age as any)}
                 >
-                  Meio
-                </Button>
-                <Button
-                  onClick={() => setPlayerPosition('ataque')}
-                  colorScheme={playerPosition === 'ataque' ? 'red' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  Ataque
-                </Button>
-              </SimpleGrid>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Nível de Habilidade</FormLabel>
-              <StarRating
-                value={playerSkillLevel}
-                onChange={handleStarClick}
-                size="md"
-                showLabel={true}
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Faixa Etária</FormLabel>
-              <SimpleGrid columns={2} spacing={2}>
-                <Button
-                  onClick={() => setPlayerAgeGroup('15-20')}
-                  colorScheme={playerAgeGroup === '15-20' ? 'blue' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  15-20 anos
-                </Button>
-                <Button
-                  onClick={() => setPlayerAgeGroup('21-30')}
-                  colorScheme={playerAgeGroup === '21-30' ? 'blue' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  21-30 anos
-                </Button>
-                <Button
-                  onClick={() => setPlayerAgeGroup('31-40')}
-                  colorScheme={playerAgeGroup === '31-40' ? 'blue' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  31-40 anos
-                </Button>
-                <Button
-                  onClick={() => setPlayerAgeGroup('41-50')}
-                  colorScheme={playerAgeGroup === '41-50' ? 'blue' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  41-50 anos
-                </Button>
-                <Button
-                  onClick={() => setPlayerAgeGroup('+50')}
-                  colorScheme={playerAgeGroup === '+50' ? 'blue' : 'gray'}
-                  size={{ base: 'sm', md: 'md' }}
-                >
-                  +50 anos
-                </Button>
-              </SimpleGrid>
-            </FormControl>
-
-            <Flex justify="flex-end" width="full">
-              <Button
-                colorScheme="blue"
-                mr={3}
-                onClick={handleSubmit}
-                isLoading={isJoining}
-                isDisabled={!playerName.trim()}
-              >
-                Adicionar
-              </Button>
-              <Button onClick={onClose}>Cancelar</Button>
-            </Flex>
-          </VStack>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+                  {age} anos
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            disabled={isJoining || !playerName.trim()}
+          >
+            {isJoining ? 'Adicionando...' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
-});
+}
+
+interface PlayerSwapModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentPlayer: Player | null;
+  otherTeamPlayers: Player[];
+  waitingPlayers: Player[];
+  onSwapPlayers: (otherPlayer: Player) => void;
+  onReplacePlayer: (waitingPlayer: Player) => void;
+}
+
+export function PlayerSwapModal({
+  isOpen,
+  onClose,
+  currentPlayer,
+  otherTeamPlayers,
+  waitingPlayers,
+  onSwapPlayers,
+  onReplacePlayer,
+}: PlayerSwapModalProps) {
+  if (!isOpen || !currentPlayer) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+        <button
+          className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+          onClick={onClose}
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+        <h2 className="text-lg font-semibold mb-4">Trocar Jogador</h2>
+
+        {/* Trocar com jogador do outro time */}
+        <div className="mb-6">
+          <div className="font-medium mb-2">Trocar com jogador do outro time</div>
+          <div className="space-y-2">
+            {otherTeamPlayers.length === 0 && (
+              <div className="text-gray-400 text-sm">Nenhum jogador disponível no outro time.</div>
+            )}
+            {otherTeamPlayers.map((player) => (
+              <button
+                key={player.id}
+                onClick={() => onSwapPlayers(player)}
+                className="flex items-center w-full p-2 rounded-lg hover:bg-blue-50 transition"
+              >
+                <User className="w-5 h-5 text-blue-400 mr-2" />
+                <span className="flex-1 text-left">{player.name}</span>
+                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <hr className="my-4" />
+
+        {/* Substituir por jogador da lista de espera */}
+        <div>
+          <div className="font-medium mb-2">Substituir por jogador da lista de espera</div>
+          <div className="space-y-2">
+            {waitingPlayers.length === 0 && (
+              <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>
+            )}
+            {waitingPlayers.map((player) => (
+              <button
+                key={player.id}
+                onClick={() => onReplacePlayer(player)}
+                className="flex items-center w-full p-2 rounded-lg hover:bg-green-50 transition"
+              >
+                <User className="w-5 h-5 text-green-400 mr-2" />
+                <span className="flex-1 text-left">{player.name}</span>
+                <ArrowLeftRight className="w-4 h-4 text-green-500" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function GameDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const toast = useToast();
   const [game, setGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isGeneratingTeams, setIsGeneratingTeams] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [playerName, setPlayerName] = useState('');
-  const [playerPosition, setPlayerPosition] = useState<'defesa' | 'meio' | 'ataque'>('meio');
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isDeleteAlertOpen, onOpen: onDeleteAlertOpen, onClose: onDeleteAlertClose } = useDisclosure();
-  const { isOpen: isWaitingListOpen, onOpen: onWaitingListOpen, onClose: onWaitingListClose } = useDisclosure();
-  const cancelRef = useRef(null);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [selectedMatchForSwap, setSelectedMatchForSwap] = useState<Match | null>(null);
   const [isPlayerOptionsOpen, setIsPlayerOptionsOpen] = useState(false);
   const [isPlayerSwapOpen, setIsPlayerSwapOpen] = useState(false);
+  const { user } = useAuth();
+  const [isSelectPlayerModalOpen, setIsSelectPlayerModalOpen] = useState(false);
+  const [availablePlayers, setAvailablePlayers] = useState<any[]>([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'jogadores' | 'partidas' | 'analises'>('jogadores');
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+  const [waitingListMatchId, setWaitingListMatchId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(''); // Novo estado para o termo de busca
 
   // Função para contar partidas consecutivas sem ir para lista de espera
   const getConsecutiveMatchesWithoutBreak = (playerId: string) => {
@@ -276,32 +278,20 @@ export function GameDetails() {
           setGame(gameData);
         } else {
           
-          toast({
-            title: 'Erro',
-            description: 'Jogo não encontrado.',
-            status: 'error',
-            duration: 3000,
-            isClosable: true,
-          });
+          setToastMsg({ type: 'error', message: 'Jogo não encontrado.' });
           navigate('/');
         }
         setIsLoading(false);
       },
       (error) => {
         console.error('Erro ao buscar jogo:', error);
-        toast({
-          title: 'Erro',
-          description: 'Ocorreu um erro ao carregar o jogo.',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
+        setToastMsg({ type: 'error', message: 'Ocorreu um erro ao carregar o jogo.' });
         setIsLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [id, navigate, toast]);
+  }, [id, navigate]);
 
   const formatDate = (date: Date | Timestamp) => {
     return convertTimestampToDate(date).toLocaleDateString('pt-BR', {
@@ -355,13 +345,13 @@ export function GameDetails() {
   const getPositionColor = (position: string) => {
     switch (position) {
       case 'defesa':
-        return 'yellow.400';
+        return 'yellow';
       case 'meio':
-        return 'blue.400';
+        return 'blue';
       case 'ataque':
-        return 'red.400';
+        return 'red';
       default:
-        return 'gray.400';
+        return 'gray';
     }
   };
 
@@ -402,27 +392,14 @@ export function GameDetails() {
         players: updatedPlayers,
         updatedAt: serverTimestamp(),
       });
-      toast({
-        title: 'Sucesso',
-        description: 'Jogador adicionado com sucesso!',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      onClose();
+      setToastMsg({ type: 'success', message: 'Jogador adicionado com sucesso!' });
     } catch (error) {
       console.error('Erro ao entrar no jogo:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao adicionar o jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao adicionar o jogador.' });
     } finally {
       setIsJoining(false);
     }
-  }, [game, id, toast, onClose]);
+  }, [game, id]);
 
   const handleRemovePlayer = async (playerId: string) => {
     if (!game || !id) return;
@@ -436,22 +413,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Jogador removido!',
-        description: 'O jogador foi removido da lista com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'Jogador removido da lista com sucesso.' });
     } catch (error) {
       console.error('Erro ao remover jogador:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao remover o jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao remover o jogador.' });
     }
   };
 
@@ -466,22 +431,10 @@ export function GameDetails() {
       await updateDoc(gameRef, {
         players: updatedPlayers,
       });
-      toast({
-        title: 'Jogador removido!',
-        description: 'O jogador foi removido da lista com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'Jogador removido da lista com sucesso.' });
     } catch (error) {
       console.error('Erro ao remover jogador:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao remover o jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao remover o jogador.' });
     } finally {
       setIsLeaving(false);
     }
@@ -492,31 +445,17 @@ export function GameDetails() {
 
     try {
       setIsDeleting(true);
-      if (!id) return;
       const gameRef = doc(db, 'games', id);
       await deleteDoc(gameRef);
       
-      toast({
-        title: 'Pelada excluída!',
-        description: 'A pelada foi excluída com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-
+      setToastMsg({ type: 'success', message: 'A pelada foi excluída com sucesso.' });
       navigate('/');
     } catch (error) {
       console.error('Erro ao excluir pelada:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao excluir a pelada.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao excluir a pelada.' });
     } finally {
       setIsDeleting(false);
-      onDeleteAlertClose();
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -534,22 +473,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Partida excluída!',
-        description: 'A partida foi excluída com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'A partida foi excluída com sucesso.' });
     } catch (error) {
       console.error('Erro ao excluir partida:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao excluir a partida.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao excluir a partida.' });
     }
   };
 
@@ -559,34 +486,45 @@ export function GameDetails() {
     try {
       setIsGeneratingTeams(true);
       console.log('waitingList do banco:', game.waitingList);
-      const lastMatch = game.matches[game.matches.length - 1];
+      
+      // Verifica se é a primeira partida ou se a última partida foi finalizada
+      const isFirstMatch = !game.matches || game.matches.length === 0;
+      const lastMatch = game.matches?.[game.matches.length - 1];
+      
+      if (!isFirstMatch && (!lastMatch || lastMatch.status !== 'finished')) {
+        setToastMsg({ 
+          type: 'error', 
+          message: 'A última partida precisa ser finalizada antes de gerar uma nova.' 
+        });
+        return;
+      }
+
       let waitingList = (game.waitingList && game.waitingList.length > 0)
         ? [...game.waitingList]
         : game.players
-            .filter(p => !lastMatch.teams.flatMap(t => t.players).some(j => j.id === p.id))
+            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
             .map(p => p.id);
+
       console.log('waitingList local (antes):', waitingList);
 
-      if (!lastMatch) {
-        // Primeira partida: pega os primeiros 18 jogadores por ordem de chegada e balanceia os times
+      if (isFirstMatch) {
+        // Primeira partida: pega os primeiros 18 jogadores por ordem de chegada
         const playersForFirstMatch = [...game.players]
-          .sort((a, b) => {
-            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
-            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
-            return timeA - timeB;
-          })
+          .sort((a, b) => a.arrivalOrder - b.arrivalOrder) // Ordena por ordem de chegada
           .slice(0, 18);
 
+        console.log('Jogadores selecionados para primeira partida:', 
+          playersForFirstMatch.map(p => ({ 
+            name: p.name, 
+            order: p.arrivalOrder,
+            arrivalTime: p.arrivalTime ? convertTimestampToDate(p.arrivalTime).toLocaleTimeString() : 'N/A'
+          }))
+        );
+
         if (playersForFirstMatch.length < 4) {
-      toast({
-        title: 'Erro',
-        description: 'É necessário pelo menos 4 jogadores para gerar os times.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
+          setToastMsg({ type: 'error', message: 'É necessário pelo menos 4 jogadores para gerar os times.' });
+          return;
+        }
 
         // Balanceia os times apenas na primeira partida
         const { teamA, teamB } = findBalancedTeams(playersForFirstMatch);
@@ -595,12 +533,19 @@ export function GameDetails() {
         const playingIds = [...teamA, ...teamB].map(p => p.id);
         waitingList = game.players
           .filter(p => !playingIds.includes(p.id))
-          .sort((a, b) => {
-            const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
-            const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
-            return timeA - timeB;
-          })
+          .sort((a, b) => a.arrivalOrder - b.arrivalOrder) // Mantém a ordem de chegada na lista de espera
           .map(p => p.id);
+
+        console.log('Lista de espera após primeira partida:', 
+          waitingList.map(id => {
+            const player = game.players.find(p => p.id === id);
+            return {
+              name: player?.name,
+              order: player?.arrivalOrder,
+              arrivalTime: player?.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString() : 'N/A'
+            };
+          })
+        );
 
         const teams: Team[] = [
           {
@@ -642,112 +587,95 @@ export function GameDetails() {
           waitingList,
           updatedAt: serverTimestamp(),
         });
-
       } else {
         // Partidas subsequentes
+        if (!lastMatch?.winner) {
+          setToastMsg({ type: 'error', message: 'A última partida precisa ter um vencedor definido.' });
+          return;
+        }
+
         const winnerTeam = lastMatch.teams.find(t => t.id === lastMatch.winner);
         const loserTeam = lastMatch.teams.find(t => t.id !== lastMatch.winner);
         
         if (!winnerTeam || !loserTeam) {
-          toast({
-            title: 'Erro',
-            description: 'Não foi possível identificar os times da última partida.',
-            status: 'error',
-            duration: 3000,
-            isClosable: true,
-          });
+          setToastMsg({ type: 'error', message: 'Não foi possível identificar os times da última partida.' });
           return;
         }
 
         // 1. Primeiro adiciona o time perdedor na lista de espera
         const loserPlayers = loserTeam.players.sort((a, b) => {
-              const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
-              const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
-              if (aConsecutiveMatches !== bConsecutiveMatches) {
-                return aConsecutiveMatches - bConsecutiveMatches;
-              }
+          const aConsecutiveMatches = getConsecutiveMatchesWithoutBreak(a.id);
+          const bConsecutiveMatches = getConsecutiveMatchesWithoutBreak(b.id);
+          if (aConsecutiveMatches !== bConsecutiveMatches) {
+            return aConsecutiveMatches - bConsecutiveMatches;
+          }
           const timeA = a.arrivalTime ? convertTimestampToDate(a.arrivalTime).getTime() : 0;
           const timeB = b.arrivalTime ? convertTimestampToDate(b.arrivalTime).getTime() : 0;
           return timeA - timeB;
         });
+
         console.log('waitingList local (antes de adicionar perdedores):', waitingList);
         waitingList = [...waitingList, ...loserPlayers.map(p => p.id)];
         console.log('waitingList local (depois de adicionar perdedores):', waitingList);
+
         const nextTeamIds = waitingList.slice(0, 9);
         if (nextTeamIds.length < 4) {
-          toast({
-            title: 'Erro',
-            description: 'Não há jogadores suficientes na lista de espera.',
-            status: 'error',
-            duration: 3000,
-            isClosable: true,
-          });
+          setToastMsg({ type: 'error', message: 'Não há jogadores suficientes na lista de espera.' });
           return;
         }
+
         waitingList = waitingList.slice(9);
         console.log('waitingList local (após remover quem entrou):', waitingList);
 
         // 5. Monta os times
         const nextTeamPlayers = nextTeamIds.map(pid => game.players.find(p => p.id === pid)).filter(Boolean) as Player[];
 
-          const teams: Team[] = [
-            {
-              id: 'teamA',
-              name: 'Time Branco',
+        const teams: Team[] = [
+          {
+            id: 'teamA',
+            name: 'Time Branco',
             players: winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers,
-              score: 0,
-              formation: {
+            score: 0,
+            formation: {
               defesa: (winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'defesa'),
               meio: (winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'meio'),
               ataque: (winnerTeam.id === 'teamA' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'ataque'),
-              },
             },
-            {
-              id: 'teamB',
-              name: 'Time Laranja',
+          },
+          {
+            id: 'teamB',
+            name: 'Time Laranja',
             players: winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers,
-              score: 0,
-              formation: {
+            score: 0,
+            formation: {
               defesa: (winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'defesa'),
               meio: (winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'meio'),
               ataque: (winnerTeam.id === 'teamB' ? winnerTeam.players : nextTeamPlayers).filter(p => p.position === 'ataque'),
-              },
             },
-          ];
+          },
+        ];
 
-          const newMatch: Match = {
-            id: Math.random().toString(36).substr(2, 9),
-            teams,
-            status: 'in_progress',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
+        const newMatch: Match = {
+          id: Math.random().toString(36).substr(2, 9),
+          teams,
+          status: 'in_progress',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
-          await updateDoc(doc(db, 'games', id), {
-            matches: arrayUnion(newMatch),
-            currentMatch: newMatch.id,
-            status: 'in_progress',
+        await updateDoc(doc(db, 'games', id), {
+          matches: arrayUnion(newMatch),
+          currentMatch: newMatch.id,
+          status: 'in_progress',
           waitingList,
-            updatedAt: serverTimestamp(),
-          });
+          updatedAt: serverTimestamp(),
+        });
       }
 
-      toast({
-        title: 'Times gerados!',
-        description: 'Os times foram gerados com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'Os times foram gerados com sucesso.' });
     } catch (error) {
       console.error('Erro ao gerar times:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao gerar os times.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao gerar os times.' });
     } finally {
       setIsGeneratingTeams(false);
     }
@@ -857,22 +785,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Partida finalizada!',
-        description: 'A partida foi finalizada com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'A partida foi finalizada com sucesso.' });
     } catch (error) {
       console.error('Erro ao finalizar partida:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao finalizar a partida.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao finalizar a partida.' });
     }
   };
 
@@ -915,22 +831,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Jogadores trocados!',
-        description: 'Os jogadores foram trocados com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'Os jogadores foram trocados com sucesso.' });
     } catch (error) {
       console.error('Erro ao trocar jogadores:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao trocar os jogadores.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao trocar os jogadores.' });
     }
   };
 
@@ -938,6 +842,7 @@ export function GameDetails() {
     if (!game || !id) return;
 
     try {
+      // Atualiza os times da partida
       const updatedMatches = game.matches.map(match => {
         if (match.id === matchId) {
           const updatedTeams = match.teams.map(team => {
@@ -965,28 +870,28 @@ export function GameDetails() {
         return match;
       });
 
-      if (!id) return;
+      // Atualiza a lista de espera
+      let updatedWaitingList = [...(game.waitingList || [])];
+      
+      // Remove o jogador que entrou da lista de espera
+      updatedWaitingList = updatedWaitingList.filter(id => id !== newPlayer.id);
+      
+      // Adiciona o jogador que saiu à lista de espera
+      if (!updatedWaitingList.includes(currentPlayer.id)) {
+        updatedWaitingList.push(currentPlayer.id);
+      }
+
+      // Atualiza o documento no Firestore
       await updateDoc(doc(db, 'games', id), {
         matches: updatedMatches,
+        waitingList: updatedWaitingList,
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Jogador substituído!',
-        description: 'O jogador foi substituído com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'O jogador foi substituído com sucesso.' });
     } catch (error) {
       console.error('Erro ao substituir jogador:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao substituir o jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao substituir o jogador.' });
     }
   };
 
@@ -1013,22 +918,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Jogador atualizado!',
-        description: 'As informações do jogador foram atualizadas com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'As informações do jogador foram atualizadas com sucesso.' });
     } catch (error) {
       console.error('Erro ao atualizar jogador:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao atualizar o jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao atualizar o jogador.' });
     }
   };
 
@@ -1062,22 +955,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Ordem atualizada!',
-        description: 'A ordem de chegada foi atualizada com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'A ordem de chegada foi atualizada com sucesso.' });
     } catch (error) {
       console.error('Erro ao atualizar ordem:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao atualizar a ordem de chegada.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao atualizar a ordem de chegada.' });
     }
   };
 
@@ -1160,22 +1041,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Nível de habilidade atualizado!',
-        description: 'O nível de habilidade do jogador foi atualizado com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'O nível de habilidade do jogador foi atualizado com sucesso.' });
     } catch (error) {
       console.error('Erro ao atualizar nível de habilidade:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao atualizar o nível de habilidade do jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao atualizar o nível de habilidade do jogador.' });
     }
   };
 
@@ -1197,22 +1066,10 @@ export function GameDetails() {
         updatedAt: serverTimestamp(),
       });
 
-      toast({
-        title: 'Faixa etária atualizada!',
-        description: 'A faixa etária do jogador foi atualizada com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'A faixa etária do jogador foi atualizada com sucesso.' });
     } catch (error) {
       console.error('Erro ao atualizar faixa etária:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao atualizar a faixa etária do jogador.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao atualizar a faixa etária do jogador.' });
     }
   };
 
@@ -1265,39 +1122,27 @@ export function GameDetails() {
         updatedAt: serverTimestamp()
       });
 
-      toast({
-        title: 'Gol registrado!',
-        description: 'O gol foi registrado com sucesso.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'success', message: 'O gol foi registrado com sucesso.' });
     } catch (error) {
       console.error('Erro ao registrar gol:', error);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao registrar o gol.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao registrar o gol.' });
     }
   };
 
   const getSkillLevelIcon = (level: number) => {
     switch (level) {
       case 1:
-        return <Icon as={FaRunning} color="gray.400" />;
+        return '⚪'; // Iniciante
       case 2:
-        return <Icon as={FaRunning} color="blue.400" />;
+        return '🔵'; // Amador
       case 3:
-        return <Icon as={FaFutbol} color="green.400" />;
+        return '🟢'; // Intermediário
       case 4:
-        return <Icon as={FaMedal} color="yellow.400" />;
+        return '🟡'; // Avançado
       case 5:
-        return <Icon as={FaMedal} color="orange.400" />;
+        return '🟠'; // Profissional
       default:
-        return <Icon as={FaRunning} color="gray.400" />;
+        return '⚪';
     }
   };
 
@@ -1318,764 +1163,796 @@ export function GameDetails() {
     }
   };
 
+  const handleOpenSelectPlayerModal = async () => {
+    setIsSelectPlayerModalOpen(true);
+    setIsLoadingPlayers(true);
+    try {
+      const usersRef = collection(db, 'users');
+      const snapshot = await getDocs(usersRef);
+      const playersList = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(user => user.username !== 'admin')
+        // Filtra jogadores que já estão confirmados
+        .filter(user => !game?.players.some(p => p.id === user.id));
+      setAvailablePlayers(playersList);
+    } catch (error) {
+      console.error('Erro ao carregar jogadores:', error);
+      setAvailablePlayers([]);
+    } finally {
+      setIsLoadingPlayers(false);
+    }
+  };
+
+  const handleAddExistingPlayer = async (user: any) => {
+    if (!game || !id) return;
+    try {
+      // Pega o último horário de chegada dos jogadores existentes
+      const lastArrivalTime = game.players.length > 0 
+        ? Math.max(...game.players.map(p => 
+            p.arrivalTime ? (p.arrivalTime instanceof Date ? p.arrivalTime.getTime() : p.arrivalTime.toDate().getTime()) : 0
+          ))
+        : new Date().getTime();
+      const newArrivalTime = new Date(lastArrivalTime + 60000);
+      const playerInfo = user.playerInfo;
+      if (!playerInfo) throw new Error('Usuário não possui informações de jogador.');
+      const newPlayer: Player = {
+        id: user.id,
+        name: playerInfo.name,
+        email: user.email || '',
+        confirmed: true,
+        arrivalTime: Timestamp.fromDate(newArrivalTime),
+        position: playerInfo.position,
+        arrivalOrder: game.players.length + 1,
+        skillLevel: playerInfo.skillLevel,
+        ageGroup: playerInfo.ageGroup,
+      };
+      const updatedPlayers = [...game.players, newPlayer];
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
+        players: updatedPlayers,
+        updatedAt: serverTimestamp(),
+      });
+      setToastMsg({ type: 'success', message: 'Jogador adicionado! Jogador confirmado com sucesso.' });
+    } catch (error) {
+      setToastMsg({ type: 'error', message: (error as any).message || 'Ocorreu um erro ao adicionar o jogador.' });
+    } finally {
+      setIsSelectPlayerModalOpen(false);
+    }
+  };
+
+  // Expandir automaticamente a última partida em andamento
+  useEffect(() => {
+    if (selectedTab === 'partidas' && game?.matches?.length) {
+      const inProgress = game.matches.findLast(m => m.status === 'in_progress');
+      if (inProgress && expandedMatchId !== inProgress.id) {
+        setExpandedMatchId(inProgress.id);
+      }
+    }
+  }, [selectedTab, game?.matches]);
+
+  // Toast com timeout para sumir
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
+
+  // Loading
   if (isLoading) {
     return (
-      <Center h="100vh">
-        <Spinner size="xl" />
-      </Center>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
 
   if (!game) {
     return (
-      <Center h="100vh">
-        <Text>Jogo não encontrado</Text>
-      </Center>
+      <div className="flex items-center justify-center min-h-screen">
+        <span className="text-gray-500 text-lg">Jogo não encontrado</span>
+      </div>
     );
   }
 
   const isGameFull = game.players?.length >= game.maxPlayers;
 
+  const formatMatchDate = (date: any) => {
+    if (!date) return '';
+    try {
+      let d;
+      if (date instanceof Date) d = date;
+      else if (typeof date === 'string') d = new Date(date);
+      else if (date instanceof Timestamp) d = date.toDate();
+      else d = new Date(date);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('pt-BR');
+    } catch {
+      return '';
+    }
+  };
+
+  // Função para filtrar jogadores baseado no termo de busca
+  const filteredPlayers = availablePlayers
+    // Primeiro filtra jogadores que já estão confirmados
+    .filter(player => !game?.players.some(p => p.id === player.id))
+    // Depois filtra pelo termo de busca
+    .filter(player => 
+      player.playerInfo?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      player.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  // Layout principal
   return (
-    <Container maxW="container.md" py={{ base: 4, md: 8 }} px={{ base: 4, md: 6 }}>
-      <Flex 
-        align="center" 
-        justify="space-between" 
-        mb={{ base: 4, md: 6 }}
-        flexDir={{ base: 'column', sm: 'row' }}
-        gap={{ base: 4, sm: 0 }}
-      >
-        <Flex align="center" w={{ base: 'full', sm: 'auto' }}>
-          <IconButton
-            aria-label="Voltar"
-            icon={<FaArrowLeft />}
-            variant="ghost"
-            mr={4}
-            onClick={() => navigate('/')}
-            size={{ base: 'sm', md: 'md' }}
-          />
-          <Box>
-            <Heading size={{ base: 'md', md: 'lg' }}>Detalhes da Pelada</Heading>
-            <Text color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>
-              {formatDate(game.date)}
-            </Text>
-          </Box>
-        </Flex>
-        <HStack spacing={2} w={{ base: 'full', sm: 'auto' }} justify={{ base: 'space-between', sm: 'flex-end' }}>
-          <IconButton
-            aria-label={game.status === 'finished' ? "Reabrir pelada" : "Finalizar pelada"}
-            icon={<FaCheck />}
-            colorScheme={game.status === 'finished' ? "yellow" : "green"}
-            variant="ghost"
-            size={{ base: 'sm', md: 'md' }}
-            onClick={async () => {
-              try {
-                if (!id) return;
-                await updateDoc(doc(db, 'games', id), {
-                  status: game.status === 'finished' ? 'waiting' : 'finished',
-                  updatedAt: new Date()
-                });
-                
-                toast({
-                  title: game.status === 'finished' ? 'Pelada reaberta!' : 'Pelada finalizada!',
-                  description: game.status === 'finished' ? 'A pelada foi reaberta com sucesso.' : 'A pelada foi finalizada com sucesso.',
-                  status: 'success',
-                  duration: 3000,
-                  isClosable: true,
-                });
-              } catch (error) {
-                console.error('Erro ao alterar status da pelada:', error);
-                toast({
-                  title: 'Erro',
-                  description: 'Ocorreu um erro ao alterar o status da pelada.',
-                  status: 'error',
-                  duration: 3000,
-                  isClosable: true,
-                });
-              }
-            }}
-          />
-          <IconButton
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      {toastMsg && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>{toastMsg.message}</div>
+      )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Voltar">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Detalhes da Pelada</h1>
+            <p className="text-sm text-gray-500">{game && formatDate(game.date)}</p>
+          </div>
+        </div>
+        <div className="flex gap-3 w-full sm:w-auto justify-end">
+          <button
+            onClick={() => {/* lógica de finalizar/reabrir pelada */}}
+            className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              game?.status === 'finished'
+                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                : 'bg-green-100 text-green-800 hover:bg-green-200'
+            }`}
+            aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
+          >
+            <Check className="w-4 h-4 mr-2" />
+            {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
+          </button>
+          <button
+            onClick={() => navigate(`/game/${game?.id}/edit`)}
+            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
             aria-label="Editar pelada"
-            icon={<FaEdit />}
-            colorScheme="blue"
-            variant="ghost"
-            size={{ base: 'sm', md: 'md' }}
-            onClick={() => navigate(`/game/${id}/edit`)}
-          />
-        <IconButton
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Editar
+          </button>
+          <button
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
           aria-label="Excluir pelada"
-          icon={<FaTrash />}
-          colorScheme="red"
-          variant="ghost"
-            size={{ base: 'sm', md: 'md' }}
-          onClick={onDeleteAlertOpen}
-        />
-        </HStack>
-      </Flex>
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Excluir
+          </button>
+        </div>
+      </div>
 
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 6 }} mb={{ base: 4, md: 6 }}>
-        <Box p={4} bg="white" borderRadius="lg" shadow="sm">
-          <Flex align="center" mb={2}>
-            <FaMapMarkerAlt style={{ marginRight: '8px', fontSize: '16px' }} />
-            <Text fontWeight="medium" fontSize={{ base: 'sm', md: 'md' }}>{game.location}</Text>
-          </Flex>
-          <Flex align="center">
-            <FaUsers style={{ marginRight: '8px', fontSize: '16px' }} />
-            <Text fontSize={{ base: 'sm', md: 'md' }}>
-              {game.players.length} / {game.maxPlayers} jogadores
-            </Text>
-          </Flex>
-          </Box>
-
-        <Box p={4} bg="white" borderRadius="lg" shadow="sm">
-          <Flex align="center" mb={2}>
-            <FaCalendarAlt style={{ marginRight: '8px', fontSize: '16px' }} />
-            <Text fontWeight="medium" fontSize={{ base: 'sm', md: 'md' }}>Status</Text>
-        </Flex>
-          <Badge colorScheme={getStatusColor(game.status)} fontSize={{ base: 'sm', md: 'md' }}>
-            {getStatusText(game.status)}
-          </Badge>
-        </Box>
-      </SimpleGrid>
-
-        {game.observations && (
-        <Box p={4} bg="white" borderRadius="lg" shadow="sm" mb={{ base: 4, md: 6 }}>
-          <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.600">
-              {game.observations}
-            </Text>
-          </Box>
+      {/* Modal de confirmação de exclusão */}
+      <AnimatePresence>
+        {isDeleteDialogOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-2">
+                Excluir Pelada
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Tem certeza que deseja excluir esta pelada? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteGame}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? 'Excluindo...' : 'Excluir'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-      <Tabs variant="enclosed" colorScheme="blue" size={{ base: 'sm', md: 'md' }}>
-        <TabList>
-          <Tab>Jogadores</Tab>
-          <Tab>Partidas</Tab>
-          <Tab>Análises</Tab>
-        </TabList>
+      {/* Cards de informações */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
+          <div className="flex items-center gap-2 mb-2">
+            <MapPin className="w-5 h-5 text-green-500" />
+            <span className="font-medium">{game?.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-500" />
+            <span className="text-gray-600">{game?.players.length} / {game?.maxPlayers} jogadores</span>
+          </div>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-5 h-5 text-blue-500" />
+            <span className="font-medium">Status</span>
+          </div>
+          <span className={`badge ${game?.status === 'waiting' ? 'badge-waiting' : game?.status === 'in_progress' ? 'badge-in-progress' : 'badge-finished'}`}>{game && getStatusText(game.status)}</span>
+        </motion.div>
+      </div>
 
-        <TabPanels>
-          <TabPanel px={0}>
-            <Box bg="white" borderRadius="lg" shadow="sm" p={{ base: 3, md: 4 }}>
-              <Flex justify="space-between" align="center" mb={4}>
-                <Heading size={{ base: 'sm', md: 'md' }}>Ordem de Chegada</Heading>
-                <HStack>
-                  {/* Botão para gerar 18 jogadores aleatórios */}
-                  {game.status !== 'finished' && (
-                  <IconButton
-                    aria-label="Gerar 18 jogadores"
-                    icon={<FaUsers />}
-                    color="purple"
-                    size="sm"
-                    onClick={async () => {
-                      if (!id) return;
-                      try {
-                        const randomPlayers = generateRandomPlayers(18).map((player, index) => ({
-                          ...player,
-                          arrivalOrder: index + 1
-                        }));
-                        await updateDoc(doc(db, 'games', id), {
-                          players: randomPlayers,
-                          waitingList: randomPlayers.slice(9).map(p => p.id)
-                        });
-                        toast({
-                          title: 'Jogadores adicionados!',
-                          description: '18 jogadores aleatórios foram adicionados com sucesso.',
-                          status: 'success',
-                          duration: 3000,
-                          isClosable: true,
-                        });
-                      } catch (error) {
-                        console.error('Erro ao adicionar jogadores:', error);
-                        toast({
-                          title: 'Erro',
-                          description: 'Ocorreu um erro ao adicionar os jogadores.',
-                          status: 'error',
-                          duration: 3000,
-                          isClosable: true,
-                        });
-                      }
-                    }}
-                  />
+      {/* Observações */}
+      {game?.observations && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card mb-6">
+          <span className="text-gray-600 text-sm">{game.observations}</span>
+        </motion.div>
+      )}
+
+                        {/* Lista de Jogadores */}
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b">
+          <button
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'jogadores' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
+            onClick={() => setSelectedTab('jogadores')}
+          >
+            Jogadores
+          </button>
+          <button
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'partidas' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
+            onClick={() => setSelectedTab('partidas')}
+          >
+            Partidas
+          </button>
+          <button
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'analises' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
+            onClick={() => setSelectedTab('analises')}
+          >
+            Análises
+          </button>
+        </div>
+
+        {/* Conteúdo das tabs */}
+        {selectedTab === 'jogadores' && (
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Jogadores Confirmados</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowAddPlayerModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  title="Adicionar Jogador"
+                >
+                  <Plus className="w-4 h-3" />
+                  <span className="hidden sm:inline">Adicionar Jogador</span>
+                </button>
+                <button
+                  onClick={handleOpenSelectPlayerModal}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                  title="Selecionar Jogador"
+                >
+                  <User className="w-4 h-3" />
+                  <span className="hidden sm:inline">Selecionar Jogador</span>
+                </button>
+              </div>
+            </div>
+                {game.players && game.players.length > 0 ? (
+              <ul className="divide-y divide-gray-100">
+                {game.players
+                  .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+                  .map((player, idx) => (
+                    <li key={player.id} className="py-2">
+                      <div className="flex flex-row items-center w-full">
+                        {/* Bloco esquerdo: ordem, nome, estrelas, idade */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {/* Ordem */}
+                            <span className="w-7 text-xs text-center font-mono text-gray-400">{String(player.arrivalOrder).padStart(2, '0')}</span>
+                            {/* Nome */}
+                            <span className="font-medium text-gray-800 text-sm truncate max-w-[200px] md:max-w-[250px]">{player.name}</span>
+                          </div>
+                          <div className="flex gap-2 mt-0.5 ml-7">
+                            {/* Estrelas */}
+                            <span className="flex items-center">
+                              {[...Array(5)].map((_, i) => (
+                                <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                  <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
+                                </svg>
+                              ))}
+                            </span>
+                            {/* Idade */}
+                            <span className="text-xs text-gray-400">{player.ageGroup} anos</span>
+                          </div>
+                        </div>
+                        {/* Bloco direito: posição e botão */}
+                        <div className="flex flex-col items-end justify-center gap-1 ml-2">
+                          <span className={`px-1.5 py-0.5 rounded-full font-semibold text-[10px] flex items-center ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                            {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                          </span>
+                          <button
+                            className="p-2 rounded hover:bg-gray-100 flex items-center justify-center"
+                            onClick={() => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
+                            title="Editar/Remover"
+                          >
+                            <span className="text-lg leading-none">⋮</span>
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <div className="text-gray-500 text-center py-8">Nenhum jogador confirmado ainda.</div>
+            )}
+            {/* Modal de opções do jogador */}
+      <PlayerOptionsModal
+        isOpen={isPlayerOptionsOpen}
+              onClose={() => { setIsPlayerOptionsOpen(false); setSelectedPlayer(null); }}
+        player={selectedPlayer}
+        totalPlayers={game.players.length}
+              onUpdatePosition={(position) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { position }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+              onUpdateArrivalOrder={(order) => { if (selectedPlayer) { handleUpdateArrivalOrder(selectedPlayer.id, order); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+              onUpdateSkillLevel={(skillLevel) => { if (selectedPlayer) { handleUpdateSkillLevel(selectedPlayer.id, skillLevel); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+              onUpdateAgeGroup={(ageGroup) => { if (selectedPlayer) { handleUpdateAgeGroup(selectedPlayer.id, ageGroup); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+              onRemovePlayer={() => { if (selectedPlayer) { handleRemovePlayer(selectedPlayer.id); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+                      />
+                    </>
                   )}
 
-                  {/* Botão para adicionar um jogador fictício */}
-                  {game.status !== 'finished' && (
-                  <IconButton
-                    aria-label="Adicionar jogador fictício"
-                    icon={<FaUserPlus />}
-                    color="purple"
-                    size="sm"
-                    onClick={async () => {
-                      if (!id) return;
-                      try {
-                        const randomPlayer = generateRandomPlayers(1)[0];
-                        await updateDoc(doc(db, 'games', id), {
-                          players: arrayUnion(randomPlayer),
-                          waitingList: game.waitingList ? [...game.waitingList, randomPlayer.id] : [randomPlayer.id],
-                        });
-                        toast({
-                          title: 'Jogador adicionado!',
-                          description: 'Jogador fictício adicionado com sucesso.',
-                          status: 'success',
-                          duration: 3000,
-                          isClosable: true,
-                        });
-                      } catch (error) {
-                        console.error('Erro ao adicionar jogador:', error);
-                        toast({
-                          title: 'Erro',
-                          description: 'Ocorreu um erro ao adicionar o jogador.',
-                          status: 'error',
-                          duration: 3000,
-                          isClosable: true,
-                        });
-                      }
-                    }}
-                  />
-                )}
-
-                {game.status !== 'finished' && (
-                  <Button
-                    colorScheme="blue"
-                    size={{ base: 'sm', md: 'md' }}
-                    onClick={onOpen}
-                    display={{ base: 'flex', md: 'inline-flex' }}
-                    px={{ base: 2, md: 4 }}
-                  >
-                    <FaUserPlus />
-                    <Text display={{ base: 'none', md: 'block' }} ml={2}>
-                      Adicionar Jogador
-                </Text>
-                  </Button>
-                )}
-                </HStack>
-              </Flex>
-
-              <Box mb={6}>
-                {game.players && game.players.length > 0 ? (
-                  <VStack align="stretch" spacing={3}>
-                    <Box mt={4}>
-                      <PlayerList
-                        players={game.players.sort((a, b) => a.arrivalOrder - b.arrivalOrder)}
-                        onPlayerOptions={(player) => {
-                                        setSelectedPlayer(player);
-                                        setIsPlayerOptionsOpen(true);
-                                    }}
-                        goals={game.matches.flatMap(m => m.goals || [])}
-                        variant="arrival"
-                        showOrder={true}
-                        formatArrivalTime={formatArrivalTime}
-                                  />
-                    </Box>
-                  </VStack>
-                ) : (
-                  <Text color="gray.500">
-                    Nenhum jogador confirmado ainda.
-                  </Text>
-                )}
-              </Box>
-            </Box>
-          </TabPanel>
-
-          <TabPanel px={0}>
-            <Box>
+        {selectedTab === 'partidas' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Partidas</h2>
               {game.matches && game.matches.length > 0 ? (
-                <VStack spacing={6} align="stretch">
-                  {game.matches.map((match) => (
-                    <Card key={match.id}>
-                      <CardBody>
-                        <Flex justify="space-between" align="center" mb={4}>
-                          <Badge
-                            colorScheme={match.status === 'finished' ? 'green' : 'blue'}
-                            fontSize={{ base: 'sm', md: 'md' }}
-                          >
-                            {match.status === 'finished' ? 'Finalizada' : 'Em andamento'}
-                          </Badge>
-                          <Flex align="center" gap={2}>
-                            {match.winner && (
-                              <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.500">
-                                Vencedor: {match.teams.find(t => t.id === match.winner)?.name}
-                              </Text>
-                            )}
-                            {match.status === 'finished' && (
-                              <IconButton
-                                aria-label="Excluir partida"
-                                icon={<FaTrash />}
-                                size={{ base: 'sm', md: 'md' }}
-                                colorScheme="red"
-                                variant="ghost"
-                                onClick={() => deleteMatch(match.id)}
-                              />
-                            )}
-                          </Flex>
-                        </Flex>
-
-                        {/* Placar quando a partida estiver finalizada */}
-                        {match.status === 'finished' && (
-                          <MatchScore match={match} />
+              <ul className="space-y-4">
+                {game.matches.map((match, idx) => {
+                  const isExpanded = expandedMatchId === match.id;
+                  // Função para contar gols e assistências de um jogador
+                  const getPlayerStats = (playerId) => {
+                    const goals = match.goals?.filter(g => g.scorerId === playerId).length || 0;
+                    const assists = match.goals?.filter(g => g.assisterId === playerId).length || 0;
+                    return { goals, assists };
+                  };
+                  const { players: waitingList, playersIn, playersOut } = getPlayersNotInNextMatch(match);
+                  return (
+                    <li key={match.id} className="bg-gray-50 rounded-xl p-4 shadow-sm relative">
+                      {/* Cabeçalho fixo da partida */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${match.status === 'finished' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>{match.status === 'finished' ? 'Finalizada' : 'Em andamento'}</span>
+                        </div>
+                        {!isExpanded && (                         
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
+                            <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
+                            <span className="text-gray-400">x</span>
+                            <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
+                            <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
+                          </div>
                         )}
 
-                        {/* Timer e Placar */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="p-2 rounded-full hover:bg-gray-200 transition"
+                            title="Ver lista de espera"
+                            onClick={() => setWaitingListMatchId(match.id)}
+                          >
+                            <Users className="w-5 h-5 text-blue-500" />
+                          </button>
+                          <button
+                            className="p-2 rounded-full hover:bg-red-100 transition"
+                            title="Excluir partida"
+                                onClick={() => deleteMatch(match.id)}
+                          >
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          </button>
+                          <button
+                            className="ml-2 px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 transition"
+                            onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
+                          >
+                            {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Modal de lista de espera */}
+                      {waitingListMatchId === match.id && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs relative animate-fadeIn">
+                            <button
+                              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
+                              onClick={() => setWaitingListMatchId(null)}
+                              aria-label="Fechar"
+                            >
+                              ×
+                            </button>
+                            <h2 className="font-bold text-lg text-gray-800 mb-4">Lista de Espera</h2>
+                            {/* Entraram na próxima partida */}
+                            {playersIn && playersIn.length > 0 && (
+                              <div className="mb-4">
+                                <div className="font-semibold text-green-700 mb-1 text-sm">Entraram na próxima partida</div>
+                                <ul className="space-y-1">
+                                  {playersIn.map((player) => (
+                                    <li key={player.id} className="flex items-center gap-2 text-sm text-green-700">
+                                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center font-bold">{player.name.charAt(0).toUpperCase()}</div>
+                                      <span className="truncate max-w-[250px]">{player.name}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {/* Saíram da próxima partida */}
+                            {playersOut && playersOut.length > 0 && (
+                              <div className="mb-4">
+                                <div className="font-semibold text-red-700 mb-1 text-sm">Saíram da próxima partida</div>
+                                <ul className="space-y-1">
+                                  {playersOut.map((player) => (
+                                    <li key={player.id} className="flex items-center gap-2 text-sm text-red-700">
+                                      <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center font-bold">{player.name.charAt(0).toUpperCase()}</div>
+                                      <span className="truncate max-w-[250px]">{player.name}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {/* Lista de espera */}
+                            {waitingList && waitingList.length > 0 && (
+                              <div className="mb-2">
+                                <div className="font-semibold text-gray-700 mb-1 text-sm">Na lista de espera</div>
+                                <ul className="space-y-1">
+                                  {waitingList.map((player) => (
+                                    <li key={player.id} className="flex items-center gap-2 text-sm text-gray-700">
+                                      <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-bold">{player.name.charAt(0).toUpperCase()}</div>
+                                      <span className="truncate max-w-[250px]">{player.name}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {(!playersIn?.length && !playersOut?.length && !waitingList?.length) && (
+                              <div className="text-gray-500 text-center">Nenhum jogador na lista de espera ou troca.</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Conteúdo expandido */}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden mt-4"
+                          >
+                            <div className="mt-4">
+                              <MatchScore match={match} />
+                            </div>
+                            {/* Campinho, etc... */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <TacticalView
+                                team={match.teams[0]}
+                                formation={match.teams[0].formation?.tactical || '4-3-2'}
+                                onFormationChange={() => {}}
+                                goals={match.goals}
+                                teamColor="#3b82f6"
+                                isHomeTeam={false}
+                              />
+                              <TacticalView
+                                team={match.teams[1]}
+                                formation={match.teams[1].formation?.tactical || '4-3-2'}
+                                onFormationChange={() => {}}
+                                    goals={match.goals}
+                                teamColor="#f59e42"
+                                isHomeTeam={false}
+                              />
+                            </div>
+                            {/* MatchTimer sempre visível para partidas em andamento */}
                                           {match.status === 'in_progress' && (
+                              <>
                           <MatchTimer
                             teamA={match.teams[0]}
                             teamB={match.teams[1]}
-                            isFirstMatch={game.matches.length === 1}
-                            onGoalScored={(teamId, scorerId, assisterId) => 
-                              handleGoalScored(match.id, teamId, scorerId, assisterId)
-                            }
-                          />
-                        )}
-
-                        {/* Visualização Tática */}
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mb={4}>
-                          {match.teams.map((team) => (
-                            <Box key={team.id}>
-                              <TacticalView
-                                team={team}
-                                formation={team.formation?.tactical || '4-3-2'}
-                                goals={match.goals}
-                                teamColor={team.id === 'teamA' ? 'gray.600' : 'orange.500'}
-                                onFormationChange={async (newFormation) => {
-                                  try {
-                                    const updatedTeams = match.teams.map(t => {
-                                      if (t.id === team.id) {
-                                        return {
-                                          ...t,
-                                          formation: {
-                                            ...t.formation,
-                                            tactical: newFormation
-                                          }
-                                        };
-                                      }
-                                      return t;
-                                    });
-
-                                    const updatedMatches = game.matches.map(m => {
-                                      if (m.id === match.id) {
-                                        return {
-                                          ...m,
-                                          teams: updatedTeams
-                                        };
-                                      }
-                                      return m;
-                                    });
-
-                                    if (!id) return;
-                                    const gameRef = doc(db, 'games', id);
-                                    await updateDoc(gameRef, {
-                                      matches: updatedMatches
-                                    });
-                                  } catch (error) {
-                                    console.error('Erro ao atualizar formação:', error);
-                                    toast({
-                                      title: 'Erro',
-                                      description: 'Ocorreu um erro ao atualizar a formação.',
-                                      status: 'error',
-                                      duration: 3000,
-                                      isClosable: true,
-                                    });
-                                  }
-                                }}
-                              />
-                                  </Box>
-                          ))}
-                        </SimpleGrid>
-
-                        {/* Lista de Jogadores */}
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                          {match.teams.map((team) => (
-                            <Box key={team.id}>
-                              <Text fontWeight="bold" mb={2} fontSize={{ base: 'sm', md: 'md' }}>
-                                {team.name}
-                                              </Text>
-                              <VStack align="stretch" spacing={2}>
-                                {team.players.sort((a, b) => {
-                                  // Primeiro por posição (defesa -> meio -> ataque)
-                                  const positionOrder = { defesa: 1, meio: 2, ataque: 3 };
-                                  if (positionOrder[a.position] !== positionOrder[b.position]) {
-                                    return positionOrder[a.position] - positionOrder[b.position];
-                                  }
-                                  
-                                  // Depois por idade (mais novo -> mais velho)
-                                  const ageOrder = {
-                                    '15-20': 1,
-                                    '21-30': 2,
-                                    '31-40': 3,
-                                    '41-50': 4,
-                                    '+50': 5
-                                  };
-                                  if (ageOrder[a.ageGroup] !== ageOrder[b.ageGroup]) {
-                                    return ageOrder[a.ageGroup] - ageOrder[b.ageGroup];
-                                  }
-                                  
-                                  // Por fim por habilidade (menos habilidoso -> mais habilidoso)
-                                  return a.skillLevel - b.skillLevel;
-                                }).map((player) => (
-                                  <PlayerList
-                                    key={player.id}
-                                    players={[player]}
-                                    goals={match.goals}
-                                    showStats={true}
-                                    showOrder={false}
-                                    variant="lineup"
-                                    teamColor={team.id === 'teamA' ? 'gray.600' : 'orange.500'}
-                                    onPlayerOptions={match.status === 'in_progress' ? (player) => {
-                                                setSelectedPlayer(player);
-                                                setSelectedTeam(team);
-                                                setSelectedMatchForSwap(match);
+                                  isFirstMatch={idx === 0}
+                                  onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
+                                />
+                                {/* Lista de jogadores dos times */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                  <div>
+                                    <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[0]?.name}</h3>
+                                    <ul className="space-y-2">
+                                      {[...(match.teams[0]?.players || [])]
+                                        .sort((a, b) => {
+                                          const posOrder = { defesa: 0, meio: 1, ataque: 2 };
+                                          return posOrder[a.position] - posOrder[b.position];
+                                        })
+                                        .map((player) => {
+                                          const stats = getPlayerStats(player.id);
+                                          return (
+                                            <li className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
+                                              {/* Avatar */}
+                                              <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
+                                                   style={{ backgroundColor: '#3b82f6' }}>
+                                                {player.name.charAt(0).toUpperCase()}
+                                              </div>
+                                              {/* Nome + posição */}
+                                              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ml-1 ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                                              </span>
+                                              <span className="font-medium truncate max-w-[200px]">{player.name}</span>
+                                              {/* Gols */}
+                                              {stats.goals > 0 && (
+                                                <span className="flex items-center gap-1 text-blue-600 ml-1">
+                                                  <Circle className="w-3 h-3" /> {stats.goals}
+                                                </span>
+                                              )}
+                                              {/* Assistências */}
+                                              {stats.assists > 0 && (
+                                                <span className="flex items-center gap-1 text-green-600 ml-1">
+                                                  <ArrowUpRight className="w-3 h-3" /> {stats.assists}
+                                                </span>
+                                              )}
+                                              <button
+                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                title="Trocar jogador"
+                                                onClick={() => {
                                                 setIsPlayerSwapOpen(true);
-                                    } : undefined}
-                                    consecutiveMatches={getConsecutiveMatchesWithoutBreak}
-                                            />
-                                ))}
-                                    </VStack>
-                                  </Box>
-                          ))}
-                        </SimpleGrid>
-
-                        <Flex justify="center" mt={4}>
-                          <IconButton
-                            aria-label="Ver lista de espera"
-                            icon={<FaEye />}
-                            colorScheme="blue"
-                            variant="ghost"
-                            size={{ base: 'sm', md: 'md' }}
+                                                  setSelectedPlayer(player);
+                                                  setSelectedTeam(match.teams[0]); // ou match.teams[1] conforme o time
+                                                  setSelectedMatch(match);
+                                                }}
+                                              >
+                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                              </button>
+                                            </li>
+                                          );
+                                        })}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[1]?.name}</h3>
+                                    <ul className="space-y-2">
+                                      {[...(match.teams[1]?.players || [])]
+                                        .sort((a, b) => {
+                                          const posOrder = { defesa: 0, meio: 1, ataque: 2 };
+                                          return posOrder[a.position] - posOrder[b.position];
+                                        })
+                                        .map((player) => {
+                                          const stats = getPlayerStats(player.id);
+                                          return (
+                                            <li className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
+                                              {/* Avatar */}
+                                              <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
+                                                   style={{ backgroundColor: '#f59e42' }}>
+                                                {player.name.charAt(0).toUpperCase()}
+                                              </div>
+                                              {/* Nome + posição */}
+                                              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ml-1 ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                                              </span>
+                                              <span className="font-medium truncate max-w-[200px]">{player.name}</span>
+                                              {/* Gols */}
+                                              {stats.goals > 0 && (
+                                                <span className="flex items-center gap-1 text-blue-600 ml-1">
+                                                  <Circle className="w-3 h-3" /> {stats.goals}
+                                                </span>
+                                              )}
+                                              {/* Assistências */}
+                                              {stats.assists > 0 && (
+                                                <span className="flex items-center gap-1 text-green-600 ml-1">
+                                                  <ArrowUpRight className="w-3 h-3" /> {stats.assists}
+                                                </span>
+                                              )}
+                                              <button
+                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                title="Trocar jogador"
                             onClick={() => {
+                                                  setIsPlayerSwapOpen(true);
+                                                  setSelectedPlayer(player);
+                                                  setSelectedTeam(match.teams[1]); // ou match.teams[0] conforme o time
                               setSelectedMatch(match);
-                              onWaitingListOpen();
-                            }}
-                          />
-                        </Flex>
+                                                }}
+                                              >
+                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                              </button>
+                                            </li>
+                                          );
+                                        })}
+                                    </ul>
+                                  </div>
+                                </div>
 
-                        {match.status === 'in_progress' && (
-                          <Flex 
-                            justify="center" 
-                            mt={4} 
-                            gap={4}
-                            flexDir={{ base: 'column', sm: 'row' }}
-                          >
-                            <Button
-                              leftIcon={<FaTrophy />}
-                              colorScheme="gray"
-                              size={{ base: 'sm', md: 'md' }}
-                              onClick={() => finishMatch(match.id, 'teamA')}
-                            >
-                              Time Branco Venceu
-                            </Button>
-                            <Button
-                              leftIcon={<FaTrophy />}
-                              colorScheme="orange"
-                              size={{ base: 'sm', md: 'md' }}
-                              onClick={() => finishMatch(match.id, 'teamB')}
-                            >
-                              Time Laranja Venceu
-                            </Button>
-                          </Flex>
+                                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                                  <button
+                                    className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                                    onClick={() => finishMatch(match.id, match.teams[0].id)}
+                                  >
+                                    {match.teams[0]?.name} Venceu
+                                  </button>
+                                  <button
+                                    className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
+                                    onClick={() => finishMatch(match.id, match.teams[1].id)}
+                                  >
+                                    {match.teams[1]?.name} Venceu
+                                  </button>
+                                </div>
+                  </>
+                )}
+                          </motion.div>
                         )}
-                      </CardBody>
-                    </Card>
-                  ))}
-                </VStack>
-              ) : (
-                <Center py={12}>
-                  <Text color="gray.500" fontSize={{ base: 'sm', md: 'md' }}>
-                    Nenhuma partida iniciada ainda.
-                  </Text>
-                </Center>
-              )}
-
-              {game.status !== 'finished' && (
-                <Flex justify="center" mt={6}>
-                  <Button
-                    leftIcon={<FaRandom />}
-                    colorScheme="blue"
-                    size={{ base: 'sm', md: 'md' }}
+                      </AnimatePresence>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="text-gray-500 text-center py-8">Nenhuma partida registrada ainda.</div>
+            )}
+            {/* Botão Gerar Nova Partida */}
+            {selectedTab === 'partidas' && game.status !== 'finished' && (
+              <div className="flex justify-center mt-8">
+                <button
                     onClick={generateTeams}
-                    isLoading={isGeneratingTeams}
-                    isDisabled={
-                      game.players.length < 4 || 
-                      (game.matches && game.matches.length > 0 && 
-                       game.matches[game.matches.length - 1].status !== 'finished')
-                    }
-                  >
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  disabled={isGeneratingTeams || game.players.length < 4 || (game.matches && game.matches.length > 0 && game.matches[game.matches.length - 1].status !== 'finished')}
+                >
+                  {isGeneratingTeams && (
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                  )}
                     Gerar Nova Partida
-                  </Button>
-                </Flex>
+                </button>
+              </div>
               )}
-            </Box>
-          </TabPanel>
+          </div>
+        )}
 
-          <TabPanel px={0}>
+        {selectedTab === 'analises' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Análises e Estatísticas</h2>
             <GameAnalytics game={game} />
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+          </div>
+        )}
+      </div>
 
-      <AddPlayerModal 
-        isOpen={isOpen}
-        onClose={onClose}
+      {/* Modal de adicionar jogador */}
+      <AddPlayerModalTailwind
+        isOpen={showAddPlayerModal}
+        onClose={() => setShowAddPlayerModal(false)}
         onAddPlayer={handleJoinGame}
         isJoining={isJoining}
       />
-
-      <PlayerOptionsModal
-        isOpen={isPlayerOptionsOpen}
-        onClose={() => {
-          setIsPlayerOptionsOpen(false);
-          setSelectedPlayer(null);
-        }}
-        player={selectedPlayer}
-        totalPlayers={game.players.length}
-        onUpdatePosition={(position) => {
-          if (selectedPlayer) {
-            handleUpdatePlayer(selectedPlayer.id, { position });
-            setIsPlayerOptionsOpen(false);
-            setSelectedPlayer(null);
-          }
-        }}
-        onUpdateArrivalOrder={(order) => {
-          if (selectedPlayer) {
-            handleUpdateArrivalOrder(selectedPlayer.id, order);
-            setIsPlayerOptionsOpen(false);
-            setSelectedPlayer(null);
-          }
-        }}
-        onUpdateSkillLevel={(skillLevel) => {
-          if (selectedPlayer) {
-            handleUpdateSkillLevel(selectedPlayer.id, skillLevel);
-            setIsPlayerOptionsOpen(false);
-            setSelectedPlayer(null);
-          }
-        }}
-        onUpdateAgeGroup={(ageGroup) => {
-          if (selectedPlayer) {
-            handleUpdateAgeGroup(selectedPlayer.id, ageGroup);
-            setIsPlayerOptionsOpen(false);
-            setSelectedPlayer(null);
-          }
-        }}
-        onRemovePlayer={() => {
-          if (selectedPlayer) {
-            handleRemovePlayer(selectedPlayer.id);
-            setIsPlayerOptionsOpen(false);
-            setSelectedPlayer(null);
-          }
-        }}
-      />
-
       <PlayerSwapModal
         isOpen={isPlayerSwapOpen}
-        onClose={() => {
-          setIsPlayerSwapOpen(false);
-          setSelectedPlayer(null);
-          setSelectedTeam(null);
-          setSelectedMatchForSwap(null);
-        }}
-        currentPlayer={selectedPlayer!}
-        otherTeamPlayers={selectedMatchForSwap?.teams.find(t => t.id !== selectedTeam?.id)?.players || []}
-        waitingPlayers={game.players.filter(p => !selectedMatchForSwap?.teams.some(t => t.players.some(tp => tp.id === p.id)))}
+        onClose={() => setIsPlayerSwapOpen(false)}
+        currentPlayer={selectedPlayer}
+        otherTeamPlayers={selectedTeam && selectedMatch
+          ? selectedMatch.teams.find(t => t.id !== selectedTeam.id)?.players || []
+          : []}
+        waitingPlayers={
+          (game.waitingList
+            ?.map(pid => game.players.find(p => p.id === pid))
+            .filter(Boolean) as Player[]) || []
+        }
         onSwapPlayers={(otherPlayer) => {
-          handleSwapPlayers(selectedMatchForSwap!.id, selectedPlayer!, otherPlayer);
+          if (!selectedMatch || !selectedPlayer) return;
+          handleSwapPlayers(selectedMatch.id, selectedPlayer, otherPlayer);
           setIsPlayerSwapOpen(false);
-          setSelectedPlayer(null);
-          setSelectedTeam(null);
-          setSelectedMatchForSwap(null);
         }}
         onReplacePlayer={(waitingPlayer) => {
-          handleReplacePlayer(selectedMatchForSwap!.id, selectedPlayer!, waitingPlayer);
+          if (!selectedMatch || !selectedPlayer) return;
+          handleReplacePlayer(selectedMatch.id, selectedPlayer, waitingPlayer);
           setIsPlayerSwapOpen(false);
-          setSelectedPlayer(null);
-          setSelectedTeam(null);
-          setSelectedMatchForSwap(null);
         }}
       />
+      {/* Modal de seleção de jogador */}
+      {isSelectPlayerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative animate-fadeIn">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
+              onClick={() => {
+                setIsSelectPlayerModalOpen(false);
+                setSearchTerm(''); // Limpa o termo de busca ao fechar
+              }}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <h2 className="font-bold text-lg text-gray-800 mb-4">Selecionar Jogador</h2>
+            
+            {/* Campo de busca */}
+            <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar por nome ou email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <svg
+                  className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+            </div>
 
-      <Modal isOpen={isWaitingListOpen} onClose={onWaitingListClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Lista de Espera</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            {selectedMatch && (
-              <VStack align="stretch" spacing={4}>
-                {selectedMatch.status === 'in_progress' ? (
-                  <>
-                    <Text fontSize="sm" color="gray.600">
-                      Jogadores na lista de espera:
-                    </Text>
-                    {getPlayersNotInNextMatch(selectedMatch).players.map((player) => (
-                      <Flex 
-                        key={player.id} 
-                        align="center" 
-                        p={2} 
-                        bg="gray.50" 
-                        borderRadius="md"
+            {isLoadingPlayers ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : filteredPlayers.length > 0 ? (
+              <>
+                <div className="text-sm text-gray-500 mb-2">
+                  {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? 'es' : ''} disponível{filteredPlayers.length !== 1 ? 'is' : ''}
+                </div>
+                <ul className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {filteredPlayers.map((user) => (
+                    <li key={user.id}>
+                      <button
+                        onClick={() => handleAddExistingPlayer(user)}
+                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
                       >
-                        <Avatar 
-                          size="sm" 
-                          name={player.name} 
-                          mr={2} 
-                          bg={getPositionColor(player.position)} 
-                        />
-                        <Text fontWeight="medium">{player.name}</Text>
-                      </Flex>
-                    ))}
-                    {getPlayersNotInNextMatch(selectedMatch).players.length === 0 && (
-                      <Text color="gray.500" textAlign="center">
-                        Não há jogadores na lista de espera.
-                      </Text>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Box>
-                      <Text fontSize="sm" color="gray.600" mb={2}>
-                        Jogadores que saíram:
-                      </Text>
-                      {getPlayersNotInNextMatch(selectedMatch).playersOut?.map((player) => (
-                        <Flex 
-                          key={player.id} 
-                          align="center" 
-                          p={2} 
-                          bg="red.50" 
-                          borderRadius="md"
-                          mb={2}
-                        >
-                          <Avatar 
-                            size="sm" 
-                            name={player.name} 
-                            mr={2} 
-                            bg={getPositionColor(player.position)} 
-                          />
-                          <Text fontWeight="medium">{player.name}</Text>
-                          <Badge 
-                            ml="auto"
-                            colorScheme={getPositionColor(player.position)}
-                          >
-                            {player.position}
-                          </Badge>
-                        </Flex>
-                      ))}
-                      {(!getPlayersNotInNextMatch(selectedMatch).playersOut || 
-                        getPlayersNotInNextMatch(selectedMatch).playersOut.length === 0) && (
-                        <Text color="gray.500" textAlign="center" mb={4}>
-                          Nenhum jogador saiu.
-                        </Text>
-                      )}
-                    </Box>
-
-                    <Box>
-                      <Text fontSize="sm" color="gray.600" mb={2}>
-                        Jogadores que entraram:
-                      </Text>
-                      {getPlayersNotInNextMatch(selectedMatch).playersIn?.map((player) => (
-                        <Flex 
-                          key={player.id} 
-                          align="center" 
-                          p={2} 
-                          bg="green.50" 
-                          borderRadius="md"
-                          mb={2}
-                        >
-                          <Avatar 
-                            size="sm" 
-                            name={player.name} 
-                            mr={2} 
-                            bg={getPositionColor(player.position)} 
-                          />
-                          <Text fontWeight="medium">{player.name}</Text>
-                          <Badge 
-                            ml="auto"
-                            colorScheme={getPositionColor(player.position)}
-                          >
-                            {player.position}
-                          </Badge>
-                        </Flex>
-                      ))}
-                      {(!getPlayersNotInNextMatch(selectedMatch).playersIn || 
-                        getPlayersNotInNextMatch(selectedMatch).playersIn.length === 0) && (
-                        <Text color="gray.500" textAlign="center" mb={4}>
-                          Nenhum jogador entrou.
-                        </Text>
-                      )}
-                    </Box>
-
-                    {selectedMatch.status === 'finished' && (
-                      <Box>
-                        <Text fontSize="sm" color="gray.600" mb={2}>
-                          Lista de espera:
-                        </Text>
-                        <SimpleGrid columns={2} spacing={2}>
-                          {game.players
-                            .filter(p => !selectedMatch.teams.some(t => t.players.some(tp => tp.id === p.id)))
-                            .map((player) => (
-                              <Flex 
-                                key={player.id} 
-                                align="center" 
-                                p={2} 
-                                bg="gray.50" 
-                                borderRadius="md"
-                              >
-                                <Avatar 
-                                  size="xs" 
-                                  name={player.name} 
-                                  mr={2} 
-                                  bg={getPositionColor(player.position)} 
-                                />
-                                <Text fontSize="sm">{player.name}</Text>
-                                <Badge 
-                                  ml="auto"
-                                  colorScheme={getPositionColor(player.position)}
-                                  fontSize="xs"
-                                >
-                                  {player.position}
-                                </Badge>
-              </Flex>
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+                          {user.playerInfo?.name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{user.playerInfo?.name}</div>
+                          <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            user.playerInfo?.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                            user.playerInfo?.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {user.playerInfo?.position?.toUpperCase() || 'N/A'}
+                          </span>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <svg key={i} className={`w-3 h-3 ${i < (user.playerInfo?.skillLevel || 0) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
+                              </svg>
                             ))}
-                        </SimpleGrid>
-                      </Box>
-                    )}
-                  </>
-                )}
-            </VStack>
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                {searchTerm 
+                  ? 'Nenhum jogador encontrado com esse termo.' 
+                  : 'Nenhum jogador disponível para adicionar.'}
+              </div>
             )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
-      <AlertDialog
-        isOpen={isDeleteAlertOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={onDeleteAlertClose}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Excluir Pelada
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              Tem certeza que deseja excluir esta pelada? Esta ação não pode ser desfeita.
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onDeleteAlertClose}>
-                Cancelar
-              </Button>
-              <Button
-                colorScheme="red"
-                onClick={handleDeleteGame}
-                ml={3}
-                isLoading={isDeleting}
-              >
-                Excluir
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </Container>
+          </div>
+        </div>
+      )}
+    </div>
   );
 } 

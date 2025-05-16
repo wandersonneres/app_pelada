@@ -1,24 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  Container,
-  Heading,
-  SimpleGrid,
-  Text,
-  VStack,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game } from '../types';
 import { GameCard } from '../components/GameCard';
+import { FaCalendarAlt } from 'react-icons/fa';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const [games, setGames] = useState<Game[]>([]);
-  const bg = useColorModeValue('gray.50', 'gray.900');
 
   useEffect(() => {
     const q = query(
@@ -54,37 +44,24 @@ export function Dashboard() {
   };
 
   return (
-    <Box minH="100vh" bg={bg}>
-      <Container maxW="container.xl" py={8}>
-        <VStack spacing={8} align="stretch">
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Heading>Minhas Peladas</Heading>
-            <Button
-              colorScheme="blue"
-              size="lg"
-              onClick={handleNewGame}
-            >
-              Nova Pelada
-            </Button>
-          </Box>
-
-          {games.length === 0 ? (
-            <Text textAlign="center" color="gray.500">
-              Nenhuma pelada agendada. Crie uma nova pelada!
-            </Text>
-          ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-              {games.map((game) => (
-                <GameCard
-                  key={game.id}
-                  game={game}
-                  onDelete={handleDeleteGame}
-                />
+    <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Próximas Peladas</h1>
+          <button
+            onClick={handleNewGame}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition"
+          >
+            <FaCalendarAlt className="w-4 h-4" />
+            Nova Pelada
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {games.map(game => (
+            <GameCard key={game.id} game={game} onDelete={handleDeleteGame} />
               ))}
-            </SimpleGrid>
-          )}
-        </VStack>
-      </Container>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 } 

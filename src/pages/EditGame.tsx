@@ -13,12 +13,16 @@ import {
   useToast,
   Spinner,
   Center,
+  HStack,
 } from '@chakra-ui/react';
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game } from '../types';
+import { FaChevronLeft } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 
 export function EditGame() {
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
@@ -102,35 +106,45 @@ export function EditGame() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !game) return;
-
-    setIsSaving(true);
+    if (!user?.id || !id) {
+      toast({
+        title: 'Erro',
+        description: 'Usuário não autenticado.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
 
     try {
-      const date = new Date(formData.date);
-      date.setHours(0, 0, 0, 0);
+      setIsSaving(true);
+      // Monta a data a partir dos valores do input (ano, mês, dia) para evitar que a data seja interpretada como UTC e diminua um dia.
+      const [year, month, day] = formData.date.split('-').map(Number);
+      const date = new Date(year, month - 1, day, 0, 0, 0, 0);
 
-      await updateDoc(doc(db, 'games', id), {
+      // Garante que todos os campos necessários existam antes de atualizar
+      const gameData = {
         date,
         location: formData.location,
-        observations: formData.observations.trim() || null,
+        observations: formData.observations || null,
         updatedAt: new Date(),
-      });
+        updatedBy: user.id, // Usando user.id em vez de user.uid
+      };
 
+      await updateDoc(doc(db, 'games', id), gameData);
       toast({
-        title: 'Sucesso',
-        description: 'Pelada atualizada com sucesso!',
+        title: 'Pelada atualizada com sucesso!',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
-
-      navigate(`/game/${id}`);
+      navigate('/');
     } catch (error) {
       console.error('Erro ao atualizar pelada:', error);
       toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao atualizar a pelada.',
+        title: 'Erro ao atualizar pelada.',
+        description: 'Tente novamente mais tarde.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -151,7 +165,16 @@ export function EditGame() {
   return (
     <Container maxW="container.md" py={8}>
       <VStack spacing={8} align="stretch">
-        <Heading size="lg">Editar Pelada</Heading>
+        <HStack justify="space-between" align="center">
+          <Button
+            leftIcon={<FaChevronLeft />}
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            size="md"
+          />
+          <Heading size="lg">Editar Pelada</Heading>
+          <Box w="70px" /> {/* Espaçador para manter o título centralizado */}
+        </HStack>
 
         <Box as="form" onSubmit={handleSubmit}>
           <VStack spacing={4}>

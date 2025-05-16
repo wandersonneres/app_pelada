@@ -1,4 +1,3 @@
-import { Box, Flex, Text } from '@chakra-ui/react';
 import { Match } from '../types';
 
 interface MatchScoreProps {
@@ -16,40 +15,22 @@ export function MatchScore({ match }: MatchScoreProps) {
   ).length || 0;
 
   return (
-    <Flex 
-      justify="center" 
-      align="center" 
-      gap={4} 
-      bg="gray.100" 
-      p={3} 
-      borderRadius="md"
-      mb={4}
-    >
-      <Text fontWeight="bold" fontSize="xl" color="gray.600">
-        Time Branco
-      </Text>
-      <Flex 
-        bg="white" 
-        px={4} 
-        py={2} 
-        borderRadius="md" 
-        shadow="sm"
-        align="center"
-        gap={3}
-      >
-        <Text fontSize="2xl" fontWeight="bold" color="gray.600">
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 bg-white rounded-xl shadow p-4 mb-4 border border-gray-100">
+      <span className="font-bold text-lg sm:text-xl text-gray-700 whitespace-nowrap">
+        {match.teams[0]?.name || 'Time Branco'}
+      </span>
+      <div className="flex items-center gap-2 sm:gap-4 bg-gray-50 px-4 py-2 rounded-lg shadow-inner">
+        <span className="text-2xl sm:text-3xl font-bold text-blue-600 min-w-[32px] text-center">
           {teamAGoals}
-        </Text>
-        <Text fontSize="2xl" fontWeight="bold" color="gray.400">
-          x
-        </Text>
-        <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+        </span>
+        <span className="text-2xl font-bold text-gray-400">x</span>
+        <span className="text-2xl sm:text-3xl font-bold text-orange-500 min-w-[32px] text-center">
           {teamBGoals}
-        </Text>
-      </Flex>
-      <Text fontWeight="bold" fontSize="xl" color="orange.500">
-        Time Laranja
-      </Text>
-    </Flex>
+        </span>
+      </div>
+      <span className="font-bold text-lg sm:text-xl text-orange-500 whitespace-nowrap">
+        {match.teams[1]?.name || 'Time Laranja'}
+      </span>
+    </div>
   );
 } 
