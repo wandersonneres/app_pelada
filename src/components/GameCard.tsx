@@ -4,10 +4,11 @@ import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEdit, FaTrash } from 'react-i
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { Box, Flex, Text, Badge, IconButton } from '@chakra-ui/react';
 
 interface GameCardProps {
   game: Game;
-  onDelete: (id: string) => void;
+  onDelete?: (gameId: string) => void;
 }
 
 export function GameCard({ game, onDelete }: GameCardProps) {
@@ -19,6 +20,10 @@ export function GameCard({ game, onDelete }: GameCardProps) {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  const formatTime = (time: string) => {
+    return time;
   };
 
   const getStatusColor = (status: string) => {
@@ -49,53 +54,61 @@ export function GameCard({ game, onDelete }: GameCardProps) {
 
   return (
     <Box
-      p={4}
-      bg={bg}
-      borderRadius="lg"
+      bg="white"
       borderWidth="1px"
-      borderColor={borderColor}
-      _hover={{ shadow: 'md' }}
+      borderColor="gray.200"
+      borderRadius="lg"
+      overflow="hidden"
       transition="all 0.2s"
+      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+      cursor="pointer"
+      onClick={() => navigate(`/game/${game.id}`)}
     >
-      <Flex justify="space-between" align="center" mb={2}>
-        <Text fontWeight="bold" fontSize="lg">
-          {formatDate(game.date)}
-        </Text>
-        <Badge colorScheme={getStatusColor(game.status)}>
-          {getStatusText(game.status)}
-        </Badge>
+      <Flex p={4} direction="column" gap={2}>
+        <Flex justify="space-between" align="center">
+          <Text fontSize="lg" fontWeight="bold">
+            {game.field.name}
+          </Text>
+          <Badge
+            colorScheme={game.status === 'in_progress' ? 'green' : 'gray'}
+            px={2}
+            py={1}
+            borderRadius="full"
+          >
+            {game.status === 'in_progress' ? 'Em andamento' : 'Finalizada'}
+          </Badge>
+        </Flex>
+
+        <Flex direction="column" gap={1}>
+          <Flex align="center" gap={2}>
+            <Text fontSize="sm" color="gray.600">
+              {formatDate(game.date)}
+            </Text>
+            <Text fontSize="sm" color="gray.600">
+              {formatTime(game.time)}
+            </Text>
+          </Flex>
+          <Text fontSize="sm" color="gray.600">
+            {game.teams.team1.players.length + game.teams.team2.players.length} jogadores
+          </Text>
+        </Flex>
       </Flex>
 
-      <Flex align="center" mb={2}>
-        <FaMapMarkerAlt style={{ marginRight: '8px' }} />
-        <Text>{game.location}</Text>
-      </Flex>
-
-      <Flex align="center" mb={4}>
-        <FaUsers style={{ marginRight: '8px' }} />
-        <Text>
-          {game.players.length} / {game.maxPlayers} jogadores
-        </Text>
-      </Flex>
-
-      <Flex justify="flex-end" gap={2}>
-        <IconButton
-          aria-label="Editar pelada"
-          icon={<FaEdit />}
-          colorScheme="blue"
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/game/${game.id}/edit`)}
-        />
-        <IconButton
-          aria-label="Excluir pelada"
-          icon={<FaTrash />}
-          colorScheme="red"
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(game.id)}
-        />
-      </Flex>
+      {onDelete && (
+        <Flex justify="flex-end" p={2} borderTopWidth="1px" borderColor="gray.100">
+          <IconButton
+            aria-label="Excluir pelada"
+            icon={<FaTrash />}
+            colorScheme="red"
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(game.id);
+            }}
+          />
+        </Flex>
+      )}
     </Box>
   );
 } 

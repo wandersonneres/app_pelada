@@ -545,10 +545,47 @@ export function GameDetails() {
       console.log('waitingList local (antes):', waitingList);
 
       if (isFirstMatch) {
-        // Primeira partida: pega os primeiros 18 jogadores por ordem de chegada
-        const playersForFirstMatch = [...game.players]
-          .sort((a, b) => a.arrivalOrder - b.arrivalOrder) // Ordena por ordem de chegada
-          .slice(0, 18);
+        // Verifica se tem menos de 18 jogadores
+        const totalPlayers = game.players.length;
+        const isLowPlayerCount = totalPlayers < 18;
+
+        if (totalPlayers < 4) {
+          setToastMsg({ type: 'error', message: 'É necessário pelo menos 4 jogadores para gerar os times.' });
+          return;
+        }
+
+        // Se tiver menos de 18 jogadores, divide pelo número máximo possível
+        let playersForFirstMatch;
+        if (isLowPlayerCount) {
+          // Calcula o número máximo de jogadores por time (par)
+          const maxPlayersPerTeam = Math.floor(totalPlayers / 2);
+          const totalPlayersInMatch = maxPlayersPerTeam * 2;
+          
+          // Pega os primeiros jogadores por ordem de chegada
+          playersForFirstMatch = [...game.players]
+            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+            .slice(0, totalPlayersInMatch);
+
+          // Jogadores restantes vão para a lista de espera
+          waitingList = game.players
+            .filter(p => !playersForFirstMatch.map(p => p.id).includes(p.id))
+            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+            .map(p => p.id);
+
+          console.log(`Adaptação para ${totalPlayers} jogadores: ${maxPlayersPerTeam} por time`);
+        } else {
+          // Comportamento normal para 18+ jogadores
+          playersForFirstMatch = [...game.players]
+            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+            .slice(0, 18);
+
+          // Jogadores que não estão jogando vão para a lista de espera
+          const playingIds = playersForFirstMatch.map(p => p.id);
+          waitingList = game.players
+            .filter(p => !playingIds.includes(p.id))
+            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+            .map(p => p.id);
+        }
 
         console.log('Jogadores selecionados para primeira partida:', 
           playersForFirstMatch.map(p => ({ 
@@ -558,31 +595,8 @@ export function GameDetails() {
           }))
         );
 
-        if (playersForFirstMatch.length < 4) {
-          setToastMsg({ type: 'error', message: 'É necessário pelo menos 4 jogadores para gerar os times.' });
-          return;
-        }
-
-        // Balanceia os times apenas na primeira partida
+        // Balanceia os times
         const { teamA, teamB } = findBalancedTeams(playersForFirstMatch);
-
-        // Jogadores que não estão jogando vão para a lista de espera
-        const playingIds = [...teamA, ...teamB].map(p => p.id);
-        waitingList = game.players
-          .filter(p => !playingIds.includes(p.id))
-          .sort((a, b) => a.arrivalOrder - b.arrivalOrder) // Mantém a ordem de chegada na lista de espera
-          .map(p => p.id);
-
-        console.log('Lista de espera após primeira partida:', 
-          waitingList.map(id => {
-            const player = game.players.find(p => p.id === id);
-            return {
-              name: player?.name,
-              order: player?.arrivalOrder,
-              arrivalTime: player?.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString() : 'N/A'
-            };
-          })
-        );
 
         const teams: Team[] = [
           {
