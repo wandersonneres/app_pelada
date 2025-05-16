@@ -1,5 +1,5 @@
 import { Game } from '../types';
-import { Trophy, Users, Goal, Target, Star, Award, TrendingUp } from 'lucide-react';
+import { Trophy, Users, Target, Star, Award, TrendingUp, Footprints } from 'lucide-react';
 import { useState } from 'react';
 
 interface GameAnalyticsProps {
@@ -158,7 +158,7 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
 
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
           <div className="p-2 bg-green-100 rounded-lg">
-            <Goal className="w-5 h-5 text-green-600" />
+            <Target className="w-5 h-5 text-green-600" />
           </div>
           <div>
             <p className="text-sm text-gray-600">Gols</p>
@@ -197,12 +197,12 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
                 <th className="px-4 py-2 text-left font-medium">Pos</th>
                 <th className="px-4 py-2 text-center font-medium">
                   <div className="flex items-center justify-center gap-1">
-                    <Goal className="w-3.5 h-3.5" />
+                    <Target className="w-3.5 h-3.5" />
                   </div>
                 </th>
                 <th className="px-4 py-2 text-center font-medium">
                   <div className="flex items-center justify-center gap-1">
-                    <Star className="w-3.5 h-3.5" />
+                    <Footprints className="w-3.5 h-3.5" />
                   </div>
                 </th>
                 <th className="px-4 py-2 text-center font-medium">

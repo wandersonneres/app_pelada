@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, StopCircle, Circle } from 'lucide-react';
+import { Play, Pause, StopCircle, Target } from 'lucide-react';
 import { Team } from '../types';
 import { GoalScorerModal } from './GoalScorerModal';
 
@@ -74,7 +74,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
             onClick={() => handleGoalScored(teamA)}
             disabled={!running}
           >
-            <Circle className="w-4 h-4" /> Gol
+            <Target className="w-4 h-4" /> Gol
           </button>
         </div>
         {/* Timer */}
@@ -123,7 +123,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
             onClick={() => handleGoalScored(teamB)}
             disabled={!running}
           >
-            <Circle className="w-4 h-4" /> Gol
+            <Target className="w-4 h-4" /> Gol
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
-import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, Eye, Circle, ArrowUpRight, ArrowLeftRight, User, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, Eye, ArrowLeftRight, User, Plus, Circle, ArrowUpRight, CircleDot, Target, Footprints } from 'lucide-react';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { StarRating } from '../components/StarRating';
 import { TacticalView } from '../components/TacticalView';
@@ -1661,16 +1661,19 @@ export function GameDetails() {
                                 isHomeTeam={false}
                               />
                             </div>
-                            {/* MatchTimer sempre visível para partidas em andamento */}
-                                          {match.status === 'in_progress' && (
+                            {/* MatchTimer apenas para partidas em progresso */}
+                            {match.status === 'in_progress' && (
+                              <MatchTimer
+                                teamA={match.teams[0]}
+                                teamB={match.teams[1]}
+                                isFirstMatch={idx === 0}
+                                onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
+                              />
+                            )}
+
+                            {/* Lista de jogadores dos times - visível em partidas em progresso e finalizadas */}
+                            {(match.status === 'in_progress' || match.status === 'finished') && (
                               <>
-                          <MatchTimer
-                            teamA={match.teams[0]}
-                            teamB={match.teams[1]}
-                                  isFirstMatch={idx === 0}
-                                  onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
-                                />
-                                {/* Lista de jogadores dos times */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                   <div>
                                     <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[0]?.name}</h3>
@@ -1683,7 +1686,7 @@ export function GameDetails() {
                                         .map((player) => {
                                           const stats = getPlayerStats(player.id);
                                           return (
-                                            <li className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
+                                            <li key={player.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
                                               {/* Avatar */}
                                               <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
                                                    style={{ backgroundColor: '#3b82f6' }}>
@@ -1697,27 +1700,29 @@ export function GameDetails() {
                                               {/* Gols */}
                                               {stats.goals > 0 && (
                                                 <span className="flex items-center gap-1 text-blue-600 ml-1">
-                                                  <Circle className="w-3 h-3" /> {stats.goals}
+                                                  <Target className="w-3 h-3" /> {stats.goals}
                                                 </span>
                                               )}
                                               {/* Assistências */}
                                               {stats.assists > 0 && (
                                                 <span className="flex items-center gap-1 text-green-600 ml-1">
-                                                  <ArrowUpRight className="w-3 h-3" /> {stats.assists}
+                                                  <Footprints className="w-3 h-3" /> {stats.assists}
                                                 </span>
                                               )}
-                                              <button
-                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                title="Trocar jogador"
-                                                onClick={() => {
-                                                setIsPlayerSwapOpen(true);
-                                                  setSelectedPlayer(player);
-                                                  setSelectedTeam(match.teams[0]); // ou match.teams[1] conforme o time
-                                                  setSelectedMatch(match);
-                                                }}
-                                              >
-                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                              </button>
+                                              {match.status === 'in_progress' && (
+                                                <button
+                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                  title="Trocar jogador"
+                                                  onClick={() => {
+                                                    setIsPlayerSwapOpen(true);
+                                                    setSelectedPlayer(player);
+                                                    setSelectedTeam(match.teams[0]);
+                                                    setSelectedMatch(match);
+                                                  }}
+                                                >
+                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                                </button>
+                                              )}
                                             </li>
                                           );
                                         })}
@@ -1734,7 +1739,7 @@ export function GameDetails() {
                                         .map((player) => {
                                           const stats = getPlayerStats(player.id);
                                           return (
-                                            <li className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
+                                            <li key={player.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
                                               {/* Avatar */}
                                               <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
                                                    style={{ backgroundColor: '#f59e42' }}>
@@ -1748,27 +1753,29 @@ export function GameDetails() {
                                               {/* Gols */}
                                               {stats.goals > 0 && (
                                                 <span className="flex items-center gap-1 text-blue-600 ml-1">
-                                                  <Circle className="w-3 h-3" /> {stats.goals}
+                                                  <Target className="w-3 h-3" /> {stats.goals}
                                                 </span>
                                               )}
                                               {/* Assistências */}
                                               {stats.assists > 0 && (
                                                 <span className="flex items-center gap-1 text-green-600 ml-1">
-                                                  <ArrowUpRight className="w-3 h-3" /> {stats.assists}
+                                                  <Footprints className="w-3 h-3" /> {stats.assists}
                                                 </span>
                                               )}
-                                              <button
-                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                title="Trocar jogador"
-                            onClick={() => {
-                                                  setIsPlayerSwapOpen(true);
-                                                  setSelectedPlayer(player);
-                                                  setSelectedTeam(match.teams[1]); // ou match.teams[0] conforme o time
-                              setSelectedMatch(match);
-                                                }}
-                                              >
-                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                              </button>
+                                              {match.status === 'in_progress' && (
+                                                <button
+                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                  title="Trocar jogador"
+                                                  onClick={() => {
+                                                    setIsPlayerSwapOpen(true);
+                                                    setSelectedPlayer(player);
+                                                    setSelectedTeam(match.teams[1]);
+                                                    setSelectedMatch(match);
+                                                  }}
+                                                >
+                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                                </button>
+                                              )}
                                             </li>
                                           );
                                         })}
@@ -1776,22 +1783,25 @@ export function GameDetails() {
                                   </div>
                                 </div>
 
-                                <div className="flex flex-col md:flex-row gap-2 mt-4">
-                                  <button
-                                    className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-                                    onClick={() => finishMatch(match.id, match.teams[0].id)}
-                                  >
-                                    {match.teams[0]?.name} Venceu
-                                  </button>
-                                  <button
-                                    className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
-                                    onClick={() => finishMatch(match.id, match.teams[1].id)}
-                                  >
-                                    {match.teams[1]?.name} Venceu
-                                  </button>
-                                </div>
-                  </>
-                )}
+                                {/* Botões de finalização - apenas para partidas em andamento */}
+                                {match.status === 'in_progress' && (
+                                  <div className="flex flex-col md:flex-row gap-2 mt-4">
+                                    <button
+                                      className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                                      onClick={() => finishMatch(match.id, match.teams[0].id)}
+                                    >
+                                      {match.teams[0]?.name} Venceu
+                                    </button>
+                                    <button
+                                      className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
+                                      onClick={() => finishMatch(match.id, match.teams[1].id)}
+                                    >
+                                      {match.teams[1]?.name} Venceu
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
