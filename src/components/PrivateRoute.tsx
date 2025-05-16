@@ -7,11 +7,11 @@ interface PrivateRouteProps {
 }
 
 export function PrivateRoute({ children, requireAdmin = false }: PrivateRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
 
   // Se estiver carregando, mostra um indicador de carregamento
-  if (loading) {
+  if (isLoading) {
     return <div>Carregando...</div>;
   }
 

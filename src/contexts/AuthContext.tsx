@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, query, where, getDocs, collection } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-import { User, AuthState } from '../types';
+import type { User, AuthState } from '../types/index';
 
 interface AuthContextData {
   user: User | null;
