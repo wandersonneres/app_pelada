@@ -22,10 +22,6 @@ export function GameCard({ game, onDelete }: GameCardProps) {
     });
   };
 
-  const formatTime = (time: string) => {
-    return time;
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'waiting':
@@ -67,15 +63,15 @@ export function GameCard({ game, onDelete }: GameCardProps) {
       <Flex p={4} direction="column" gap={2}>
         <Flex justify="space-between" align="center">
           <Text fontSize="lg" fontWeight="bold">
-            {game.field.name}
+            {game.location}
           </Text>
           <Badge
-            colorScheme={game.status === 'in_progress' ? 'green' : 'gray'}
+            colorScheme={getStatusColor(game.status)}
             px={2}
             py={1}
             borderRadius="full"
           >
-            {game.status === 'in_progress' ? 'Em andamento' : 'Finalizada'}
+            {getStatusText(game.status)}
           </Badge>
         </Flex>
 
@@ -84,12 +80,9 @@ export function GameCard({ game, onDelete }: GameCardProps) {
             <Text fontSize="sm" color="gray.600">
               {formatDate(game.date)}
             </Text>
-            <Text fontSize="sm" color="gray.600">
-              {formatTime(game.time)}
-            </Text>
           </Flex>
           <Text fontSize="sm" color="gray.600">
-            {game.teams.team1.players.length + game.teams.team2.players.length} jogadores
+            {game.players.length} / {game.maxPlayers} jogadores
           </Text>
         </Flex>
       </Flex>
