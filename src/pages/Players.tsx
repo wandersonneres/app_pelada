@@ -20,28 +20,21 @@ export function Players() {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        console.log('Buscando jogadores...');
         const usersRef = collection(db, 'users');
         const snapshot = await getDocs(usersRef);
-        console.log('Total de documentos encontrados:', snapshot.docs.length);
         
         const playersList = snapshot.docs
           .map(doc => {
             const data = doc.data();
-            console.log('Documento:', { id: doc.id, ...data });
             return { id: doc.id, ...data } as User;
           })
-          .filter(user => {
-            console.log('Filtrando usuário:', user.username, 'role:', user.role);
-            return user.username !== 'admin';
-          })
+          .filter(user => user.username !== 'admin')
           .sort((a, b) => {
             const nameA = a.playerInfo?.name || a.username;
             const nameB = b.playerInfo?.name || b.username;
             return nameA.localeCompare(nameB);
           });
 
-        console.log('Lista final de jogadores:', playersList);
         setPlayers(playersList);
         setFilteredPlayers(playersList);
       } catch (error) {

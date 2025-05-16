@@ -1,22 +1,8 @@
-import {
-  Box,
-  Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Flex,
-  Text,
-  Badge,
-  useColorModeValue,
-  IconButton,
-} from '@chakra-ui/react';
 import { Game, convertTimestampToDate } from '../types';
 import { Timestamp } from 'firebase/firestore';
-import { FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEdit, FaTrash } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { FaUsers, FaEdit, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 interface GameCardProps {
@@ -26,8 +12,6 @@ interface GameCardProps {
 
 export function GameCard({ game, onDelete }: GameCardProps) {
   const navigate = useNavigate();
-  const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const formatDate = (date: Date | Timestamp) => {
     return convertTimestampToDate(date).toLocaleDateString('pt-BR', {

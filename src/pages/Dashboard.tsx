@@ -39,10 +39,6 @@ export function Dashboard() {
     navigate('/new-game');
   };
 
-  const handleDeleteGame = (gameId: string) => {
-    // Implemente a lógica para deletar um jogo
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
       <div className="max-w-5xl mx-auto">
@@ -58,8 +54,8 @@ export function Dashboard() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {games.map(game => (
-            <GameCard key={game.id} game={game} onDelete={handleDeleteGame} />
-              ))}
+            <GameCard key={game.id} game={game} />
+          ))}
         </div>
       </div>
     </div>

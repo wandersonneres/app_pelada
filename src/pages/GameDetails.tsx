@@ -226,6 +226,43 @@ export function GameDetails() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(''); // Novo estado para o termo de busca
 
+  const handleFormationChange = async (matchId: string, teamId: string, newFormation: string) => {
+    if (!game || !id) return;
+
+    try {
+      const updatedMatches = game.matches.map(match => {
+        if (match.id === matchId) {
+          return {
+            ...match,
+            teams: match.teams.map(team => {
+              if (team.id === teamId) {
+                return {
+                  ...team,
+                  formation: {
+                    ...team.formation,
+                    tactical: newFormation
+                  }
+                };
+              }
+              return team;
+            })
+          };
+        }
+        return match;
+      });
+
+      await updateDoc(doc(db, 'games', id), {
+        matches: updatedMatches,
+        updatedAt: serverTimestamp()
+      });
+
+      setToastMsg({ type: 'success', message: 'Formação atualizada com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao atualizar formação:', error);
+      setToastMsg({ type: 'error', message: 'Erro ao atualizar a formação.' });
+    }
+  };
+
   // Função para contar partidas consecutivas sem ir para lista de espera
   const getConsecutiveMatchesWithoutBreak = (playerId: string) => {
     if (!game || !game.matches) return 0;
@@ -1284,11 +1321,11 @@ export function GameDetails() {
 
   // Layout principal
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       {toastMsg && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>{toastMsg.message}</div>
       )}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Voltar">
@@ -1299,7 +1336,7 @@ export function GameDetails() {
             <p className="text-sm text-gray-500">{game && formatDate(game.date)}</p>
           </div>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto justify-end">
+        <div className="flex gap-3 w-full md:w-auto justify-end">
           <button
             onClick={() => {/* lógica de finalizar/reabrir pelada */}}
             className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -1436,7 +1473,7 @@ export function GameDetails() {
                   title="Adicionar Jogador"
                 >
                   <Plus className="w-4 h-3" />
-                  <span className="hidden sm:inline">Adicionar Jogador</span>
+                  <span className="hidden md:inline">Adicionar Jogador</span>
                 </button>
                 <button
                   onClick={handleOpenSelectPlayerModal}
@@ -1444,7 +1481,7 @@ export function GameDetails() {
                   title="Selecionar Jogador"
                 >
                   <User className="w-4 h-3" />
-                  <span className="hidden sm:inline">Selecionar Jogador</span>
+                  <span className="hidden md:inline">Selecionar Jogador</span>
                 </button>
               </div>
             </div>
@@ -1528,103 +1565,56 @@ export function GameDetails() {
                   return (
                     <li key={match.id} className="bg-gray-50 rounded-xl p-4 shadow-sm relative">
                       {/* Cabeçalho fixo da partida */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${match.status === 'finished' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>{match.status === 'finished' ? 'Finalizada' : 'Em andamento'}</span>
-                        </div>
-                        {!isExpanded && (                         
+                      <div className="flex flex-col gap-2">
+                        {/* Primeira linha: Status e Ver Detalhes */}
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
-                            <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
-                            <span className="text-gray-400">x</span>
-                            <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
-                            <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${match.status === 'finished' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                              {match.status === 'finished' ? 'Finalizada' : 'Em andamento'}
+                            </span>
+                          </div>
+                          {!isExpanded && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
+                              <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
+                              <span className="text-gray-400">x</span>
+                              <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
+                              <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
+                            </div>
+                          )}
+                          <button
+                              className="px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 transition"
+                              onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
+                            >
+                              {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
+                            </button>
+                        </div>
+
+                        {/* Botões de ação (só aparecem quando expandido) */}
+                        {isExpanded && (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              className="p-2 rounded-full hover:bg-gray-200 transition"
+                              title="Ver lista de espera"
+                              onClick={() => setWaitingListMatchId(match.id)}
+                            >
+                              <Users className="w-5 h-5 text-blue-500" />
+                            </button>
+                            <button
+                              className="p-2 rounded-full hover:bg-red-100 transition"
+                              title="Excluir partida"
+                              onClick={() => {
+                                if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
+                                  deleteMatch(match.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-5 h-5 text-red-500" />
+                            </button>
                           </div>
                         )}
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="p-2 rounded-full hover:bg-gray-200 transition"
-                            title="Ver lista de espera"
-                            onClick={() => setWaitingListMatchId(match.id)}
-                          >
-                            <Users className="w-5 h-5 text-blue-500" />
-                          </button>
-                          <button
-                            className="p-2 rounded-full hover:bg-red-100 transition"
-                            title="Excluir partida"
-                                onClick={() => deleteMatch(match.id)}
-                          >
-                            <Trash2 className="w-5 h-5 text-red-500" />
-                          </button>
-                          <button
-                            className="ml-2 px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 transition"
-                            onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
-                          >
-                            {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
-                          </button>
-                        </div>
                       </div>
-                      {/* Modal de lista de espera */}
-                      {waitingListMatchId === match.id && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs relative animate-fadeIn">
-                            <button
-                              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
-                              onClick={() => setWaitingListMatchId(null)}
-                              aria-label="Fechar"
-                            >
-                              ×
-                            </button>
-                            <h2 className="font-bold text-lg text-gray-800 mb-4">Lista de Espera</h2>
-                            {/* Entraram na próxima partida */}
-                            {playersIn && playersIn.length > 0 && (
-                              <div className="mb-4">
-                                <div className="font-semibold text-green-700 mb-1 text-sm">Entraram na próxima partida</div>
-                                <ul className="space-y-1">
-                                  {playersIn.map((player) => (
-                                    <li key={player.id} className="flex items-center gap-2 text-sm text-green-700">
-                                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center font-bold">{player.name.charAt(0).toUpperCase()}</div>
-                                      <span className="truncate max-w-[250px]">{player.name}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {/* Saíram da próxima partida */}
-                            {playersOut && playersOut.length > 0 && (
-                              <div className="mb-4">
-                                <div className="font-semibold text-red-700 mb-1 text-sm">Saíram da próxima partida</div>
-                                <ul className="space-y-1">
-                                  {playersOut.map((player) => (
-                                    <li key={player.id} className="flex items-center gap-2 text-sm text-red-700">
-                                      <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center font-bold">{player.name.charAt(0).toUpperCase()}</div>
-                                      <span className="truncate max-w-[250px]">{player.name}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {/* Lista de espera */}
-                            {waitingList && waitingList.length > 0 && (
-                              <div className="mb-2">
-                                <div className="font-semibold text-gray-700 mb-1 text-sm">Na lista de espera</div>
-                                <ul className="space-y-1">
-                                  {waitingList.map((player) => (
-                                    <li key={player.id} className="flex items-center gap-2 text-sm text-gray-700">
-                                      <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center font-bold">{player.name.charAt(0).toUpperCase()}</div>
-                                      <span className="truncate max-w-[250px]">{player.name}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {(!playersIn?.length && !playersOut?.length && !waitingList?.length) && (
-                              <div className="text-gray-500 text-center">Nenhum jogador na lista de espera ou troca.</div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+
                       {/* Conteúdo expandido */}
                       <AnimatePresence initial={false}>
                         {isExpanded && (
@@ -1643,7 +1633,7 @@ export function GameDetails() {
                               <TacticalView
                                 team={match.teams[0]}
                                 formation={match.teams[0].formation?.tactical || '4-3-2'}
-                                onFormationChange={() => {}}
+                                onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[0].id, newFormation)}
                                 goals={match.goals}
                                 teamColor="#3b82f6"
                                 isHomeTeam={false}
@@ -1651,8 +1641,8 @@ export function GameDetails() {
                               <TacticalView
                                 team={match.teams[1]}
                                 formation={match.teams[1].formation?.tactical || '4-3-2'}
-                                onFormationChange={() => {}}
-                                    goals={match.goals}
+                                onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[1].id, newFormation)}
+                                goals={match.goals}
                                 teamColor="#f59e42"
                                 isHomeTeam={false}
                               />
@@ -1772,7 +1762,7 @@ export function GameDetails() {
                                   </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                                <div className="flex flex-col md:flex-row gap-2 mt-4">
                                   <button
                                     className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
                                     onClick={() => finishMatch(match.id, match.teams[0].id)}
@@ -1908,7 +1898,7 @@ export function GameDetails() {
                 <div className="text-sm text-gray-500 mb-2">
                   {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? 'es' : ''} disponível{filteredPlayers.length !== 1 ? 'is' : ''}
                 </div>
-                <ul className="space-y-2 max-h-[400px] overflow-y-auto">
+                <ul className="space-y-2 max-h-[50vh] overflow-y-auto">
                   {filteredPlayers.map((user) => (
                     <li key={user.id}>
                       <button
@@ -1950,6 +1940,115 @@ export function GameDetails() {
                   : 'Nenhum jogador disponível para adicionar.'}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal da Lista de Espera */}
+      {waitingListMatchId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+            <button
+              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+              onClick={() => setWaitingListMatchId(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Lista de Espera</h2>
+
+            {(() => {
+              const match = game?.matches.find(m => m.id === waitingListMatchId);
+              if (!match) return null;
+
+              // Se a partida está em andamento, mostra a lista de espera
+              if (match.status === 'in_progress') {
+                const currentPlayers = match.teams.flatMap(team => team.players);
+                const waitingPlayers = game?.players
+                  .filter(player => !currentPlayers.some(p => p.id === player.id))
+                  .sort((a, b) => {
+                    const timeA = a.arrivalTime instanceof Date ? a.arrivalTime.getTime() : 
+                                a.arrivalTime instanceof Timestamp ? a.arrivalTime.toDate().getTime() : 0;
+                    const timeB = b.arrivalTime instanceof Date ? b.arrivalTime.getTime() : 
+                                b.arrivalTime instanceof Timestamp ? b.arrivalTime.toDate().getTime() : 0;
+                    return timeA - timeB;
+                  }) || [];
+
+                if (waitingPlayers.length === 0) {
+                  return <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>;
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {waitingPlayers.map((player) => (
+                      <div key={player.id} className="flex items-center p-2 rounded-lg bg-gray-50">
+                        <User className="w-5 h-5 text-blue-400 mr-2" />
+                        <span className="flex-1 text-left">{player.name}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // Se a partida está finalizada, mostra quem entrou e saiu
+              const { playersOut, playersIn } = getPlayersNotInNextMatch(match);
+              return (
+                <>
+                  <div className="mb-6">
+                    <div className="font-medium mb-2">Jogadores que saíram</div>
+                    <div className="space-y-2">
+                      {playersOut.length === 0 ? (
+                        <div className="text-gray-400 text-sm">Nenhum jogador saiu.</div>
+                      ) : (
+                        playersOut.map((player) => (
+                          <div key={player.id} className="flex items-center p-2 rounded-lg bg-red-50">
+                            <User className="w-5 h-5 text-red-400 mr-2" />
+                            <span className="flex-1 text-left">{player.name}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                              player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-medium mb-2">Jogadores que entraram</div>
+                    <div className="space-y-2">
+                      {playersIn.length === 0 ? (
+                        <div className="text-gray-400 text-sm">Nenhum jogador entrou.</div>
+                      ) : (
+                        playersIn.map((player) => (
+                          <div key={player.id} className="flex items-center p-2 rounded-lg bg-green-50">
+                            <User className="w-5 h-5 text-green-400 mr-2" />
+                            <span className="flex-1 text-left">{player.name}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                              player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
