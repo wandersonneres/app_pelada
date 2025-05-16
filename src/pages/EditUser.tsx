@@ -107,7 +107,7 @@ export function EditUser() {
     if (!validateForm() || !user) return;
 
     // Verificar permissões
-    if (currentUser?.role !== 'admin' && currentUser?.id !== user.id) {
+    if (currentUser?.role !== 'admin' && currentUser?.username !== user.username) {
       toast({
         title: 'Erro',
         description: 'Você não tem permissão para editar este usuário.',
@@ -120,7 +120,7 @@ export function EditUser() {
 
     setIsLoading(true);
     try {
-      const userRef = doc(db, 'users', user.id);
+      const userRef = doc(db, 'users', userId!);
       await updateDoc(userRef, {
         username,
         email,

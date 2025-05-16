@@ -129,7 +129,12 @@ export function Players() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Jogadores</h1>
-              <p className="text-sm sm:text-base text-gray-500 mt-0.5 sm:mt-1">Gerencie os jogadores da pelada</p>
+              <p className="text-sm sm:text-base text-gray-500 mt-0.5 sm:mt-1">
+                {filteredPlayers.length === players.length 
+                  ? `${players.length} jogador${players.length !== 1 ? 'es' : ''} cadastrado${players.length !== 1 ? 's' : ''}`
+                  : `${filteredPlayers.length} de ${players.length} jogador${players.length !== 1 ? 'es' : ''} encontrado${filteredPlayers.length !== 1 ? 's' : ''}`
+                }
+              </p>
             </div>
             <button
               onClick={() => navigate('/register')}
