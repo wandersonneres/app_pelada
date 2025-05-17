@@ -5,6 +5,9 @@ import { db } from '../config/firebase';
 import { StarRating } from '../components/StarRating';
 import { FaChevronLeft, FaUser, FaEnvelope, FaLock, FaFutbol, FaBirthdayCake, FaStar } from 'react-icons/fa';
 import { useToast } from '@chakra-ui/react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { firebaseConfig } from '../config/firebase';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
@@ -80,22 +83,28 @@ export function Register() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    let secondaryApp;
     try {
-      // Criar documento do usuário no Firestore
+      // Inicializa um app secundário para não deslogar o admin
+      secondaryApp = initializeApp(firebaseConfig, 'Secondary');
+      const secondaryAuth = getAuth(secondaryApp);
+
+      // Cria usuário no Auth do app secundário
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      const uid = userCredential.user.uid;
+
+      // Cria documento do usuário no Firestore (sem senha)
       const usersRef = collection(db, 'users');
-      const newUserRef = await addDoc(usersRef, {
+      await setDoc(doc(usersRef, uid), {
         username: username.toLowerCase(),
         email: email.toLowerCase(),
-        password, // Em produção, isso deve ser criptografado
         role,
         playerInfo,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
 
-      console.log('Usuário criado com ID:', newUserRef.id);
-
-      // Mostrar mensagem de sucesso
+      // Mostra mensagem de sucesso
       toast({
         title: 'Usuário cadastrado',
         description: 'O usuário foi cadastrado com sucesso!',
@@ -105,7 +114,7 @@ export function Register() {
         position: 'top',
       });
 
-      // Redirecionar para a página de jogadores
+      // Redireciona para a página de jogadores
       navigate('/players');
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
@@ -113,6 +122,8 @@ export function Register() {
 
       if (error.code === 'permission-denied') {
         errorMessage = 'Você não tem permissão para cadastrar usuários';
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'Este e-mail já está em uso.';
       }
 
       toast({
@@ -125,6 +136,10 @@ export function Register() {
       });
     } finally {
       setIsLoading(false);
+      // Remove o app secundário para liberar recursos
+      if (secondaryApp) {
+        try { await secondaryApp.delete(); } catch {}
+      }
     }
   };
 
