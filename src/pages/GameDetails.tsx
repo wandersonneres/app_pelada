@@ -579,12 +579,12 @@ export function GameDetails() {
             .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
             .slice(0, 18);
 
-          // Jogadores que não estão jogando vão para a lista de espera
+        // Jogadores que não estão jogando vão para a lista de espera
           const playingIds = playersForFirstMatch.map(p => p.id);
-          waitingList = game.players
-            .filter(p => !playingIds.includes(p.id))
+        waitingList = game.players
+          .filter(p => !playingIds.includes(p.id))
             .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
-            .map(p => p.id);
+          .map(p => p.id);
         }
 
         console.log('Jogadores selecionados para primeira partida:', 
@@ -1582,20 +1582,20 @@ export function GameDetails() {
                       <div className="flex flex-col gap-2">
                         {/* Primeira linha: Status e Ver Detalhes */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${match.status === 'finished' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
                               {match.status === 'finished' ? 'Finalizada' : 'Em andamento'}
                             </span>
+                        </div>
+                        {!isExpanded && (                         
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
+                            <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
+                            <span className="text-gray-400">x</span>
+                            <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
+                            <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
                           </div>
-                          {!isExpanded && (
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
-                              <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
-                              <span className="text-gray-400">x</span>
-                              <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
-                              <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
-                            </div>
-                          )}
+                        )}
                           <button
                               className="px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 transition"
                               onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
@@ -1607,27 +1607,27 @@ export function GameDetails() {
                         {/* Botões de ação (só aparecem quando expandido) */}
                         {isExpanded && (
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              className="p-2 rounded-full hover:bg-gray-200 transition"
-                              title="Ver lista de espera"
-                              onClick={() => setWaitingListMatchId(match.id)}
-                            >
-                              <Users className="w-5 h-5 text-blue-500" />
-                            </button>
-                            <button
-                              className="p-2 rounded-full hover:bg-red-100 transition"
-                              title="Excluir partida"
+                          <button
+                            className="p-2 rounded-full hover:bg-gray-200 transition"
+                            title="Ver lista de espera"
+                            onClick={() => setWaitingListMatchId(match.id)}
+                          >
+                            <Users className="w-5 h-5 text-blue-500" />
+                          </button>
+                          <button
+                            className="p-2 rounded-full hover:bg-red-100 transition"
+                            title="Excluir partida"
                               onClick={() => {
                                 if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
                                   deleteMatch(match.id);
                                 }
                               }}
-                            >
-                              <Trash2 className="w-5 h-5 text-red-500" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                          >
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          </button>
+                              </div>
+                            )}
+                              </div>
 
                       {/* Conteúdo expandido */}
                       <AnimatePresence initial={false}>
@@ -1656,19 +1656,19 @@ export function GameDetails() {
                                 team={match.teams[1]}
                                 formation={match.teams[1].formation?.tactical || '4-3-2'}
                                 onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[1].id, newFormation)}
-                                goals={match.goals}
+                                    goals={match.goals}
                                 teamColor="#f59e42"
                                 isHomeTeam={false}
                               />
                             </div>
                             {/* MatchTimer apenas para partidas em progresso */}
-                            {match.status === 'in_progress' && (
-                              <MatchTimer
-                                teamA={match.teams[0]}
-                                teamB={match.teams[1]}
-                                isFirstMatch={idx === 0}
-                                onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
-                              />
+                                          {match.status === 'in_progress' && (
+                          <MatchTimer
+                            teamA={match.teams[0]}
+                            teamB={match.teams[1]}
+                                  isFirstMatch={idx === 0}
+                                  onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
+                                />
                             )}
 
                             {/* Lista de jogadores dos times - visível em partidas em progresso e finalizadas */}
@@ -1710,18 +1710,18 @@ export function GameDetails() {
                                                 </span>
                                               )}
                                               {match.status === 'in_progress' && (
-                                                <button
-                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                  title="Trocar jogador"
-                                                  onClick={() => {
-                                                    setIsPlayerSwapOpen(true);
-                                                    setSelectedPlayer(player);
+                                              <button
+                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                title="Trocar jogador"
+                                                onClick={() => {
+                                                setIsPlayerSwapOpen(true);
+                                                  setSelectedPlayer(player);
                                                     setSelectedTeam(match.teams[0]);
-                                                    setSelectedMatch(match);
-                                                  }}
-                                                >
-                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                                </button>
+                                                  setSelectedMatch(match);
+                                                }}
+                                              >
+                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                              </button>
                                               )}
                                             </li>
                                           );
@@ -1763,18 +1763,18 @@ export function GameDetails() {
                                                 </span>
                                               )}
                                               {match.status === 'in_progress' && (
-                                                <button
-                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                  title="Trocar jogador"
-                                                  onClick={() => {
-                                                    setIsPlayerSwapOpen(true);
-                                                    setSelectedPlayer(player);
+                                              <button
+                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                title="Trocar jogador"
+                            onClick={() => {
+                                                  setIsPlayerSwapOpen(true);
+                                                  setSelectedPlayer(player);
                                                     setSelectedTeam(match.teams[1]);
-                                                    setSelectedMatch(match);
-                                                  }}
-                                                >
-                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                                </button>
+                              setSelectedMatch(match);
+                                                }}
+                                              >
+                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                              </button>
                                               )}
                                             </li>
                                           );
@@ -1786,22 +1786,22 @@ export function GameDetails() {
                                 {/* Botões de finalização - apenas para partidas em andamento */}
                                 {match.status === 'in_progress' && (
                                   <div className="flex flex-col md:flex-row gap-2 mt-4">
-                                    <button
-                                      className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-                                      onClick={() => finishMatch(match.id, match.teams[0].id)}
-                                    >
-                                      {match.teams[0]?.name} Venceu
-                                    </button>
-                                    <button
-                                      className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
-                                      onClick={() => finishMatch(match.id, match.teams[1].id)}
-                                    >
-                                      {match.teams[1]?.name} Venceu
-                                    </button>
-                                  </div>
+                                  <button
+                                    className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                                    onClick={() => finishMatch(match.id, match.teams[0].id)}
+                                  >
+                                    {match.teams[0]?.name} Venceu
+                                  </button>
+                                  <button
+                                    className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
+                                    onClick={() => finishMatch(match.id, match.teams[1].id)}
+                                  >
+                                    {match.teams[1]?.name} Venceu
+                                  </button>
+                                </div>
                                 )}
-                              </>
-                            )}
+                  </>
+                )}
                           </motion.div>
                         )}
                       </AnimatePresence>

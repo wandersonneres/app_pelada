@@ -55,7 +55,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {games.map(game => (
             <GameCard key={game.id} game={game} />
-          ))}
+              ))}
         </div>
       </div>
     </div>
