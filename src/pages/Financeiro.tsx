@@ -4,7 +4,7 @@ import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, ChevronLeft, Copy, Check } from 'lucide-react';
+import { Calendar, ChevronLeft, Copy, Check, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Payment {
@@ -372,45 +372,77 @@ export function Financeiro() {
           <div className="sm:hidden">
             <div className="grid grid-cols-4 gap-3">
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Mês</label>
-                <select 
-                  value={selectedMonth} 
-                  onChange={e => setSelectedMonth(Number(e.target.value))} 
-                  className="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[...Array(12)].map((_, i) => (
-                    <option key={i+1} value={i+1}>{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Mês
+                </label>
+                <div className="relative">
+                  <select 
+                    value={selectedMonth} 
+                    onChange={e => setSelectedMonth(Number(e.target.value))} 
+                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </div>
+                </div>
               </div>
 
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Ano</label>
-                <select 
-                  value={selectedYear} 
-                  onChange={e => setSelectedYear(Number(e.target.value))} 
-                  className="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[2023, 2024, 2025].map(y => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Ano
+                </label>
+                <div className="relative">
+                  <select 
+                    value={selectedYear} 
+                    onChange={e => setSelectedYear(Number(e.target.value))} 
+                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                  >
+                    {[2025,2026,2027,2028,2029,2030].map(y => (
+                      <option key={y} value={y} className="py-1">{y}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </div>
+                </div>
               </div>
 
-              <div className="col-span-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-                <select 
-                  value={statusFilter} 
-                  onChange={e => setStatusFilter(e.target.value as any)} 
-                  className="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Todos</option>
-                  <option value="paid">Pagos</option>
-                  <option value="pending">Pendentes</option>
-                </select>
+              <div className="col-span-4">
+                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  Status
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                      ${statusFilter === 'paid' 
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                  >
+                    Pagos
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                      ${statusFilter === 'pending' 
+                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                  >
+                    Pendentes
+                  </button>
+                </div>
               </div>
 
-              <div className="col-span-1 flex items-end">
+              <div className="col-span-4 flex items-end">
                 <button
                   onClick={copyToClipboard}
                   className="w-full flex items-center justify-center gap-2 px-2 py-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700"
@@ -430,42 +462,74 @@ export function Financeiro() {
             <div className="flex items-end gap-4">
               <div className="flex gap-4 flex-1">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mês</label>
-                  <select 
-                    value={selectedMonth} 
-                    onChange={e => setSelectedMonth(Number(e.target.value))} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i+1} value={i+1}>{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Mês
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={selectedMonth} 
+                      onChange={e => setSelectedMonth(Number(e.target.value))} 
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
-                  <select 
-                    value={selectedYear} 
-                    onChange={e => setSelectedYear(Number(e.target.value))} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {[2023, 2024, 2025].map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Ano
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={selectedYear} 
+                      onChange={e => setSelectedYear(Number(e.target.value))} 
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      {[2025,2026,2027,2028,2029,2030].map(y => (
+                        <option key={y} value={y} className="py-1">{y}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="w-32">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select 
-                    value={statusFilter} 
-                    onChange={e => setStatusFilter(e.target.value as any)} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">Todos</option>
-                    <option value="paid">Pagos</option>
-                    <option value="pending">Pendentes</option>
-                  </select>
+                <div className="w-40">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Check className="w-4 h-4 text-blue-600" />
+                    Status
+                  </label>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                        ${statusFilter === 'paid' 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Pagos
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                        ${statusFilter === 'pending' 
+                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Pendentes
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -493,42 +557,74 @@ export function Financeiro() {
             <div className="flex items-end justify-between gap-4">
               <div className="flex gap-4">
                 <div className="w-40">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mês</label>
-                  <select 
-                    value={selectedMonth} 
-                    onChange={e => setSelectedMonth(Number(e.target.value))} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i+1} value={i+1}>{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Mês
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={selectedMonth} 
+                      onChange={e => setSelectedMonth(Number(e.target.value))} 
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
-                  <select 
-                    value={selectedYear} 
-                    onChange={e => setSelectedYear(Number(e.target.value))} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {[2023, 2024, 2025].map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Ano
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={selectedYear} 
+                      onChange={e => setSelectedYear(Number(e.target.value))} 
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      {[2025,2026,2027,2028,2029,2030].map(y => (
+                        <option key={y} value={y} className="py-1">{y}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="w-32">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select 
-                    value={statusFilter} 
-                    onChange={e => setStatusFilter(e.target.value as any)} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">Todos</option>
-                    <option value="paid">Pagos</option>
-                    <option value="pending">Pendentes</option>
-                  </select>
+                <div className="w-40">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Check className="w-4 h-4 text-blue-600" />
+                    Status
+                  </label>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                        ${statusFilter === 'paid' 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Pagos
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                        ${statusFilter === 'pending' 
+                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Pendentes
+                    </button>
+                  </div>
                 </div>
               </div>
 
