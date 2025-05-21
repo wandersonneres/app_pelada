@@ -145,7 +145,7 @@ export function EditUser() {
   }
 
   return (
-    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-4 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
@@ -154,14 +154,14 @@ export function EditUser() {
         >
           <FaChevronLeft className="w-5 h-5 text-gray-500" />
         </button>
-        <h1 className="text-2xl font-bold text-center flex-1">Editar Usuário</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-center flex-1">Editar Usuário</h1>
         <div className="w-8" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informações Básicas */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
             <FaUser className="w-4 h-4 text-blue-600" />
             Informações Básicas
           </h2>
@@ -227,7 +227,7 @@ export function EditUser() {
 
         {/* Informações do Jogador */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
             <FaFutbol className="w-4 h-4 text-blue-600" />
             Informações do Jogador
           </h2>
@@ -314,23 +314,25 @@ export function EditUser() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <FaUserEdit className="w-4 h-4" />
-              Salvar Alterações
-            </>
-          )}
-        </button>
+        <div className="sticky bottom-0 left-0 right-0 bg-white border-t p-4 -mx-4 sm:mx-0 sm:border-0 sm:p-0">
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <FaUserEdit className="w-4 h-4" />
+                Salvar Alterações
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
