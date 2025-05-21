@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection, setDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
 import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, Eye, ArrowLeftRight, User, Plus, Circle, ArrowUpRight, CircleDot, Target, Footprints } from 'lucide-react';
@@ -19,23 +19,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
   isOpen: boolean; 
   onClose: () => void; 
-  onAddPlayer: (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => void; 
+  onAddPlayer: (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50', paymentType: 'mensalista' | 'diarista') => void; 
   isJoining: boolean;
 }) {
   const [playerName, setPlayerName] = useState('');
   const [playerPosition, setPlayerPosition] = useState<'defesa' | 'meio' | 'ataque'>('meio');
   const [playerSkillLevel, setPlayerSkillLevel] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [playerAgeGroup, setPlayerAgeGroup] = useState<'15-20' | '21-30' | '31-40' | '41-50' | '+50'>('21-30');
+  const [playerPaymentType, setPlayerPaymentType] = useState<'mensalista' | 'diarista'>('mensalista');
 
   const handleSubmit = useCallback(() => {
     if (playerName.trim()) {
-      onAddPlayer(playerName.trim(), playerPosition, playerSkillLevel, playerAgeGroup);
+      onAddPlayer(playerName.trim(), playerPosition, playerSkillLevel, playerAgeGroup, playerPaymentType);
       setPlayerName('');
       setPlayerPosition('meio');
       setPlayerSkillLevel(3);
       setPlayerAgeGroup('21-30');
     }
-  }, [playerName, playerPosition, playerSkillLevel, playerAgeGroup, onAddPlayer]);
+  }, [playerName, playerPosition, playerSkillLevel, playerAgeGroup, playerPaymentType, onAddPlayer]);
 
   const handleSkillChange = (value: number) => {
     setPlayerSkillLevel(value as 1 | 2 | 3 | 4 | 5);
@@ -90,6 +91,21 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
                   onClick={() => setPlayerAgeGroup(age as any)}
                 >
                   {age} anos
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Tipo de Pagamento</label>
+            <div className="grid grid-cols-2 gap-2">
+              {['mensalista', 'diarista'].map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`px-3 py-2 rounded-lg border ${playerPaymentType === type ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  onClick={() => setPlayerPaymentType(type as any)}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>
               ))}
             </div>
@@ -224,7 +240,87 @@ export function GameDetails() {
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [waitingListMatchId, setWaitingListMatchId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(''); // Novo estado para o termo de busca
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDiaristaModal, setShowDiaristaModal] = useState(false);
+  const [selectedDiarista, setSelectedDiarista] = useState<{id: string, name: string} | null>(null);
+  const [diaristaPaymentValue, setDiaristaPaymentValue] = useState(30);
+  const [diaristaPayments, setDiaristaPayments] = useState<Record<string, { 
+    value: number; 
+    date: string;
+    playerName: string;
+    matchId: string;
+  }>>({});
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchDiaristaPayments = async () => {
+      const paymentsRef = collection(db, 'diaristaPayments');
+      const q = query(
+        paymentsRef,
+        where('gameId', '==', id),
+        where('status', '==', 'paid')
+      );
+      const snapshot = await getDocs(q);
+      const payments: Record<string, { value: number; date: string; playerName: string; matchId: string }> = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        payments[data.playerId] = {
+          value: data.value,
+          date: data.date,
+          playerName: data.playerName,
+          matchId: data.matchId
+        };
+      });
+      setDiaristaPayments(payments);
+    };
+    fetchDiaristaPayments();
+  }, [id]);
+
+  const handleUndoDiaristaPayment = async (playerId: string) => {
+    if (!id) return;
+    
+    try {
+      const paymentsRef = collection(db, 'diaristaPayments');
+      const q = query(
+        paymentsRef,
+        where('playerId', '==', playerId),
+        where('gameId', '==', id),
+        where('status', '==', 'paid')
+      );
+      const snapshot = await getDocs(q);
+      
+      // Deleta o documento do pagamento
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      // Atualiza o estado local
+      setDiaristaPayments(prev => {
+        const newPayments = { ...prev };
+        delete newPayments[playerId];
+        return newPayments;
+      });
+
+      setToastMsg({ type: 'success', message: 'Pagamento desfeito com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao desfazer pagamento:', error);
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao desfazer o pagamento.' });
+    }
+  };
+
+  const handleDiaristaPayment = (userId: string, name: string) => {
+    if (diaristaPayments[userId]) {
+      // Se já está pago, pergunta se quer desfazer
+      if (window.confirm(`Deseja desfazer o pagamento de R$ ${diaristaPayments[userId].value.toFixed(2)} deste diarista?`)) {
+        handleUndoDiaristaPayment(userId);
+      }
+    } else {
+      setSelectedDiarista({ id: userId, name });
+      setShowDiaristaModal(true);
+    }
+  };
 
   const handleFormationChange = async (matchId: string, teamId: string, newFormation: string) => {
     if (!game || !id) return;
@@ -392,7 +488,7 @@ export function GameDetails() {
     }
   };
 
-  const handleJoinGame = useCallback(async (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => {
+  const handleJoinGame = useCallback(async (name: string, position: 'defesa' | 'meio' | 'ataque', skillLevel: 1 | 2 | 3 | 4 | 5, ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50', paymentType: 'mensalista' | 'diarista') => {
     if (!game || !id || !name.trim()) return;
 
     try {
@@ -418,6 +514,7 @@ export function GameDetails() {
         arrivalOrder: game.players.length + 1,
         skillLevel,
         ageGroup,
+        paymentType,
       };
 
       // Adiciona o novo jogador à lista existente
@@ -442,14 +539,18 @@ export function GameDetails() {
     if (!game || !id) return;
 
     try {
+      // Remove o jogador
       const updatedPlayers = game.players.filter(p => p.id !== playerId);
+      // Reordena e atualiza arrivalOrder sequencialmente
+      const reorderedPlayers = updatedPlayers
+        .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+        .map((p, idx) => ({ ...p, arrivalOrder: idx + 1 }));
       if (!id) return;
       const gameRef = doc(db, 'games', id);
       await updateDoc(gameRef, {
-        players: updatedPlayers,
+        players: reorderedPlayers,
         updatedAt: serverTimestamp(),
       });
-
       setToastMsg({ type: 'success', message: 'Jogador removido da lista com sucesso.' });
     } catch (error) {
       console.error('Erro ao remover jogador:', error);
@@ -536,6 +637,35 @@ export function GameDetails() {
         return;
       }
 
+      // 1. Definir o horário de corte
+      const prioridadeHorario = convertTimestampToDate(game.date);
+      prioridadeHorario.setHours(10, 42, 0, 0);
+
+      // 2. Identificar IDs de quem já jogou pelo menos uma partida
+      const jogadoresJaJogaram = (game.matches || []).flatMap(m => m.teams.flatMap(t => t.players.map(p => p.id)));
+
+      // 3. Mensalistas prioritários: chegaram até 8:35 e ainda não jogaram
+      const mensalistasPrioritarios = game.players.filter(p =>
+        p.paymentType === 'mensalista' &&
+        convertTimestampToDate(p.arrivalTime) <= prioridadeHorario &&
+        !jogadoresJaJogaram.includes(p.id)
+      );
+      const mensalistasOrdenados = [...mensalistasPrioritarios].sort((a, b) => convertTimestampToDate(a.arrivalTime).getTime() - convertTimestampToDate(b.arrivalTime).getTime());
+
+      // 4. Preencher o restante das vagas com os demais jogadores por ordem de chegada
+      const idsPrioritarios = new Set(mensalistasOrdenados.map(p => p.id));
+      const outros = game.players.filter(p => !idsPrioritarios.has(p.id));
+      outros.sort((a, b) => convertTimestampToDate(a.arrivalTime).getTime() - convertTimestampToDate(b.arrivalTime).getTime());
+
+      // 5. Lista final de prioridade para entrar
+      const jogadoresParaEntrar = [...mensalistasOrdenados, ...outros];
+
+      // 6. Use jogadoresParaEntrar.slice(0, N) para montar playersForFirstMatch ou nextTeamPlayers
+      // (N = 18 ou menos, conforme já implementado)
+      // Exemplo para o primeiro jogo:
+      // playersForFirstMatch = jogadoresParaEntrar.slice(0, totalPlayersInMatch);
+      // Para jogos seguintes, use para montar nextTeamPlayers
+
       let waitingList = (game.waitingList && game.waitingList.length > 0)
         ? [...game.waitingList]
         : game.players
@@ -575,9 +705,7 @@ export function GameDetails() {
           console.log(`Adaptação para ${totalPlayers} jogadores: ${maxPlayersPerTeam} por time`);
         } else {
           // Comportamento normal para 18+ jogadores
-          playersForFirstMatch = [...game.players]
-            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
-            .slice(0, 18);
+          playersForFirstMatch = jogadoresParaEntrar.slice(0, 18);
 
         // Jogadores que não estão jogando vão para a lista de espera
           const playingIds = playersForFirstMatch.map(p => p.id);
@@ -1256,6 +1384,7 @@ export function GameDetails() {
         arrivalOrder: game.players.length + 1,
         skillLevel: playerInfo.skillLevel,
         ageGroup: playerInfo.ageGroup,
+        paymentType: playerInfo.paymentType || 'mensalista',
       };
       const updatedPlayers = [...game.players, newPlayer];
       const gameRef = doc(db, 'games', id);
@@ -1333,6 +1462,71 @@ export function GameDetails() {
       player.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+  const confirmDiaristaPayment = async () => {
+    if (!selectedDiarista || !id) return;
+    
+    try {
+      const paymentRef = doc(collection(db, 'diaristaPayments'));
+      const currentMatch = game?.matches?.find(m => m.status === 'in_progress');
+      
+      const paymentData = {
+        id: paymentRef.id,
+        playerId: selectedDiarista.id,
+        playerName: selectedDiarista.name,
+        gameId: id,
+        matchId: currentMatch?.id || 'pending',
+        date: new Date().toISOString(),
+        value: diaristaPaymentValue,
+        status: 'paid',
+        paidAt: new Date().toISOString(),
+      };
+
+      await setDoc(paymentRef, paymentData);
+
+      // Atualiza o estado local
+      setDiaristaPayments(prev => ({
+        ...prev,
+        [selectedDiarista.id]: {
+          value: diaristaPaymentValue,
+          date: paymentData.date,
+          playerName: selectedDiarista.name,
+          matchId: paymentData.matchId
+        }
+      }));
+
+      setToastMsg({ type: 'success', message: 'Pagamento registrado com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao registrar pagamento:', error);
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao registrar o pagamento.' });
+    } finally {
+      setShowDiaristaModal(false);
+      setSelectedDiarista(null);
+    }
+  };
+
+  const handleFinishGame = async () => {
+    if (!game || !id) return;
+
+    try {
+      const newStatus = game.status === 'finished' ? 'waiting' : 'finished';
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+
+      setToastMsg({ 
+        type: 'success', 
+        message: newStatus === 'finished' 
+          ? 'Pelada finalizada com sucesso.' 
+          : 'Pelada reaberta com sucesso.' 
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar status da pelada:', error);
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao atualizar o status da pelada.' });
+    }
+  };
+
   // Layout principal
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -1351,34 +1545,38 @@ export function GameDetails() {
           </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto justify-end">
-          <button
-            onClick={() => {/* lógica de finalizar/reabrir pelada */}}
-            className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              game?.status === 'finished'
-                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                : 'bg-green-100 text-green-800 hover:bg-green-200'
-            }`}
-            aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
-          >
-            <Check className="w-4 h-4 mr-2" />
-            {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
-          </button>
-          <button
-            onClick={() => navigate(`/game/${game?.id}/edit`)}
-            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-            aria-label="Editar pelada"
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Editar
-          </button>
-          <button
-            onClick={() => setIsDeleteDialogOpen(true)}
-            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
-          aria-label="Excluir pelada"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Excluir
-          </button>
+          {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
+            <>
+              <button
+                onClick={handleFinishGame}
+                className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  game?.status === 'finished'
+                    ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                }`}
+                aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
+              </button>
+              <button
+                onClick={() => navigate(`/game/${game?.id}/edit`)}
+                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                aria-label="Editar pelada"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Editar
+              </button>
+              <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                aria-label="Excluir pelada"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1480,24 +1678,26 @@ export function GameDetails() {
           <>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Jogadores Confirmados</h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowAddPlayerModal(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                  title="Adicionar Jogador"
-                >
-                  <Plus className="w-4 h-3" />
-                  <span className="hidden md:inline">Adicionar Jogador</span>
-                </button>
-                <button
-                  onClick={handleOpenSelectPlayerModal}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                  title="Selecionar Jogador"
-                >
-                  <User className="w-4 h-3" />
-                  <span className="hidden md:inline">Selecionar Jogador</span>
-                </button>
-              </div>
+              {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowAddPlayerModal(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                    title="Adicionar Jogador"
+                  >
+                    <Plus className="w-4 h-3" />
+                    <span className="hidden lg:inline">Adicionar Jogador</span>
+                  </button>
+                  <button
+                    onClick={handleOpenSelectPlayerModal}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                    title="Selecionar Jogador"
+                  >
+                    <User className="w-4 h-3" />
+                    <span className="hidden lg:inline">Selecionar Jogador</span>
+                  </button>
+                </div>
+              )}
             </div>
                 {game.players && game.players.length > 0 ? (
               <ul className="divide-y divide-gray-100">
@@ -1512,7 +1712,15 @@ export function GameDetails() {
                             {/* Ordem */}
                             <span className="w-7 text-xs text-center font-mono text-gray-400">{String(player.arrivalOrder).padStart(2, '0')}</span>
                             {/* Nome */}
-                            <span className="font-medium text-gray-800 text-sm truncate max-w-[200px] md:max-w-[250px]">{player.name}</span>
+                            <span className="font-medium text-gray-800 text-sm truncate max-w-[200px] md:max-w-[250px]">
+                              {player.name}
+                              {/* <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${player.paymentType === 'mensalista' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{player.paymentType === 'mensalista' ? 'Mensalista' : 'Diarista'}</span> */}
+                            </span>
+                            {/* {player.paymentType === 'diarista' && diaristaPayments[player.id] && (
+                              <span className="ml-2 px-2 py-0.5 rounded-lg text-xs font-medium bg-green-100 text-green-800" title={`Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)}`}>
+                                Pago ✓
+                              </span>
+                            )} */}
                           </div>
                           <div className="flex gap-2 mt-0.5 ml-7">
                             {/* Estrelas */}
@@ -1525,6 +1733,19 @@ export function GameDetails() {
                             </span>
                             {/* Idade */}
                             <span className="text-xs text-gray-400">{player.ageGroup} anos</span>
+                            <span className="text-xs text-gray-400 ml-2">{player.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</span>
+                            {player.paymentType === 'diarista' && (
+                              <button
+                                onClick={() => handleDiaristaPayment(player.id, player.name)}
+                                className={`ml-2 px-2 py-0.5 rounded-lg text-xs font-medium ${
+                                  diaristaPayments[player.id]
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                } transition-colors`}
+                              >
+                                {diaristaPayments[player.id] ? 'Pago ✓' : 'Pagou'}
+                              </button>
+                            )}
                           </div>
                         </div>
                         {/* Bloco direito: posição e botão */}
@@ -1536,6 +1757,7 @@ export function GameDetails() {
                             className="p-2 rounded hover:bg-gray-100 flex items-center justify-center"
                             onClick={() => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
                             title="Editar/Remover"
+                            style={{ display: (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' ? 'flex' : 'none' }}
                           >
                             <span className="text-lg leading-none">⋮</span>
                           </button>
@@ -1550,15 +1772,31 @@ export function GameDetails() {
             {/* Modal de opções do jogador */}
       <PlayerOptionsModal
         isOpen={isPlayerOptionsOpen}
-              onClose={() => { setIsPlayerOptionsOpen(false); setSelectedPlayer(null); }}
+        onClose={() => { setIsPlayerOptionsOpen(false); setSelectedPlayer(null); }}
         player={selectedPlayer}
         totalPlayers={game.players.length}
-              onUpdatePosition={(position) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { position }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
-              onUpdateArrivalOrder={(order) => { if (selectedPlayer) { handleUpdateArrivalOrder(selectedPlayer.id, order); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
-              onUpdateSkillLevel={(skillLevel) => { if (selectedPlayer) { handleUpdateSkillLevel(selectedPlayer.id, skillLevel); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
-              onUpdateAgeGroup={(ageGroup) => { if (selectedPlayer) { handleUpdateAgeGroup(selectedPlayer.id, ageGroup); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
-              onRemovePlayer={() => { if (selectedPlayer) { handleRemovePlayer(selectedPlayer.id); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
-                      />
+        onUpdatePosition={(position) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { position }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+        onUpdateArrivalOrder={(order) => { if (selectedPlayer) { handleUpdateArrivalOrder(selectedPlayer.id, order); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+        onUpdateSkillLevel={(skillLevel) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { skillLevel }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+        onUpdateAgeGroup={(ageGroup) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { ageGroup }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+        onUpdatePaymentType={(paymentType) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { paymentType }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+        onRemovePlayer={() => { if (selectedPlayer) { handleRemovePlayer(selectedPlayer.id); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
+        onDiaristaPayment={() => { 
+          if (selectedPlayer) { 
+            if (diaristaPayments[selectedPlayer.id]) {
+              if (window.confirm(`Deseja desfazer o pagamento de R$ ${diaristaPayments[selectedPlayer.id].value.toFixed(2)} deste diarista?`)) {
+                handleUndoDiaristaPayment(selectedPlayer.id);
+              }
+            } else {
+              setSelectedDiarista({ id: selectedPlayer.id, name: selectedPlayer.name });
+              setShowDiaristaModal(true);
+            }
+            setIsPlayerOptionsOpen(false);
+            setSelectedPlayer(null);
+          }
+        }}
+        isDiaristaPaid={selectedPlayer ? !!diaristaPayments[selectedPlayer.id] : false}
+      />
                     </>
                   )}
 
@@ -1617,11 +1855,12 @@ export function GameDetails() {
                           <button
                             className="p-2 rounded-full hover:bg-red-100 transition"
                             title="Excluir partida"
-                              onClick={() => {
-                                if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
-                                  deleteMatch(match.id);
-                                }
-                              }}
+                            onClick={() => {
+                              if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
+                                deleteMatch(match.id);
+                              }
+                            }}
+                            style={{ display: (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' ? 'block' : 'none' }}
                           >
                             <Trash2 className="w-5 h-5 text-red-500" />
                           </button>
@@ -1709,19 +1948,19 @@ export function GameDetails() {
                                                   <Footprints className="w-3 h-3" /> {stats.assists}
                                                 </span>
                                               )}
-                                              {match.status === 'in_progress' && (
-                                              <button
-                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                title="Trocar jogador"
-                                                onClick={() => {
-                                                setIsPlayerSwapOpen(true);
-                                                  setSelectedPlayer(player);
+                                              {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
+                                                <button
+                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                  title="Trocar jogador"
+                                                  onClick={() => {
+                                                    setIsPlayerSwapOpen(true);
+                                                    setSelectedPlayer(player);
                                                     setSelectedTeam(match.teams[0]);
-                                                  setSelectedMatch(match);
-                                                }}
-                                              >
-                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                              </button>
+                                                    setSelectedMatch(match);
+                                                  }}
+                                                >
+                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                                </button>
                                               )}
                                             </li>
                                           );
@@ -1762,19 +2001,19 @@ export function GameDetails() {
                                                   <Footprints className="w-3 h-3" /> {stats.assists}
                                                 </span>
                                               )}
-                                              {match.status === 'in_progress' && (
-                                              <button
-                                                className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                title="Trocar jogador"
-                            onClick={() => {
-                                                  setIsPlayerSwapOpen(true);
-                                                  setSelectedPlayer(player);
+                                              {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
+                                                <button
+                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
+                                                  title="Trocar jogador"
+                                                  onClick={() => {
+                                                    setIsPlayerSwapOpen(true);
+                                                    setSelectedPlayer(player);
                                                     setSelectedTeam(match.teams[1]);
-                              setSelectedMatch(match);
-                                                }}
-                                              >
-                                                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                              </button>
+                                                    setSelectedMatch(match);
+                                                  }}
+                                                >
+                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
+                                                </button>
                                               )}
                                             </li>
                                           );
@@ -1784,21 +2023,21 @@ export function GameDetails() {
                                 </div>
 
                                 {/* Botões de finalização - apenas para partidas em andamento */}
-                                {match.status === 'in_progress' && (
+                                {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
                                   <div className="flex flex-col md:flex-row gap-2 mt-4">
-                                  <button
-                                    className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-                                    onClick={() => finishMatch(match.id, match.teams[0].id)}
-                                  >
-                                    {match.teams[0]?.name} Venceu
-                                  </button>
-                                  <button
-                                    className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
-                                    onClick={() => finishMatch(match.id, match.teams[1].id)}
-                                  >
-                                    {match.teams[1]?.name} Venceu
-                                  </button>
-                                </div>
+                                    <button
+                                      className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+                                      onClick={() => finishMatch(match.id, match.teams[0].id)}
+                                    >
+                                      {match.teams[0]?.name} Venceu
+                                    </button>
+                                    <button
+                                      className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
+                                      onClick={() => finishMatch(match.id, match.teams[1].id)}
+                                    >
+                                      {match.teams[1]?.name} Venceu
+                                    </button>
+                                  </div>
                                 )}
                   </>
                 )}
@@ -1813,10 +2052,10 @@ export function GameDetails() {
               <div className="text-gray-500 text-center py-8">Nenhuma partida registrada ainda.</div>
             )}
             {/* Botão Gerar Nova Partida */}
-            {selectedTab === 'partidas' && game.status !== 'finished' && (
+            {selectedTab === 'partidas' && game.status !== 'finished' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
               <div className="flex justify-center mt-8">
                 <button
-                    onClick={generateTeams}
+                  onClick={generateTeams}
                   className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   disabled={isGeneratingTeams || game.players.length < 4 || (game.matches && game.matches.length > 0 && game.matches[game.matches.length - 1].status !== 'finished')}
                 >
@@ -1826,10 +2065,10 @@ export function GameDetails() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
                   )}
-                    Gerar Nova Partida
+                  Gerar Nova Partida
                 </button>
               </div>
-              )}
+            )}
           </div>
         )}
 
@@ -2073,6 +2312,79 @@ export function GameDetails() {
                 </>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Pagamento do Diarista */}
+      {showDiaristaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+            <button
+              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+              onClick={() => setShowDiaristaModal(false)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Confirmar Pagamento</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nome do Diarista</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={selectedDiarista?.name || ''}
+                  readOnly
+                  placeholder="Nome do diarista"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="w-full border rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      setDiaristaPaymentValue(value === '' ? 0 : Number(value));
+                    }}
+                    placeholder="30"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowDiaristaModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setDiaristaPaymentValue(0);
+                  confirmDiaristaPayment();
+                }}
+                className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                type="button"
+                disabled={!selectedDiarista}
+              >
+                Gratis
+              </button>
+              <button
+                onClick={confirmDiaristaPayment}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                disabled={!selectedDiarista}
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}

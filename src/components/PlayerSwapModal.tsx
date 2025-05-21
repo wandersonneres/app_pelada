@@ -1,3 +1,9 @@
+// Removendo a importação do Chakra UI
+// import { useToast } from '@chakra-ui/react';
+
+// Substituindo por classes do Tailwind CSS
+// Exemplo: <div className="bg-blue-500 text-white p-4 rounded">...</div>
+
 import {
   Modal,
   ModalOverlay,

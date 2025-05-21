@@ -1,6 +1,5 @@
-import { Box, Flex, Text, Icon } from '@chakra-ui/react';
+// import { Box, Flex, Text, Icon } from '@chakra-ui/react';
 import { useState } from 'react';
-import { StarIcon } from '@chakra-ui/icons';
 
 interface StarRatingProps {
   value: number;
@@ -9,55 +8,61 @@ interface StarRatingProps {
   showLabel?: boolean;
 }
 
+const sizes = {
+  sm: 24,
+  md: 32,
+  lg: 40,
+};
+
+const getLabel = (level: number) => {
+  switch (level) {
+    case 1: return "Iniciante";
+    case 2: return "Básico";
+    case 3: return "Intermediário";
+    case 4: return "Avançado";
+    case 5: return "Profissional";
+    default: return "";
+  }
+};
+
 export function StarRating({ value, onChange, size = 'md', showLabel = true }: StarRatingProps) {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
-
-  const getSize = () => {
-    switch (size) {
-      case 'sm': return '1.5rem';
-      case 'md': return '2rem';
-      case 'lg': return '2.5rem';
-      default: return '2rem';
-    }
-  };
-
-  const getLabel = (level: number) => {
-    switch (level) {
-      case 1: return "Iniciante";
-      case 2: return "Básico";
-      case 3: return "Intermediário";
-      case 4: return "Avançado";
-      case 5: return "Profissional";
-      default: return "";
-    }
-  };
+  const starSize = sizes[size] || sizes.md;
 
   return (
-    <Box>
-      <Flex gap={1} justify="center">
+    <div className="flex flex-col items-center select-none">
+      <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((level) => (
-          <Box
+          <button
             key={level}
-            as="button"
+            type="button"
+            aria-label={`Selecionar nível ${level}`}
+            tabIndex={0}
             onClick={() => onChange(level)}
             onMouseEnter={() => setHoverValue(level)}
             onMouseLeave={() => setHoverValue(null)}
-            fontSize={getSize()}
-            color={level <= (hoverValue || value) ? "yellow.400" : "gray.300"}
-            transition="color 0.2s"
-            cursor="pointer"
-            type="button"
-            p={1}
+            className="focus:outline-none"
+            style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0, cursor: 'pointer' }}
           >
-            <Icon as={StarIcon} boxSize={getSize()} />
-          </Box>
+            <svg
+              width={starSize}
+              height={starSize}
+              viewBox="0 0 24 24"
+              fill={(hoverValue || value) >= level ? '#facc15' : '#e5e7eb'}
+              stroke="#facc15"
+              strokeWidth="1"
+              className="transition-colors duration-150"
+            >
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+          </button>
         ))}
-      </Flex>
+      </div>
       {showLabel && (
-        <Text fontSize="sm" color="gray.500" textAlign="center" mt={1}>
+        <span className="text-sm text-gray-500 mt-1">
           {getLabel(hoverValue || value)}
-        </Text>
+        </span>
       )}
-    </Box>
+    </div>
   );
 } 

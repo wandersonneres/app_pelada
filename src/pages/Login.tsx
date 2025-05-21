@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '@chakra-ui/react';
 import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export function Login() {
@@ -12,7 +11,6 @@ export function Login() {
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
 
   useEffect(() => {
     if (user) navigate('/');
@@ -46,14 +44,8 @@ export function Login() {
         errorMessage = 'Muitas tentativas. Tente novamente mais tarde';
       }
 
-      toast({
-        title: 'Erro',
-        description: errorMessage,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
+      // Substituindo por classes do Tailwind CSS
+      // Exemplo: <div className="bg-blue-500 text-white p-4 rounded">...</div>
     } finally {
       setIsLoading(false);
     }

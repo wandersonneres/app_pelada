@@ -11,7 +11,10 @@ interface PlayerOptionsModalProps {
   onUpdateArrivalOrder: (order: number) => void;
   onUpdateSkillLevel: (skillLevel: 1 | 2 | 3 | 4 | 5) => void;
   onUpdateAgeGroup: (ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50') => void;
+  onUpdatePaymentType: (paymentType: 'mensalista' | 'diarista') => void;
   onRemovePlayer: () => void;
+  onDiaristaPayment: () => void;
+  isDiaristaPaid: boolean;
 }
 
 export function PlayerOptionsModal({
@@ -23,7 +26,10 @@ export function PlayerOptionsModal({
   onUpdateArrivalOrder,
   onUpdateSkillLevel,
   onUpdateAgeGroup,
+  onUpdatePaymentType,
   onRemovePlayer,
+  onDiaristaPayment,
+  isDiaristaPaid
 }: PlayerOptionsModalProps) {
   if (!isOpen || !player) return null;
 
@@ -128,13 +134,55 @@ export function PlayerOptionsModal({
 
         <hr className="my-4" />
 
+        {/* Tipo de Pagamento */}
+        <div className="mb-4">
+          <div className="font-medium mb-2">Tipo de Pagamento</div>
+          <div className="grid grid-cols-2 gap-2">
+            {(['mensalista', 'diarista'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => onUpdatePaymentType(type)}
+                className={`py-2 rounded-lg font-semibold transition-colors
+                  ${player.paymentType === type
+                    ? type === 'mensalista'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-orange-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+                `}
+              >
+                {type === 'mensalista' ? 'Mensalista' : 'Diarista'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <hr className="my-4" />
+
+        {/* Pagamento do Diarista */}
+        {player.paymentType === 'diarista' && (
+          <div className="mb-4">
+            <button
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border text-white font-semibold transition"
+              onClick={onDiaristaPayment}
+              style={{
+                backgroundColor: isDiaristaPaid ? '#22c55e' : '#3b82f6',
+                borderColor: isDiaristaPaid ? '#22c55e' : '#3b82f6'
+              }}
+            >
+              {isDiaristaPaid ? 'Pago ✓' : 'Confirmar Pagamento'}
+            </button>
+          </div>
+        )}
+
+        <hr className="my-4" />
+
         {/* Remover Jogador */}
         <button
           className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-500 text-red-600 font-semibold hover:bg-red-50 transition"
-              onClick={onRemovePlayer}
-            >
+          onClick={onRemovePlayer}
+        >
           <FaUserMinus />
-              Remover Jogador
+          Remover Jogador
         </button>
       </div>
     </div>

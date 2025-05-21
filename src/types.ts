@@ -10,6 +10,7 @@ export interface Player {
   arrivalOrder: number;
   skillLevel: 1 | 2 | 3 | 4 | 5;
   ageGroup: '15-20' | '21-30' | '31-40' | '41-50' | '+50';
+  paymentType: 'mensalista' | 'diarista';
 }
 
 export interface Team {

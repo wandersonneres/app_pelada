@@ -4,7 +4,6 @@ import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEdit, FaTrash } from 'react-i
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { Box, Flex, Text, Badge, IconButton } from '@chakra-ui/react';
 
 interface GameCardProps {
   game: Game;
@@ -49,59 +48,47 @@ export function GameCard({ game, onDelete }: GameCardProps) {
   };
 
   return (
-    <Box
-      bg="white"
-      borderWidth="1px"
-      borderColor="gray.200"
-      borderRadius="lg"
-      overflow="hidden"
-      transition="all 0.2s"
-      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-      cursor="pointer"
+    <div
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-200 hover:translate-y-[-2px] hover:shadow-md cursor-pointer"
       onClick={() => navigate(`/game/${game.id}`)}
     >
-      <Flex p={4} direction="column" gap={2}>
-        <Flex justify="space-between" align="center">
-          <Text fontSize="lg" fontWeight="bold">
+      <div className="p-4 flex flex-col gap-2">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold">
             {game.location}
-          </Text>
-          <Badge
-            colorScheme={getStatusColor(game.status)}
-            px={2}
-            py={1}
-            borderRadius="full"
+          </h2>
+          <span
+            className={`px-2 py-1 border border-${getStatusColor(game.status)} rounded-full`}
           >
             {getStatusText(game.status)}
-          </Badge>
-        </Flex>
+          </span>
+        </div>
 
-        <Flex direction="column" gap={1}>
-          <Flex align="center" gap={2}>
-            <Text fontSize="sm" color="gray.600">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
               {formatDate(game.date)}
-            </Text>
-          </Flex>
-          <Text fontSize="sm" color="gray.600">
+            </span>
+          </div>
+          <span className="text-sm text-gray-600">
             {game.players.length} / {game.maxPlayers} jogadores
-          </Text>
-        </Flex>
-      </Flex>
+          </span>
+        </div>
+      </div>
 
       {onDelete && (
-        <Flex justify="flex-end" p={2} borderTopWidth="1px" borderColor="gray.100">
-          <IconButton
-            aria-label="Excluir pelada"
-            icon={<FaTrash />}
-            colorScheme="red"
-            variant="ghost"
-            size="sm"
+        <div className="flex justify-end p-2 border-t border-gray-100">
+          <button
+            className="text-red-500 bg-transparent border border-red-500 rounded-md text-sm px-2 py-1"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(game.id);
             }}
-          />
-        </Flex>
+          >
+            Excluir pelada
+          </button>
+        </div>
       )}
-    </Box>
+    </div>
   );
 } 

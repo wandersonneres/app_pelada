@@ -6,6 +6,7 @@ import { Game, Player, convertTimestampToDate } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { StarRating } from '../components/StarRating';
+import { Timestamp } from 'firebase/firestore';
 
 export function PlayerConfirmation() {
   const { id } = useParams<{ id: string }>();
@@ -42,11 +43,12 @@ export function PlayerConfirmation() {
         name: playerName.trim(),
         email: '',
         confirmed: true,
-        arrivalTime: new Date(),
+        arrivalTime: Timestamp.fromDate(new Date()),
         position: 'meio',
         arrivalOrder: game.players.length + 1,
         skillLevel: playerSkillLevel,
         ageGroup: playerAgeGroup,
+        paymentType: 'mensalista',
       };
 
       await updateDoc(doc(db, 'games', id), {

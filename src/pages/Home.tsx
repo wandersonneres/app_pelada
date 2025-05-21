@@ -96,13 +96,15 @@ export function Home() {
           <p className="text-sm text-gray-500">Cadastre e gerencie suas peladas</p>
         </div>
         <div className="flex gap-4 w-full sm:w-auto">
-          <button
-                onClick={() => navigate('/new-game')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-            <Calendar className="w-5 h-5" />
-                Nova Pelada
-          </button>
+          {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
+            <button
+              onClick={() => navigate('/new-game')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              <Calendar className="w-5 h-5" />
+              Nova Pelada
+            </button>
+          )}
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/players')}

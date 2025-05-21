@@ -8,9 +8,9 @@ import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
 import { PrivateRoute } from './components/PrivateRoute';
 import { Navbar } from './components/Navbar';
-import { Box } from '@chakra-ui/react';
 import { EditUser } from './pages/EditUser';
 import { Players } from './pages/Players';
+import { Financeiro } from './pages/Financeiro';
 
 export function AppRoutes() {
   const location = useLocation();
@@ -27,10 +27,8 @@ export function AppRoutes() {
   return (
     <>
       {!isAuthRoute && <Navbar />}
-      <Box 
-        as="main" 
+      <div 
         className={`${isAuthRoute ? 'flex items-center justify-center min-h-screen' : ''} ${shouldCenterContent ? 'flex items-center justify-center min-h-screen' : 'min-h-screen'}`}
-        bg="gray.50"
       >
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -91,9 +89,17 @@ export function AppRoutes() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/financeiro"
+            element={
+              <PrivateRoute requireAdmin>
+                <Financeiro />
+              </PrivateRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Box>
+      </div>
     </>
   );
 } 

@@ -57,16 +57,22 @@ export function generateRandomPlayers(count: number): Player[] {
 
   return Array.from({ length: count }, (_, i) => {
     const { nome, sobrenome } = generateUniqueName(usedNames);
+    const position = positions[Math.floor(Math.random() * positions.length)];
+    const skillLevel = Math.floor(Math.random() * 5) + 1 as 1 | 2 | 3 | 4 | 5;
+    const ageGroup = ageGroups[Math.floor(Math.random() * ageGroups.length)] as '15-20' | '21-30' | '31-40' | '41-50' | '+50';
+    const paymentType = Math.random() > 0.5 ? 'mensalista' : 'diarista';
+
     return {
       id: Math.random().toString(36).substr(2, 9),
       name: `${nome} ${sobrenome}`,
-      email: '',
+      email: `jogador${i + 1}@email.com`,
       confirmed: true,
-      arrivalTime: new Date(Date.now() + i * 60000),
-      position: positions[Math.floor(Math.random() * positions.length)],
-      skillLevel: skillLevels[Math.floor(Math.random() * skillLevels.length)],
-      ageGroup: ageGroups[Math.floor(Math.random() * ageGroups.length)],
-      arrivalOrder: i + 1
+      arrivalTime: new Date(),
+      position,
+      skillLevel,
+      ageGroup,
+      arrivalOrder: i + 1,
+      paymentType,
     };
   });
 } 

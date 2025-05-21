@@ -9,7 +9,8 @@ import {
   Menu as MenuIcon, 
   User, 
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  DollarSign
 } from 'lucide-react';
 
 export function Navbar() {
@@ -30,7 +31,10 @@ export function Navbar() {
   const menuItems = [
     { icon: <Home className="w-5 h-5" />, label: 'Início', path: '/' },
     { icon: <Calendar className="w-5 h-5" />, label: 'Nova Pelada', path: '/new-game' },
-    ...(user?.role === 'admin' ? [{ icon: <Users className="w-5 h-5" />, label: 'Jogadores', path: '/players' }] : [])
+    ...(user?.role === 'admin' ? [
+      { icon: <Users className="w-5 h-5" />, label: 'Jogadores', path: '/players' },
+      { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', path: '/financeiro' }
+    ] : [])
   ];
 
   return (

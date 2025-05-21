@@ -4,7 +4,6 @@ import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { StarRating } from '../components/StarRating';
 import { FaChevronLeft, FaUser, FaEnvelope, FaLock, FaFutbol, FaBirthdayCake, FaStar } from 'react-icons/fa';
-import { useToast } from '@chakra-ui/react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from '../config/firebase';
@@ -13,12 +12,14 @@ type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
 type SkillLevel = 1 | 2 | 3 | 4 | 5;
 type Role = 'admin' | 'player';
+type PaymentType = 'mensalista' | 'diarista';
 
 interface PlayerInfo {
   name: string;
   position: Position;
   ageGroup: AgeGroup;
   skillLevel: SkillLevel;
+  paymentType: PaymentType;
 }
 
 interface FormErrors {
@@ -39,12 +40,12 @@ export function Register() {
     position: 'defesa',
     ageGroup: '21-30',
     skillLevel: 3,
+    paymentType: 'mensalista',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   
   const navigate = useNavigate();
-  const toast = useToast();
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -105,14 +106,14 @@ export function Register() {
       });
 
       // Mostra mensagem de sucesso
-      toast({
-        title: 'Usuário cadastrado',
-        description: 'O usuário foi cadastrado com sucesso!',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
+      // toast({
+      //   title: 'Usuário cadastrado',
+      //   description: 'O usuário foi cadastrado com sucesso!',
+      //   status: 'success',
+      //   duration: 3000,
+      //   isClosable: true,
+      //   position: 'top',
+      // });
 
       // Redireciona para a página de jogadores
       navigate('/players');
@@ -126,14 +127,14 @@ export function Register() {
         errorMessage = 'Este e-mail já está em uso.';
       }
 
-      toast({
-        title: 'Erro',
-        description: errorMessage,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
+      // toast({
+      //   title: 'Erro',
+      //   description: errorMessage,
+      //   status: 'error',
+      //   duration: 5000,
+      //   isClosable: true,
+      //   position: 'top',
+      // });
     } finally {
       setIsLoading(false);
       // Remove o app secundário para liberar recursos
@@ -307,6 +308,21 @@ export function Register() {
                 showLabel
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-gray-700">
+              Tipo de Pagamento
+            </label>
+            <select
+              id="playerInfo.paymentType"
+              value={playerInfo.paymentType}
+              onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            >
+              <option value="mensalista">Mensalista</option>
+              <option value="diarista">Diarista</option>
+            </select>
           </div>
         </div>
 

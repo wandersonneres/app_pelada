@@ -5,7 +5,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { StarRating } from '../components/StarRating';
 import { FaChevronLeft, FaUser, FaEnvelope, FaFutbol, FaStar, FaUserEdit, FaCamera } from 'react-icons/fa';
-import { useToast } from '@chakra-ui/react';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
@@ -20,7 +19,6 @@ interface FormErrors {
 export function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
 
   const [username, setUsername] = useState(user?.username || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -71,20 +69,9 @@ export function Profile() {
         updatedAt: new Date().toISOString(),
       });
 
-      toast({
-        title: 'Perfil atualizado com sucesso!',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      // Exemplo: <div className="bg-blue-500 text-white p-4 rounded">...</div>
     } catch (error: any) {
-      toast({
-        title: 'Erro ao atualizar perfil',
-        description: error.message || 'Ocorreu um erro ao tentar atualizar o perfil',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      // Exemplo: <div className="bg-red-500 text-white p-4 rounded">...</div>
     } finally {
       setIsLoading(false);
     }

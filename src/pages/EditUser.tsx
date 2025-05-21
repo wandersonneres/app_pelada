@@ -6,12 +6,12 @@ import { db } from '../config/firebase';
 import { User } from '../types/index';
 import { StarRating } from '../components/StarRating';
 import { FaChevronLeft, FaUser, FaEnvelope, FaFutbol, FaStar, FaUserEdit, FaUserShield } from 'react-icons/fa';
-import { useToast } from '@chakra-ui/react';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
 type SkillLevel = 1 | 2 | 3 | 4 | 5;
 type Role = 'admin' | 'player';
+type PaymentType = 'mensalista' | 'diarista';
 
 // Mapeamento para exibição visual dos papéis
 const roleDisplayMap = {
@@ -25,11 +25,19 @@ interface FormErrors {
   'playerInfo.name'?: string;
 }
 
+// Atualizar tipagem de playerInfo para incluir paymentType
+interface PlayerInfo {
+  name: string;
+  position: Position;
+  ageGroup: AgeGroup;
+  skillLevel: SkillLevel;
+  paymentType: PaymentType;
+}
+
 export function EditUser() {
   const { userId } = useParams();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
 
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState('');
@@ -38,11 +46,12 @@ export function EditUser() {
   const [role, setRole] = useState<Role>('player');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [playerInfo, setPlayerInfo] = useState({
+  const [playerInfo, setPlayerInfo] = useState<PlayerInfo>({
     name: '',
-    position: 'defesa' as Position,
-    ageGroup: '21-30' as AgeGroup,
-    skillLevel: 3 as SkillLevel,
+    position: 'defesa',
+    ageGroup: '21-30',
+    skillLevel: 3,
+    paymentType: 'mensalista',
   });
 
   useEffect(() => {
@@ -63,22 +72,16 @@ export function EditUser() {
             position: userData.playerInfo?.position || 'defesa',
             ageGroup: userData.playerInfo?.ageGroup || '21-30',
             skillLevel: userData.playerInfo?.skillLevel || 3,
+            paymentType: userData.playerInfo?.paymentType || 'mensalista',
           });
         }
       } catch (error) {
         console.error('Erro ao buscar usuário:', error);
-        toast({
-          title: 'Erro',
-          description: 'Não foi possível carregar os dados do usuário.',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
       }
     };
 
     fetchUser();
-  }, [userId, toast]);
+  }, [userId]);
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -108,13 +111,6 @@ export function EditUser() {
 
     // Verificar permissões
     if (currentUser?.role !== 'admin' && currentUser?.username !== user.username) {
-      toast({
-        title: 'Erro',
-        description: 'Você não tem permissão para editar este usuário.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
       return;
     }
 
@@ -130,23 +126,9 @@ export function EditUser() {
         updatedAt: new Date().toISOString(),
       });
 
-      toast({
-        title: 'Usuário atualizado com sucesso!',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-
       navigate(-1);
     } catch (error: any) {
       console.error('Erro ao atualizar usuário:', error);
-      toast({
-        title: 'Erro ao atualizar usuário',
-        description: error.message || 'Ocorreu um erro ao tentar atualizar o usuário',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -314,6 +296,21 @@ export function EditUser() {
                 showLabel
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-gray-700">
+              Tipo de Pagamento
+            </label>
+            <select
+              id="playerInfo.paymentType"
+              value={playerInfo.paymentType}
+              onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            >
+              <option value="mensalista">Mensalista</option>
+              <option value="diarista">Diarista</option>
+            </select>
           </div>
         </div>
 
