@@ -244,12 +244,22 @@ export function GameDetails() {
   const [showDiaristaModal, setShowDiaristaModal] = useState(false);
   const [selectedDiarista, setSelectedDiarista] = useState<{id: string, name: string} | null>(null);
   const [diaristaPaymentValue, setDiaristaPaymentValue] = useState(30);
+  const [diaristaFree, setDiaristaFree] = useState(false);
   const [diaristaPayments, setDiaristaPayments] = useState<Record<string, { 
     value: number; 
     date: string;
     playerName: string;
     matchId: string;
+    recordBy?: string;
   }>>({});
+
+  useEffect(() => {
+    console.log('diaristaPaymentValue', diaristaFree);
+    if (diaristaFree) {
+      confirmDiaristaPayment();
+      setDiaristaFree(false);
+    }
+  }, [diaristaFree]);
 
   useEffect(() => {
     if (!id) return;
@@ -261,14 +271,15 @@ export function GameDetails() {
         where('status', '==', 'paid')
       );
       const snapshot = await getDocs(q);
-      const payments: Record<string, { value: number; date: string; playerName: string; matchId: string }> = {};
+      const payments: Record<string, { value: number; date: string; playerName: string; matchId: string; recordBy?: string }> = {};
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         payments[data.playerId] = {
           value: data.value,
           date: data.date,
           playerName: data.playerName,
-          matchId: data.matchId
+          matchId: data.matchId,
+          recordBy: data.recordBy
         };
       });
       setDiaristaPayments(payments);
@@ -1474,9 +1485,10 @@ export function GameDetails() {
         gameId: id,
         matchId: currentMatch?.id || 'pending',
         date: new Date().toISOString(),
-        value: diaristaPaymentValue,
+        value: diaristaFree ? 0 : diaristaPaymentValue,
         status: 'paid',
         paidAt: new Date().toISOString(),
+        recordBy: user?.playerInfo?.name || user?.email || 'Sistema',
       };
 
       await setDoc(paymentRef, paymentData);
@@ -1485,10 +1497,11 @@ export function GameDetails() {
       setDiaristaPayments(prev => ({
         ...prev,
         [selectedDiarista.id]: {
-          value: diaristaPaymentValue,
+          value: diaristaFree ? 0 : diaristaPaymentValue,
           date: paymentData.date,
           playerName: selectedDiarista.name,
-          matchId: paymentData.matchId
+          matchId: paymentData.matchId,
+          recordBy: paymentData.recordBy
         }
       }));
 
@@ -1740,6 +1753,7 @@ export function GameDetails() {
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                                 } transition-colors`}
+                                title={diaristaPayments[player.id] ? `Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)} - Registrado por: ${diaristaPayments[player.id].recordBy}` : 'Pagou'}
                               >
                                 {diaristaPayments[player.id] ? 'Pago ✓' : 'Pagou'}
                               </button>
@@ -2368,9 +2382,8 @@ export function GameDetails() {
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  setDiaristaPaymentValue(0);
-                  confirmDiaristaPayment();
+                onClick={() => {              
+                  setDiaristaFree(true);                  
                 }}
                 className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
                 type="button"

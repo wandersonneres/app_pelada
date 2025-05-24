@@ -21,15 +21,15 @@ interface Payment {
 
 interface DiaristaPayment {
   id: string;
-  userId: string;
-  name?: string;
-  playerName?: string;
-  recordedBy: string;
+  playerId: string;
+  playerName: string;
+  recordBy: string;
   date: string;
   value: number;
   status: 'paid' | 'pending';
   paidAt?: string;
-  obs?: string;
+  gameId: string;
+  matchId: string;
 }
 
 interface Mensalista {
@@ -209,25 +209,31 @@ export function Financeiro() {
   };
 
   const confirmDiaristaPayment = async () => {
-    if (!selectedDiarista) return;
+    if (!selectedDiarista || !user) return;
     
-    const paymentRef = doc(collection(db, 'diaristaPayments'));
-    const paymentData: DiaristaPayment = {
-      id: paymentRef.id,
-      userId: selectedDiarista.id,
-      name: selectedDiarista.name,
-      playerName: selectedDiarista.name,
-      recordedBy: user?.username || 'Admin',
-      date: new Date().toISOString(),
-      value: diaristaPaymentValue,
-      status: 'paid',
-      paidAt: new Date().toISOString(),
-    };
+    try {
+      const paymentRef = doc(collection(db, 'diaristaPayments'));
+      const paymentData: DiaristaPayment = {
+        id: paymentRef.id,
+        playerId: selectedDiarista.id,
+        playerName: selectedDiarista.name,
+        recordBy: user?.playerInfo?.name || user?.email || 'Sistema',
+        date: new Date().toISOString(),
+        value: diaristaPaymentValue,
+        status: 'paid',
+        paidAt: new Date().toISOString(),
+        gameId: '',
+        matchId: '',
+      };
 
-    await setDoc(paymentRef, paymentData);
-    setDiaristaPayments(prev => [...prev, paymentData]);
-    setShowDiaristaModal(false);
-    setSelectedDiarista(null);
+      await setDoc(paymentRef, paymentData);
+      setDiaristaPayments(prev => [...prev, paymentData]);
+      setShowDiaristaModal(false);
+      setSelectedDiarista(null);
+      setDiaristaPaymentValue(30);
+    } catch (error) {
+      console.error('Erro ao registrar pagamento:', error);
+    }
   };
 
   const formatPaymentDate = (dateString?: string) => {
@@ -676,7 +682,7 @@ export function Financeiro() {
                     .map((m, idx) => {
                       const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
                       const p = payments[paymentId];
-                      const diaristaPayment = diaristaPayments.find(dp => dp.userId === m.id);
+                      const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
                       
                       return (
                         <tr
@@ -801,11 +807,11 @@ export function Financeiro() {
                       .map((payment, idx) => (
                         <div key={idx} className="flex items-center justify-between bg-purple-50 rounded-lg px-4 py-3 hover:bg-purple-100 transition-colors w-full">
                           <div className="flex flex-col min-w-0">
-                            <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName || payment.name || 'Diarista'}>
-                              {payment.playerName || payment.name || 'Diarista'}
+                            <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName}>
+                              {payment.playerName}
                             </span>
                             <span className="text-xs text-purple-500">{formatPaymentDate(payment.date)}</span>
-                            <span className="text-xs text-gray-500">Registrado por: {payment.recordedBy}</span>
+                            <span className="text-xs text-gray-500">Registrado por: {payment.recordBy}</span>
                           </div>
                           <div className="flex flex-col items-end">
                             <span className="text-sm font-medium text-purple-900">R$ {payment.value.toFixed(2)}</span>
@@ -927,49 +933,73 @@ export function Financeiro() {
         </div>
       )}
 
-      {/* Modal de Pagamento Diarista */}
-      {showDiaristaModal && selectedDiarista && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm mx-auto">
-            <h3 className="text-lg font-semibold mb-6">Confirmar Pagamento - Diarista</h3>
-            <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-2">
-                Jogador: <span className="font-medium">{selectedDiarista.name}</span>
-              </p>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Valor do Pagamento
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+      {/* Modal de Pagamento do Diarista */}
+      {showDiaristaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+            <button
+              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+              onClick={() => setShowDiaristaModal(false)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Confirmar Pagamento</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nome do Diarista</label>
                 <input
-                  type="number"
-                  value={diaristaPaymentValue}
-                  onChange={(e) => setDiaristaPaymentValue(Number(e.target.value))}
-                  className="w-full pl-12 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                  min="0"
-                  step="10"
-                  onBlur={(e) => {
-                    const value = Number(e.target.value);
-                    if (!isNaN(value)) {
-                      setDiaristaPaymentValue(Number(value.toFixed(2)));
-                    }
-                  }}
+                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={selectedDiarista?.name || ''}
+                  readOnly
+                  placeholder="Nome do diarista"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="w-full border rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      setDiaristaPaymentValue(value === '' ? 0 : Number(value));
+                    }}
+                    placeholder="30"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex justify-end gap-2 mt-6">
               <button
-                onClick={() => {
-                  setShowDiaristaModal(false);
-                  setSelectedDiarista(null);
-                }}
-                className="flex-1 px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                onClick={() => setShowDiaristaModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                type="button"
               >
                 Cancelar
               </button>
               <button
+                onClick={() => {
+                  setDiaristaPaymentValue(0);
+                  setTimeout(() => {
+                    confirmDiaristaPayment();
+                  }, 0);
+                }}
+                className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                type="button"
+                disabled={!selectedDiarista}
+              >
+                Gratis
+              </button>
+              <button
                 onClick={confirmDiaristaPayment}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                disabled={!selectedDiarista}
               >
                 Confirmar
               </button>
