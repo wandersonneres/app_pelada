@@ -650,7 +650,7 @@ export function GameDetails() {
 
       // 1. Definir o horário de corte
       const prioridadeHorario = convertTimestampToDate(game.date);
-      prioridadeHorario.setHours(10, 42, 0, 0);
+      prioridadeHorario.setHours(8, 35, 0, 0);
 
       // 2. Identificar IDs de quem já jogou pelo menos uma partida
       const jogadoresJaJogaram = (game.matches || []).flatMap(m => m.teams.flatMap(t => t.players.map(p => p.id)));
@@ -666,7 +666,8 @@ export function GameDetails() {
       // 4. Preencher o restante das vagas com os demais jogadores por ordem de chegada
       const idsPrioritarios = new Set(mensalistasOrdenados.map(p => p.id));
       const outros = game.players.filter(p => !idsPrioritarios.has(p.id));
-      outros.sort((a, b) => convertTimestampToDate(a.arrivalTime).getTime() - convertTimestampToDate(b.arrivalTime).getTime());
+      //outros.sort((a, b) => convertTimestampToDate(a.arrivalTime).getTime() - convertTimestampToDate(b.arrivalTime).getTime());
+      outros.sort((a, b) => a.arrivalOrder - b.arrivalOrder);
 
       // 5. Lista final de prioridade para entrar
       const jogadoresParaEntrar = [...mensalistasOrdenados, ...outros];
@@ -1745,7 +1746,7 @@ export function GameDetails() {
                             {/* Idade */}
                             <span className="text-xs text-gray-400">{player.ageGroup} anos</span>
                             <span className="text-xs text-gray-400 ml-2">{player.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</span>
-                            {player.paymentType === 'diarista' && (
+                            {(player.paymentType === 'diarista') && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (                              
                               <button
                                 onClick={() => handleDiaristaPayment(player.id, player.name)}
                                 className={`ml-2 px-2 py-0.5 rounded-lg text-xs font-medium ${

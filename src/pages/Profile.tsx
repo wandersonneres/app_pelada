@@ -93,7 +93,7 @@ export function Profile() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Avatar */}
-        <div className="flex flex-col items-center space-y-4">
+        {/* <div className="flex flex-col items-center space-y-4">
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               {photoURL ? (
@@ -109,13 +109,13 @@ export function Profile() {
             <button
               type="button"
               className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => {/* Implementar upload de foto */}}
+              onClick={() => {implementar upload de foto}}
             >
               <FaCamera className="w-6 h-6 text-white" />
             </button>
           </div>
           <p className="text-sm text-gray-500">Clique para alterar a foto</p>
-        </div>
+        </div> */}
 
         {/* Informações Básicas */}
         <div className="space-y-4">
