@@ -27,13 +27,15 @@ export function Navbar() {
       console.error('Erro ao fazer logout:', error);
     }
   };
-
+  
   const menuItems = [
     { icon: <Home className="w-5 h-5" />, label: 'Início', path: '/' },
     { icon: <Calendar className="w-5 h-5" />, label: 'Nova Pelada', path: '/new-game' },
     ...(user?.role === 'admin' ? [
       { icon: <Users className="w-5 h-5" />, label: 'Jogadores', path: '/players' },
-      { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', path: '/financeiro' }
+      ...(user?.username === 'cayto' ? [
+        { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', path: '/financeiro' }
+      ] : [])
     ] : [])
   ];
 

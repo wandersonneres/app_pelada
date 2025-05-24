@@ -4,9 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 interface PrivateRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireFinanceiro?: boolean;
 }
 
-export function PrivateRoute({ children, requireAdmin = false }: PrivateRouteProps) {
+export function PrivateRoute({ children, requireAdmin = false, requireFinanceiro = false   }: PrivateRouteProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -27,6 +28,10 @@ export function PrivateRoute({ children, requireAdmin = false }: PrivateRoutePro
 
   // Se precisar de admin e o usuário não for admin, redireciona para a página inicial
   if (requireAdmin && user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireFinanceiro && user.username !=='cayto') {
     return <Navigate to="/" replace />;
   }
 

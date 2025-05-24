@@ -92,7 +92,7 @@ export function AppRoutes() {
           <Route
             path="/financeiro"
             element={
-              <PrivateRoute requireAdmin>
+              <PrivateRoute requireFinanceiro>
                 <Financeiro />
               </PrivateRoute>
             }
