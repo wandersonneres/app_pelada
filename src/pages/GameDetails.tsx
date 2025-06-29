@@ -1,17 +1,15 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection, setDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
-import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, Eye, ArrowLeftRight, User, Plus, Circle, ArrowUpRight, CircleDot, Target, Footprints } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, ArrowLeftRight, User, Plus, Target, Footprints } from 'lucide-react';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { StarRating } from '../components/StarRating';
 import { TacticalView } from '../components/TacticalView';
 import { MatchTimer } from '../components/MatchTimer';
-import { PlayerList } from '../components/PlayerList';
 import { GameAnalytics } from '../components/GameAnalytics';
 import { MatchScore } from '../components/MatchScore';
-import { generateRandomPlayers } from '../utils/mockPlayers';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -141,6 +139,7 @@ interface PlayerSwapModalProps {
   waitingPlayers: Player[];
   onSwapPlayers: (otherPlayer: Player) => void;
   onReplacePlayer: (waitingPlayer: Player) => void;
+  onRemoveFromWaitingList: (player: Player) => void;
 }
 
 export function PlayerSwapModal({
@@ -151,62 +150,120 @@ export function PlayerSwapModal({
   waitingPlayers,
   onSwapPlayers,
   onReplacePlayer,
+  onRemoveFromWaitingList,
 }: PlayerSwapModalProps) {
   if (!isOpen || !currentPlayer) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
-        <button
-          className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-        <h2 className="text-lg font-semibold mb-4">Trocar Jogador</h2>
-
-        {/* Trocar com jogador do outro time */}
-        <div className="mb-6">
-          <div className="font-medium mb-2">Trocar com jogador do outro time</div>
-          <div className="space-y-2">
-            {otherTeamPlayers.length === 0 && (
-              <div className="text-gray-400 text-sm">Nenhum jogador disponível no outro time.</div>
-            )}
-            {otherTeamPlayers.map((player) => (
-              <button
-                key={player.id}
-                onClick={() => onSwapPlayers(player)}
-                className="flex items-center w-full p-2 rounded-lg hover:bg-blue-50 transition"
-              >
-                <User className="w-5 h-5 text-blue-400 mr-2" />
-                <span className="flex-1 text-left">{player.name}</span>
-                <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-              </button>
-            ))}
-          </div>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="font-bold text-lg text-gray-800">Trocar Jogador</h2>
+          <button
+            className="text-gray-400 hover:text-gray-700 text-xl font-bold"
+            onClick={onClose}
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
 
-        <hr className="my-4" />
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Trocar com jogador do outro time */}
+          <div>
+            <div className="font-medium mb-3 text-gray-700">Trocar com jogador do outro time</div>
+            <div className="space-y-2">
+              {otherTeamPlayers.length === 0 ? (
+                <div className="text-gray-400 text-sm py-2">Nenhum jogador disponível no outro time.</div>
+              ) : (
+                otherTeamPlayers.map((player) => (
+                  <button
+                    key={player.id}
+                    onClick={() => onSwapPlayers(player)}
+                    className="flex items-center w-full p-3 rounded-lg hover:bg-blue-50 transition-colors text-left border border-gray-100"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm mr-3">
+                      {player.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{player.name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                        </span>
+                        <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                              <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <ArrowLeftRight className="w-4 h-4 text-blue-500 ml-2" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
 
-        {/* Substituir por jogador da lista de espera */}
-        <div>
-          <div className="font-medium mb-2">Substituir por jogador da lista de espera</div>
-          <div className="space-y-2">
-            {waitingPlayers.length === 0 && (
-              <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>
-            )}
-            {waitingPlayers.map((player) => (
-              <button
-                key={player.id}
-                onClick={() => onReplacePlayer(player)}
-                className="flex items-center w-full p-2 rounded-lg hover:bg-green-50 transition"
-              >
-                <User className="w-5 h-5 text-green-400 mr-2" />
-                <span className="flex-1 text-left">{player.name}</span>
-                <ArrowLeftRight className="w-4 h-4 text-green-500" />
-              </button>
-            ))}
+          <hr className="border-gray-200" />
+
+          {/* Substituir por jogador da lista de espera */}
+          <div>
+            <div className="font-medium mb-3 text-gray-700">Substituir por jogador da lista de espera</div>
+            <div className="space-y-2">
+              {waitingPlayers.length === 0 ? (
+                <div className="text-gray-400 text-sm py-2">Nenhum jogador na lista de espera.</div>
+              ) : (
+                waitingPlayers.map((player) => (
+                  <div key={player.id} className="flex items-center w-full p-3 rounded-lg border border-gray-100">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-600 text-sm mr-3">
+                      {player.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{player.name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                        </span>
+                        <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                              <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <button
+                        onClick={() => onReplacePlayer(player)}
+                        className="p-2 rounded-lg hover:bg-green-50 transition-colors"
+                        title="Substituir jogador"
+                      >
+                        <ArrowLeftRight className="w-4 h-4 text-green-500" />
+                      </button>
+                      <button
+                        onClick={() => onRemoveFromWaitingList(player)}
+                        className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                        title="Remover da lista de espera"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -220,21 +277,28 @@ export function GameDetails() {
   const [game, setGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
   const [isGeneratingTeams, setIsGeneratingTeams] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [selectedMatchForSwap, setSelectedMatchForSwap] = useState<Match | null>(null);
   const [isPlayerOptionsOpen, setIsPlayerOptionsOpen] = useState(false);
   const [isPlayerSwapOpen, setIsPlayerSwapOpen] = useState(false);
   const { user } = useAuth();
   const [isSelectPlayerModalOpen, setIsSelectPlayerModalOpen] = useState(false);
-  const [availablePlayers, setAvailablePlayers] = useState<any[]>([]);
+  const [availablePlayers, setAvailablePlayers] = useState<Array<{
+    id: string;
+    email?: string;
+    playerInfo?: {
+      name: string;
+      position: string;
+      skillLevel: number;
+      ageGroup: string;
+      paymentType?: string;
+    };
+  }>>([]);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'jogadores' | 'partidas' | 'analises'>('jogadores');
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
@@ -358,6 +422,12 @@ export function GameDetails() {
         return match;
       });
 
+      // Atualiza o estado local imediatamente para feedback visual
+      setGame(prev => prev ? {
+        ...prev,
+        matches: updatedMatches
+      } : null);
+
       await updateDoc(doc(db, 'games', id), {
         matches: updatedMatches,
         updatedAt: serverTimestamp()
@@ -367,6 +437,12 @@ export function GameDetails() {
     } catch (error) {
       console.error('Erro ao atualizar formação:', error);
       setToastMsg({ type: 'error', message: 'Erro ao atualizar a formação.' });
+      
+      // Reverte o estado local em caso de erro
+      setGame(prev => prev ? {
+        ...prev,
+        matches: game.matches
+      } : null);
     }
   };
 
@@ -531,10 +607,20 @@ export function GameDetails() {
       // Adiciona o novo jogador à lista existente
       const updatedPlayers = [...game.players, newPlayer];
 
+      // Atualiza a lista de espera se já existem partidas
+      let updatedWaitingList = game.waitingList || [];
+      if (game.matches && game.matches.length > 0) {
+        // Se já existem partidas, adiciona o novo jogador à lista de espera
+        if (!updatedWaitingList.includes(newPlayer.id)) {
+          updatedWaitingList = [...updatedWaitingList, newPlayer.id];
+        }
+      }
+
       if (!id) return;
       const gameRef = doc(db, 'games', id);
       await updateDoc(gameRef, {
         players: updatedPlayers,
+        waitingList: updatedWaitingList,
         updatedAt: serverTimestamp(),
       });
       setToastMsg({ type: 'success', message: 'Jogador adicionado com sucesso!' });
@@ -556,10 +642,15 @@ export function GameDetails() {
       const reorderedPlayers = updatedPlayers
         .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
         .map((p, idx) => ({ ...p, arrivalOrder: idx + 1 }));
+      
+      // Remove o jogador da lista de espera também
+      const updatedWaitingList = (game.waitingList || []).filter(id => id !== playerId);
+      
       if (!id) return;
       const gameRef = doc(db, 'games', id);
       await updateDoc(gameRef, {
         players: reorderedPlayers,
+        waitingList: updatedWaitingList,
         updatedAt: serverTimestamp(),
       });
       setToastMsg({ type: 'success', message: 'Jogador removido da lista com sucesso.' });
@@ -573,7 +664,6 @@ export function GameDetails() {
     if (!game || !id) return;
 
     try {
-      setIsLeaving(true);
       const updatedPlayers = game.players.filter(p => p.id !== playerId);
       if (!id) return;
       const gameRef = doc(db, 'games', id);
@@ -584,8 +674,6 @@ export function GameDetails() {
     } catch (error) {
       console.error('Erro ao remover jogador:', error);
       setToastMsg({ type: 'error', message: 'Ocorreu um erro ao remover o jogador.' });
-    } finally {
-      setIsLeaving(false);
     }
   };
 
@@ -1307,7 +1395,12 @@ export function GameDetails() {
         return match;
       });
 
-      if (!id) return;
+      // Atualiza o estado local imediatamente para feedback visual
+      setGame(prev => prev ? {
+        ...prev,
+        matches: updatedMatches
+      } : null);
+
       await updateDoc(gameRef, {
         matches: updatedMatches,
         updatedAt: serverTimestamp()
@@ -1317,6 +1410,12 @@ export function GameDetails() {
     } catch (error) {
       console.error('Erro ao registrar gol:', error);
       setToastMsg({ type: 'error', message: 'Ocorreu um erro ao registrar o gol.' });
+      
+      // Reverte o estado local em caso de erro
+      setGame(prev => prev ? {
+        ...prev,
+        matches: game.matches
+      } : null);
     }
   };
 
@@ -1399,9 +1498,20 @@ export function GameDetails() {
         paymentType: playerInfo.paymentType || 'mensalista',
       };
       const updatedPlayers = [...game.players, newPlayer];
+      
+      // Atualiza a lista de espera se já existem partidas
+      let updatedWaitingList = game.waitingList || [];
+      if (game.matches && game.matches.length > 0) {
+        // Se já existem partidas, adiciona o novo jogador à lista de espera
+        if (!updatedWaitingList.includes(newPlayer.id)) {
+          updatedWaitingList = [...updatedWaitingList, newPlayer.id];
+        }
+      }
+      
       const gameRef = doc(db, 'games', id);
       await updateDoc(gameRef, {
         players: updatedPlayers,
+        waitingList: updatedWaitingList,
         updatedAt: serverTimestamp(),
       });
       setToastMsg({ type: 'success', message: 'Jogador adicionado! Jogador confirmado com sucesso.' });
@@ -1521,11 +1631,19 @@ export function GameDetails() {
 
     try {
       const newStatus = game.status === 'finished' ? 'waiting' : 'finished';
+      
+      // Atualiza apenas o status da pelada, sem afetar as partidas
       const gameRef = doc(db, 'games', id);
       await updateDoc(gameRef, {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
+
+      // Atualiza o estado local para feedback visual imediato
+      setGame(prev => prev ? {
+        ...prev,
+        status: newStatus
+      } : null);
 
       setToastMsg({ 
         type: 'success', 
@@ -1536,7 +1654,96 @@ export function GameDetails() {
     } catch (error) {
       console.error('Erro ao atualizar status da pelada:', error);
       setToastMsg({ type: 'error', message: 'Ocorreu um erro ao atualizar o status da pelada.' });
+      
+      // Reverte o estado local em caso de erro
+      setGame(prev => prev ? {
+        ...prev,
+        status: game.status
+      } : null);
     }
+  };
+
+  const handleRemoveFromWaitingList = async (player: Player) => {
+    if (!game || !id) return;
+
+    try {
+      // Remove o jogador da lista de espera
+      const updatedWaitingList = (game.waitingList || []).filter(id => id !== player.id);
+      
+      // Atualiza o estado local imediatamente para feedback visual
+      setGame(prev => prev ? {
+        ...prev,
+        waitingList: updatedWaitingList
+      } : null);
+      
+      const gameRef = doc(db, 'games', id);
+      await updateDoc(gameRef, {
+        waitingList: updatedWaitingList,
+        updatedAt: serverTimestamp(),
+      });
+
+      setToastMsg({ type: 'success', message: `${player.name} foi removido da lista de espera.` });
+    } catch (error) {
+      console.error('Erro ao remover da lista de espera:', error);
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao remover o jogador da lista de espera.' });
+      
+      // Reverte o estado local em caso de erro
+      setGame(prev => prev ? {
+        ...prev,
+        waitingList: game.waitingList
+      } : null);
+    }
+  };
+
+  const handleTimerUpdate = async (matchId: string, timerData: {
+    isRunning: boolean;
+    remainingSeconds: number;
+    totalSeconds: number;
+    startedAt?: Date;
+  }) => {
+    if (!game || !id) return;
+
+    try {
+      const updatedMatches = game.matches.map(match => {
+        if (match.id === matchId) {
+          return {
+            ...match,
+            timer: timerData,
+            updatedAt: new Date()
+          };
+        }
+        return match;
+      });
+
+      // Atualiza o estado local imediatamente para feedback visual
+      setGame(prev => prev ? {
+        ...prev,
+        matches: updatedMatches
+      } : null);
+
+      await updateDoc(doc(db, 'games', id), {
+        matches: updatedMatches,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar timer:', error);
+      // Reverte o estado local em caso de erro
+      setGame(prev => prev ? {
+        ...prev,
+        matches: game.matches
+      } : null);
+    }
+  };
+
+  const createTimerUpdateHandler = (matchId: string) => {
+    return (timerData: {
+      isRunning: boolean;
+      remainingSeconds: number;
+      totalSeconds: number;
+      startedAt?: Date;
+    }) => {
+      handleTimerUpdate(matchId, timerData);
+    };
   };
 
   // Layout principal
@@ -1821,7 +2028,7 @@ export function GameDetails() {
                 {game.matches.map((match, idx) => {
                   const isExpanded = expandedMatchId === match.id;
                   // Função para contar gols e assistências de um jogador
-                  const getPlayerStats = (playerId) => {
+                  const getPlayerStats = (playerId: string) => {
                     const goals = match.goals?.filter(g => g.scorerId === playerId).length || 0;
                     const assists = match.goals?.filter(g => g.assisterId === playerId).length || 0;
                     return { goals, assists };
@@ -1914,13 +2121,15 @@ export function GameDetails() {
                               />
                             </div>
                             {/* MatchTimer apenas para partidas em progresso */}
-                                          {match.status === 'in_progress' && (
-                          <MatchTimer
-                            teamA={match.teams[0]}
-                            teamB={match.teams[1]}
-                                  isFirstMatch={idx === 0}
-                                  onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
-                                />
+                            {match.status === 'in_progress' && (
+                              <MatchTimer
+                                teamA={match.teams[0]}
+                                teamB={match.teams[1]}
+                                isFirstMatch={idx === 0}
+                                onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
+                                match={match}
+                                onTimerUpdate={createTimerUpdateHandler(match.id)}
+                              />
                             )}
 
                             {/* Lista de jogadores dos times - visível em partidas em progresso e finalizadas */}
@@ -2122,6 +2331,10 @@ export function GameDetails() {
           handleReplacePlayer(selectedMatch.id, selectedPlayer, waitingPlayer);
           setIsPlayerSwapOpen(false);
         }}
+        onRemoveFromWaitingList={(player) => {
+          handleRemoveFromWaitingList(player);
+          setIsPlayerSwapOpen(false);
+        }}
       />
       {/* Modal de seleção de jogador */}
       {isSelectPlayerModalOpen && (
@@ -2227,108 +2440,132 @@ export function GameDetails() {
       {/* Modal da Lista de Espera */}
       {waitingListMatchId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
-            <button
-              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
-              onClick={() => setWaitingListMatchId(null)}
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-            <h2 className="text-lg font-semibold mb-4">Lista de Espera</h2>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-bold text-lg text-gray-800">Lista de Espera</h2>
+              <button
+                className="text-gray-400 hover:text-gray-700 text-xl font-bold"
+                onClick={() => setWaitingListMatchId(null)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
 
-            {(() => {
-              const match = game?.matches.find(m => m.id === waitingListMatchId);
-              if (!match) return null;
+            <div className="flex-1 overflow-y-auto p-4">
+              {(() => {
+                const match = game?.matches.find(m => m.id === waitingListMatchId);
+                if (!match) return null;
 
-              // Se a partida está em andamento, mostra a lista de espera
-              if (match.status === 'in_progress') {
-                const currentPlayers = match.teams.flatMap(team => team.players);
-                const waitingPlayers = game?.players
-                  .filter(player => !currentPlayers.some(p => p.id === player.id))
-                  .sort((a, b) => {
-                    const timeA = a.arrivalTime instanceof Date ? a.arrivalTime.getTime() : 
-                                a.arrivalTime instanceof Timestamp ? a.arrivalTime.toDate().getTime() : 0;
-                    const timeB = b.arrivalTime instanceof Date ? b.arrivalTime.getTime() : 
-                                b.arrivalTime instanceof Timestamp ? b.arrivalTime.toDate().getTime() : 0;
-                    return timeA - timeB;
-                  }) || [];
+                // Se a partida está em andamento, mostra a lista de espera
+                if (match.status === 'in_progress') {
+                  // Usa a waitingList do banco de dados em vez de calcular dinamicamente
+                  const waitingPlayers = (game.waitingList || [])
+                    .map(pid => game.players.find(p => p.id === pid))
+                    .filter(Boolean) as Player[];
 
-                if (waitingPlayers.length === 0) {
-                  return <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>;
+                  if (waitingPlayers.length === 0) {
+                    return <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>;
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {waitingPlayers.map((player) => (
+                        <div key={player.id} className="flex items-center p-3 rounded-lg bg-gray-50 border border-gray-100">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm mr-3">
+                            {player.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">{player.name}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                              </span>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                    <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
+                                  </svg>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
+                            <button
+                              onClick={() => {
+                                handleRemoveFromWaitingList(player);
+                                // Fecha o modal após remover
+                                setTimeout(() => setWaitingListMatchId(null), 500);
+                              }}
+                              className="p-2 rounded-lg hover:bg-red-50 transition-colors ml-2"
+                              title="Remover da lista de espera"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
                 }
 
+                // Se a partida está finalizada, mostra quem entrou e saiu
+                const { playersOut, playersIn } = getPlayersNotInNextMatch(match);
                 return (
-                  <div className="space-y-2">
-                    {waitingPlayers.map((player) => (
-                      <div key={player.id} className="flex items-center p-2 rounded-lg bg-gray-50">
-                        <User className="w-5 h-5 text-blue-400 mr-2" />
-                        <span className="flex-1 text-left">{player.name}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                        </span>
+                  <>
+                    <div className="mb-6">
+                      <div className="font-medium mb-2">Jogadores que saíram</div>
+                      <div className="space-y-2">
+                        {playersOut.length === 0 ? (
+                          <div className="text-gray-400 text-sm">Nenhum jogador saiu.</div>
+                        ) : (
+                          playersOut.map((player) => (
+                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-red-50">
+                              <User className="w-5 h-5 text-red-400 mr-2" />
+                              <span className="flex-1 text-left">{player.name}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                              </span>
+                            </div>
+                          ))
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+
+                    <div>
+                      <div className="font-medium mb-2">Jogadores que entraram</div>
+                      <div className="space-y-2">
+                        {playersIn.length === 0 ? (
+                          <div className="text-gray-400 text-sm">Nenhum jogador entrou.</div>
+                        ) : (
+                          playersIn.map((player) => (
+                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-green-50">
+                              <User className="w-5 h-5 text-green-400 mr-2" />
+                              <span className="flex-1 text-left">{player.name}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
+                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
                 );
-              }
-
-              // Se a partida está finalizada, mostra quem entrou e saiu
-              const { playersOut, playersIn } = getPlayersNotInNextMatch(match);
-              return (
-                <>
-                  <div className="mb-6">
-                    <div className="font-medium mb-2">Jogadores que saíram</div>
-                    <div className="space-y-2">
-                      {playersOut.length === 0 ? (
-                        <div className="text-gray-400 text-sm">Nenhum jogador saiu.</div>
-                      ) : (
-                        playersOut.map((player) => (
-                          <div key={player.id} className="flex items-center p-2 rounded-lg bg-red-50">
-                            <User className="w-5 h-5 text-red-400 mr-2" />
-                            <span className="flex-1 text-left">{player.name}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                              player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="font-medium mb-2">Jogadores que entraram</div>
-                    <div className="space-y-2">
-                      {playersIn.length === 0 ? (
-                        <div className="text-gray-400 text-sm">Nenhum jogador entrou.</div>
-                      ) : (
-                        playersIn.map((player) => (
-                          <div key={player.id} className="flex items-center p-2 rounded-lg bg-green-50">
-                            <User className="w-5 h-5 text-green-400 mr-2" />
-                            <span className="flex-1 text-left">{player.name}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                              player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
+              })()}
+            </div>
           </div>
         </div>
       )}

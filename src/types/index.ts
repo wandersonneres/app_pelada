@@ -40,6 +40,12 @@ export interface Match {
   updatedAt: Date;
   duration?: number; // Duração em minutos
   goals?: Goal[];
+  timer?: {
+    isRunning: boolean;
+    remainingSeconds: number;
+    totalSeconds: number; // Duração total em segundos
+    startedAt?: Date; // Quando o timer foi iniciado
+  };
 }
 
 export interface Game {

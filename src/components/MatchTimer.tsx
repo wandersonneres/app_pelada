@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, StopCircle, Target } from 'lucide-react';
-import { Team } from '../types';
+import { Team, Match } from '../types';
 import { GoalScorerModal } from './GoalScorerModal';
 
 interface MatchTimerProps {
@@ -8,35 +8,95 @@ interface MatchTimerProps {
   teamB: Team;
   isFirstMatch: boolean;
   onGoalScored: (teamId: string, scorerId: string, assisterId?: string) => void;
+  match: Match;
+  onTimerUpdate?: (timerData: {
+    isRunning: boolean;
+    remainingSeconds: number;
+    totalSeconds: number;
+    startedAt?: Date;
+  }) => void;
 }
 
-export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTimerProps) => {
-  const [time, setTime] = useState(isFirstMatch ? 15 : 10);
-  const [running, setRunning] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(time * 60);
-  const [scoreA, setScoreA] = useState(0);
-  const [scoreB, setScoreB] = useState(0);
+export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, onTimerUpdate }: MatchTimerProps) => {
+  // Usa o estado do timer persistido ou valores padrão
+  const [time, setTime] = useState(() => {
+    if (match.timer?.totalSeconds) {
+      return Math.floor(match.timer.totalSeconds / 60);
+    }
+    return isFirstMatch ? 15 : 10;
+  });
+  
+  const [running, setRunning] = useState(match.timer?.isRunning || false);
+  const [remainingSeconds, setRemainingSeconds] = useState(() => {
+    if (match.timer?.remainingSeconds !== undefined) {
+      return match.timer.remainingSeconds;
+    }
+    return time * 60;
+  });
+  
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Calcula os gols de cada time baseado nos dados reais da partida
+  const scoreA = match.goals?.filter(goal => 
+    teamA.players.some(p => p.id === goal.scorerId)
+  ).length || 0;
+
+  const scoreB = match.goals?.filter(goal => 
+    teamB.players.some(p => p.id === goal.scorerId)
+  ).length || 0;
+
+  // Atualiza o timer no Firebase quando o estado muda
+  const updateTimerInFirebase = useCallback((newRunning: boolean, newRemainingSeconds: number, newTotalSeconds: number) => {
+    if (onTimerUpdate) {
+      onTimerUpdate({
+        isRunning: newRunning,
+        remainingSeconds: newRemainingSeconds,
+        totalSeconds: newTotalSeconds,
+        startedAt: newRunning ? new Date() : undefined
+      });
+    }
+  }, [onTimerUpdate]);
+
   const resetTimer = useCallback(() => {
-    setRemainingSeconds(time * 60);
+    const newRemainingSeconds = time * 60;
+    setRemainingSeconds(newRemainingSeconds);
     setRunning(false);
-  }, [time]);
+    updateTimerInFirebase(false, newRemainingSeconds, time * 60);
+  }, [time, updateTimerInFirebase]);
+
+  const toggleRunning = useCallback(() => {
+    const newRunning = !running;
+    setRunning(newRunning);
+    updateTimerInFirebase(newRunning, remainingSeconds, time * 60);
+  }, [running, remainingSeconds, time, updateTimerInFirebase]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (running && remainingSeconds > 0) {
       interval = setInterval(() => {
-        setRemainingSeconds((prev) => prev - 1);
+        setRemainingSeconds((prev) => {
+          const newRemaining = prev - 1;
+          // Atualiza o Firebase a cada segundo quando está rodando
+          if (onTimerUpdate) {
+            onTimerUpdate({
+              isRunning: true,
+              remainingSeconds: newRemaining,
+              totalSeconds: time * 60,
+              startedAt: match.timer?.startedAt
+            });
+          }
+          return newRemaining;
+        });
       }, 1000);
     } else if (remainingSeconds === 0) {
       setRunning(false);
+      updateTimerInFirebase(false, 0, time * 60);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [running, remainingSeconds]);
+  }, [running, remainingSeconds, time, updateTimerInFirebase, match.timer?.startedAt, onTimerUpdate]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -51,15 +111,17 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
 
   const handleGoalConfirmed = (scorerId: string, assisterId?: string) => {
     if (selectedTeam) {
-      if (selectedTeam.id === teamA.id) {
-        setScoreA((prev) => prev + 1);
-      } else {
-        setScoreB((prev) => prev + 1);
-      }
       onGoalScored(selectedTeam.id, scorerId, assisterId);
     }
     setIsModalOpen(false);
     setSelectedTeam(null);
+  };
+
+  const handleTimeChange = (newTime: number) => {
+    setTime(newTime);
+    const newRemainingSeconds = newTime * 60;
+    setRemainingSeconds(newRemainingSeconds);
+    updateTimerInFirebase(running, newRemainingSeconds, newTime * 60);
   };
 
   return (
@@ -82,10 +144,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
           <select
             className="absolute -top-4 left-15 text-xs bg-white/80 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={time}
-            onChange={e => {
-              setTime(Number(e.target.value));
-              setRemainingSeconds(Number(e.target.value) * 60);
-            }}
+            onChange={e => handleTimeChange(Number(e.target.value))}
             disabled={running}
           >
             <option value={10}>10 min</option>
@@ -97,7 +156,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored }: MatchTi
           <div className="flex gap-2 mt-1">
             <button
               className={`p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition ${running ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}`}
-              onClick={() => setRunning(!running)}
+              onClick={toggleRunning}
               aria-label={running ? 'Pausar' : 'Iniciar'}
             >
               {running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
