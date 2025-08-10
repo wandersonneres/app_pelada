@@ -1580,7 +1580,9 @@ export function GameDetails() {
     .filter(player => 
       player.playerInfo?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    )
+    // Ordena alfabeticamente por nome
+    .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''));
 
   const confirmDiaristaPayment = async () => {
     if (!selectedDiarista || !id) return;

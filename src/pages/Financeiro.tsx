@@ -241,23 +241,62 @@ export function Financeiro() {
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
   };
 
+  const calculateMonthsInDebt = (userId: string) => {
+    let monthsInDebt = 0;
+    
+    // Verifica os 4 meses anteriores ao mês selecionado
+    for (let i = 1; i <= 4; i++) {
+      const checkMonth = selectedMonth - i;
+      const checkYear = selectedYear;
+      
+      // Se o mês for menor que 1, ajusta para o ano anterior
+      let adjustedMonth = checkMonth;
+      let adjustedYear = checkYear;
+      
+      if (checkMonth < 1) {
+        adjustedMonth = checkMonth + 12;
+        adjustedYear = checkYear - 1;
+      }
+      
+      const paymentId = `${userId}_${adjustedMonth}_${adjustedYear}`;
+      const payment = payments[paymentId];
+      
+      // Se não existe pagamento ou o status não é 'paid', considera em atraso
+      if (!payment || payment.status !== 'paid') {
+        monthsInDebt++;
+      } else {
+        break; // Para de contar quando encontra um pagamento
+      }
+    }
+    
+    return monthsInDebt;
+  };
+
   const generateWhatsAppMessage = () => {
     const monthName = format(new Date(2024, selectedMonth - 1), 'MMMM', { locale: ptBR }).toUpperCase();
     
     let message = `MENSALIDADE DE ${monthName}\n\n`;
     
-    const sortedMensalistas = mensalistas
+    // Filtra apenas os mensalistas que já pagaram no mês selecionado
+    const paidMensalistas = mensalistas.filter(m => {
+      const currentMonthPaymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+      const currentMonthPayment = payments[currentMonthPaymentId];
+      return currentMonthPayment?.status === 'paid';
+    });
+
+    // Ordena os mensalistas pagos por nome
+    const sortedMensalistas = paidMensalistas
       .slice()
       .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''));
+
+    if (sortedMensalistas.length === 0) {
+      message += 'Nenhum mensalista pagou ainda este mês.';
+      return message;
+    }
 
     sortedMensalistas.forEach((m, index) => {
       const number = String(index + 1).padStart(2, '0');
       const name = m.playerInfo?.name?.toUpperCase() || '';
-      
-      // Verifica o mês atual
-      const currentMonthPaymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-      const currentMonthPayment = payments[currentMonthPaymentId];
-      const currentMonthStatus = currentMonthPayment?.status === 'paid' ? ' ✅' : '';
       
       // Verifica apenas os 4 meses anteriores (excluindo o mês atual)
       let monthsInDebt = 0;
@@ -274,8 +313,8 @@ export function Financeiro() {
         }
       }
 
-      const debtStatus = monthsInDebt > 0 ? ' 🚨'.repeat(monthsInDebt) : '';
-      message += `${number} - ${name}${currentMonthStatus}${debtStatus}\n\n`;
+      //const debtStatus = monthsInDebt > 0 ? ' 🚨'.repeat(monthsInDebt) : '';
+      message += `${number} - ${name} ✅\n\n`;
     });
 
     return message;
@@ -371,76 +410,90 @@ export function Financeiro() {
         <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">Financeiro</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Filtros */}
-        <div className="lg:col-span-3 bg-white rounded-xl shadow p-4">
+        <div className="lg:col-span-3 bg-white rounded-xl shadow p-3 sm:p-4">
           {/* Mobile (default) */}
           <div className="sm:hidden">
-            <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  Mês
-                </label>
-                <div className="relative">
-                  <select 
-                    value={selectedMonth} 
-                    onChange={e => setSelectedMonth(Number(e.target.value))} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                  >
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
+            <div className="space-y-4">
+              {/* Mês e Ano em linha */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Mês
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={selectedMonth} 
+                      onChange={e => setSelectedMonth(Number(e.target.value))} 
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-24">
+                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Ano
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={selectedYear} 
+                      onChange={e => setSelectedYear(Number(e.target.value))} 
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      {[2025,2026,2027,2028,2029,2030].map(y => (
+                        <option key={y} value={y} className="py-1">{y}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  Ano
-                </label>
-                <div className="relative">
-                  <select 
-                    value={selectedYear} 
-                    onChange={e => setSelectedYear(Number(e.target.value))} 
-                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                  >
-                    {[2025,2026,2027,2028,2029,2030].map(y => (
-                      <option key={y} value={y} className="py-1">{y}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-4">
-                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
                   <Check className="w-3 h-3" />
-                  Status
+                  Filtrar por Status
                 </label>
-                <div className="flex gap-1.5">
+                <div className="flex gap-2">
                   <button
-                    onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                    onClick={() => setStatusFilter('all')}
+                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                      ${statusFilter === 'all' 
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                        : 'bg-gray-50 text-gray-600 border border-gray-200'
+                      }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('paid')}
+                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                       ${statusFilter === 'paid' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        ? 'bg-green-100 text-green-700 border border-green-200' 
+                        : 'bg-gray-50 text-gray-600 border border-gray-200'
                       }`}
                   >
                     Pagos
                   </button>
                   <button
-                    onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                    onClick={() => setStatusFilter('pending')}
+                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                       ${statusFilter === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
+                        : 'bg-gray-50 text-gray-600 border border-gray-200'
                       }`}
                   >
                     Pendentes
@@ -448,15 +501,22 @@ export function Financeiro() {
                 </div>
               </div>
 
-              <div className="col-span-4 flex items-end">
+              {/* Botão Copiar */}
+              <div>
                 <button
                   onClick={copyToClipboard}
-                  className="w-full flex items-center justify-center gap-2 px-2 py-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
                 >
                   {copySuccess ? (
-                    <Check className="w-4 h-4" />
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Copiado!</span>
+                    </>
                   ) : (
-                    <Copy className="w-4 h-4" />
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copiar Lista WhatsApp</span>
+                    </>
                   )}
                 </button>
               </div>
@@ -465,8 +525,9 @@ export function Financeiro() {
 
           {/* Tablet (sm) */}
           <div className="hidden sm:block md:hidden">
-            <div className="flex items-end gap-4">
-              <div className="flex gap-4 flex-1">
+            <div className="space-y-4">
+              {/* Primeira linha: Mês e Ano */}
+              <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                     <Calendar className="w-4 h-4 text-blue-600" />
@@ -508,53 +569,66 @@ export function Financeiro() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="w-40">
+              {/* Segunda linha: Status e Botão Copiar */}
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                     <Check className="w-4 h-4 text-blue-600" />
                     Status
                   </label>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
+                      onClick={() => setStatusFilter('all')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                        ${statusFilter === 'all' 
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                          : 'bg-gray-50 text-gray-600 border border-gray-200'
+                        }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('paid')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'paid' 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                          ? 'bg-green-100 text-green-700 border border-green-200' 
+                          : 'bg-gray-50 text-gray-600 border border-gray-200'
                         }`}
                     >
                       Pagos
                     </button>
                     <button
-                      onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                      onClick={() => setStatusFilter('pending')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
+                          : 'bg-gray-50 text-gray-600 border border-yellow-200'
                         }`}
                     >
                       Pendentes
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700 font-medium whitespace-nowrap"
-              >
-                {copySuccess ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Copiado!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copiar</span>
-                  </>
-                )}
-              </button>
+                <button
+                  onClick={copyToClipboard}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                >
+                  {copySuccess ? (
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>Copiado!</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Copy className="w-4 h-4" />
+                      <span>Copiar</span>
+                    </div>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -660,95 +734,245 @@ export function Financeiro() {
             {isLoading ? (
               <div className="text-center py-8">Carregando...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="py-3 px-6 text-left font-semibold text-gray-900 min-w-[180px]">Nome</th>
-                      <th className="py-3 px-4 text-center font-semibold text-gray-900">Status</th>
-                      <th className="py-3 px-4 text-center font-semibold text-gray-900 w-[120px]">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {mensalistas.filter(m => {
-                      const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-                      const p = payments[paymentId];
-                      if (statusFilter === 'all') return true;
-                      if (statusFilter === 'paid') return p && p.status === 'paid';
-                      if (statusFilter === 'pending') return !p || p.status !== 'paid';
-                      return true;
-                    })
-                    .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
-                    .map((m, idx) => {
-                      const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-                      const p = payments[paymentId];
-                      const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
-                      
-                      return (
-                        <tr
-                          key={m.id}
-                          className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                        >
-                          <td className="py-3 px-6 font-medium text-gray-900 min-w-[180px] truncate" title={m.playerInfo?.name || m.id}>
-                            {m.playerInfo?.name || m.id}
+              <>
+                {/* Desktop: Tabela */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50">
+                        <th className="py-3 px-6 text-left font-semibold text-gray-900 min-w-[180px]">Nome</th>
+                        <th className="py-3 px-4 text-center font-semibold text-gray-900">Status</th>
+                        <th className="py-3 px-4 text-center font-semibold text-gray-900">Atrasos</th>
+                        <th className="py-3 px-4 text-center font-semibold text-gray-900 w-[120px]">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {mensalistas.filter(m => {
+                        const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+                        const p = payments[paymentId];
+                        if (statusFilter === 'all') return true;
+                        if (statusFilter === 'paid') return p && p.status === 'paid';
+                        if (statusFilter === 'pending') return !p || p.status !== 'paid';
+                        return true;
+                      })
+                      .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
+                      .map((m, idx) => {
+                        const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+                        const p = payments[paymentId];
+                        const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
+                        
+                        return (
+                          <tr
+                            key={m.id}
+                            className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                          >
+                            <td className="py-3 px-6 font-medium text-gray-900 min-w-[180px] truncate" title={m.playerInfo?.name || m.id}>
+                              {m.playerInfo?.name || m.id}
+                              {m.playerInfo?.paymentType === 'diarista' && (
+                                <span className="ml-2 text-xs text-gray-500">(Diarista)</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {m.playerInfo?.paymentType === 'diarista' ? (
+                                diaristaPayment ? (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Pago (R$ {diaristaPayment.value.toFixed(2)})
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Pendente
+                                  </span>
+                                )
+                              ) : (
+                                p && p.status === 'paid' ? (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Pago
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Pendente
+                                  </span>
+                                )
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {m.playerInfo?.paymentType === 'diarista' ? (
+                                <span className="text-gray-400">-</span>
+                              ) : (
+                                (() => {
+                                  const monthsInDebt = calculateMonthsInDebt(m.id);
+                                  if (monthsInDebt === 0) {
+                                    return <span className="text-gray-400">-</span>;
+                                  } else {
+                                    return (
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
+                                      </span>
+                                    );
+                                  }
+                                })()
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-center w-[120px]">
+                              {m.playerInfo?.paymentType === 'diarista' ? (
+                                <button
+                                  onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
+                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
+                                    ${diaristaPayment 
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                >
+                                  {diaristaPayment ? 'Voltar' : 'Pagou'}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleTogglePayment(m.id)}
+                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
+                                    ${p && p.status === 'paid' 
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                >
+                                  {p && p.status === 'paid' ? 'Voltar' : 'Pagou'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile: Cards */}
+                <div className="md:hidden p-3 space-y-3">
+                  {mensalistas.filter(m => {
+                    const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+                    const p = payments[paymentId];
+                    if (statusFilter === 'all') return true;
+                    if (statusFilter === 'paid') return p && p.status === 'paid';
+                    if (statusFilter === 'pending') return !p || p.status !== 'paid';
+                    return true;
+                  })
+                  .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
+                  .map((m, idx) => {
+                    const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+                    const p = payments[paymentId];
+                    const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
+                    
+                    return (
+                      <div key={m.id} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        {/* Cabeçalho com Nome e Status */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate text-base">
+                              {m.playerInfo?.name || m.id}
+                            </h3>
                             {m.playerInfo?.paymentType === 'diarista' && (
-                              <span className="ml-2 text-xs text-gray-500">(Diarista)</span>
+                              <span className="inline-block mt-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Diarista</span>
                             )}
-                          </td>
-                          <td className="py-3 px-4 text-center">
+                          </div>
+                          <div className="ml-2">
                             {m.playerInfo?.paymentType === 'diarista' ? (
                               diaristaPayment ? (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Pago (R$ {diaristaPayment.value.toFixed(2)})
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Pago
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                   Pendente
                                 </span>
                               )
                             ) : (
                               p && p.status === 'paid' ? (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                   Pago
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                   Pendente
                                 </span>
                               )
                             )}
-                          </td>
-                          <td className="py-3 px-4 text-center w-[120px]">
-                            {m.playerInfo?.paymentType === 'diarista' ? (
-                              <button
-                                onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                  ${diaristaPayment 
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                  }`}
+                          </div>
+                        </div>
+
+                        {/* Informações em Grid */}
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          {/* Valor (apenas para diaristas) */}
+                          {m.playerInfo?.paymentType === 'diarista' && diaristaPayment && (
+                            <div className="col-span-2">
+                              <span className="text-xs text-gray-500">Valor:</span>
+                              <div className="text-sm font-medium text-green-700">
+                                R$ {diaristaPayment.value.toFixed(2)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Atrasos */}
+                          <div>
+                            <span className="text-xs text-gray-500">Atrasos:</span>
+                            <div className="mt-1">
+                              {m.playerInfo?.paymentType === 'diarista' ? (
+                                <span className="text-gray-400 text-sm">-</span>
+                              ) : (
+                                (() => {
+                                  const monthsInDebt = calculateMonthsInDebt(m.id);
+                                  if (monthsInDebt === 0) {
+                                    return <span className="text-gray-400 text-sm">Em dia</span>;
+                                  } else {
+                                    return (
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
+                                      </span>
+                                    );
+                                  }
+                                })()
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Tipo de Pagamento */}
+                          <div>
+                            <span className="text-xs text-gray-500">Tipo:</span>
+                            <div className="mt-1 text-sm font-medium text-gray-700">
+                              {m.playerInfo?.paymentType === 'diarista' ? 'Diarista' : 'Mensalista'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Botão de Ação */}
+                        <div>
+                          {m.playerInfo?.paymentType === 'diarista' ? (
+                            <button
+                              onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
+                              className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                ${diaristaPayment 
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                            >
+                              {diaristaPayment ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleTogglePayment(m.id)}
+                              className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                ${p && p.status === 'paid' 
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
                               >
-                                {diaristaPayment ? 'Voltar' : 'Pagou'}
+                                {p && p.status === 'paid' ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
                               </button>
-                            ) : (
-                              <button
-                                onClick={() => handleTogglePayment(m.id)}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                  ${p && p.status === 'paid' 
-                                    ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                  }`}
-                              >
-                                {p && p.status === 'paid' ? 'Voltar' : 'Pagou'}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>
