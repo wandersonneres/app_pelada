@@ -994,11 +994,23 @@ export function GameDetails() {
   };
 
   const calculatePlayerScore = (player: Player) => {
-    const ageValue = getAgeValue(player.ageGroup);
+    const ageValue = getAgeBalanceScore(player.ageGroup);
     const positionValue = getPositionValue(player.position);
     const skillValue = player.skillLevel;
     
     return (skillValue * 0.6) + (ageValue * 0.3) + (positionValue * 0.1);
+  };
+
+  // Score de idade para balanceamento (quanto mais velho, menor o score)
+  const getAgeBalanceScore = (ageGroup: string) => {
+    switch (ageGroup) {
+      case '15-20': return 5;
+      case '21-30': return 4;
+      case '31-40': return 3;
+      case '41-50': return 2;
+      case '+50': return 1;
+      default: return 4;
+    }
   };
 
   const getAgeValue = (ageGroup: string) => {
@@ -2035,6 +2047,19 @@ export function GameDetails() {
                     const assists = match.goals?.filter(g => g.assisterId === playerId).length || 0;
                     return { goals, assists };
                   };
+                  
+                  // Métricas por time: score, média de idade e média de habilidade
+                  const team0 = match.teams[0];
+                  const team1 = match.teams[1];
+                  const team0Players = (team0?.players || []);
+                  const team1Players = (team1?.players || []);
+                  const average = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                  const team0AvgAge = average(team0Players.map(p => getAgeValue(p.ageGroup)));
+                  const team0AvgSkill = average(team0Players.map(p => p.skillLevel));
+                  const team1AvgAge = average(team1Players.map(p => getAgeValue(p.ageGroup)));
+                  const team1AvgSkill = average(team1Players.map(p => p.skillLevel));
+                  const team0Score = calculateTeamScore(team0Players);
+                  const team1Score = calculateTeamScore(team1Players);
                   const { players: waitingList, playersIn, playersOut } = getPlayersNotInNextMatch(match);
                   return (
                     <li key={match.id} className="bg-gray-50 rounded-xl p-4 shadow-sm relative">
@@ -2140,6 +2165,11 @@ export function GameDetails() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                   <div>
                                     <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[0]?.name}</h3>
+                                    <div className="mb-2 flex flex-wrap gap-2 text-xs">
+                                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700">Score: {team0Score.toFixed(1)}</span>
+                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média idade: {team0AvgAge.toFixed(1)}</span>
+                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média habilidade: {team0AvgSkill.toFixed(1)}</span>
+                                    </div>
                                     <ul className="space-y-2">
                                       {[...(match.teams[0]?.players || [])]
                                         .sort((a, b) => {
@@ -2193,6 +2223,11 @@ export function GameDetails() {
                                   </div>
                                   <div>
                                     <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[1]?.name}</h3>
+                                    <div className="mb-2 flex flex-wrap gap-2 text-xs">
+                                      <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700">Score: {team1Score.toFixed(1)}</span>
+                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média idade: {team1AvgAge.toFixed(1)}</span>
+                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média habilidade: {team1AvgSkill.toFixed(1)}</span>
+                                    </div>
                                     <ul className="space-y-2">
                                       {[...(match.teams[1]?.players || [])]
                                         .sort((a, b) => {
