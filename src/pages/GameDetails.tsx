@@ -2376,7 +2376,7 @@ export function GameDetails() {
       {/* Modal de seleção de jogador */}
       {isSelectPlayerModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-lg w-full h-full md:h-auto md:h-[90vh] mix md:max-w-md relative animate-fadeIn flex flex-col">
+          <div className="bg-white rounded-xl shadow-lg w-full h-full md:h-auto md:max-h-[90vh] min-h-[70vh] mix md:max-w-md relative animate-fadeIn flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="font-bold text-lg text-gray-800">Selecionar Jogador</h2>
               <button
