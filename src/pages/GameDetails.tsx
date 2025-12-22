@@ -43,7 +43,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 max-h-screen overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Adicionar Jogador</h2>
@@ -2399,6 +2399,7 @@ export function GameDetails() {
                   placeholder="Buscar por nome ou email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  //className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   className="w-full px-4 py-2 pl-10 text-base md:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <svg
