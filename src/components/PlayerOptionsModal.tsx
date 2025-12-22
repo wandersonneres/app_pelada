@@ -35,10 +35,10 @@ export function PlayerOptionsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white shadow-xl w-full max-w-md max-h-[100vh] relative animate-fade-in flex flex-col md:rounded-2xl">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-bold text-lg text-gray-800">Opções do Jogador</h2>
+        <div className="flex items-center justify-between p-2 border-b">
+          <h2 className="ml-2 font-medium text-sm text-gray-900">Opções do Jogador</h2>
           <button
             className="text-gray-400 hover:text-gray-700 text-xl font-bold"
             onClick={onClose}
@@ -58,7 +58,7 @@ export function PlayerOptionsModal({
                 <button
                   key={pos}
                   onClick={() => onUpdatePosition(pos)}
-                  className={`py-2 rounded-lg font-semibold transition-colors
+                  className={`py-1 rounded-lg font-medium transition-colors
                     ${player.position === pos
                       ? pos === 'defesa'
                         ? 'bg-yellow-400 text-white'
@@ -78,7 +78,7 @@ export function PlayerOptionsModal({
 
           {/* Nível de Habilidade */}
           <div>
-            <div className="font-medium mb-2 text-gray-600">Nível de Habilidade</div>
+            <div className="font-medium mb-1 text-gray-600">Nível de Habilidade</div>
             <StarRating
               value={player.skillLevel}
               onChange={(level) => onUpdateSkillLevel(level as 1 | 2 | 3 | 4 | 5)}
@@ -91,13 +91,13 @@ export function PlayerOptionsModal({
 
           {/* Faixa Etária */}
           <div>
-            <div className="font-medium mb-2 text-gray-600">Faixa Etária</div>
+            <div className="font-medium mb-1 text-gray-600">Faixa Etária</div>
             <div className="grid grid-cols-3 gap-2">
               {(['15-20', '21-30', '31-40', '41-50', '+50'] as const).map((age) => (
                 <button
                   key={age}
                   onClick={() => onUpdateAgeGroup(age)}
-                  className={`py-2 rounded-lg font-semibold transition-colors
+                  className={`py-1 rounded-lg font-medium transition-colors
                     ${player.ageGroup === age
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
@@ -122,7 +122,7 @@ export function PlayerOptionsModal({
                     <button
                       key={order}
                       onClick={() => onUpdateArrivalOrder(order)}
-                      className={`py-2 rounded-lg font-semibold transition-colors
+                      className={`py-2 rounded-lg font-medium transition-colors
                         ${player.arrivalOrder === order
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
@@ -140,13 +140,13 @@ export function PlayerOptionsModal({
 
           {/* Tipo de Pagamento */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Tipo de Pagamento</div>
+            <div className="font-medium mb-2 text-gray-700">Tipo de Pagamento</div>
             <div className="grid grid-cols-2 gap-2">
               {(['mensalista', 'diarista'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => onUpdatePaymentType(type)}
-                  className={`py-2 rounded-lg font-semibold transition-colors
+                  className={`py-1 rounded-lg font-medium transition-colors
                     ${player.paymentType === type
                       ? type === 'mensalista'
                         ? 'bg-green-500 text-white'
@@ -169,7 +169,7 @@ export function PlayerOptionsModal({
             {/* Pagamento do Diarista */}
             {player.paymentType === 'diarista' && (
               <button
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border text-white font-semibold transition"
+                className="w-full flex items-center justify-center gap-2 py-1 rounded-lg border text-white font-semibold transition"
                 onClick={onDiaristaPayment}
                 style={{
                   backgroundColor: isDiaristaPaid ? '#22c55e' : '#3b82f6',
@@ -182,7 +182,7 @@ export function PlayerOptionsModal({
 
             {/* Remover Jogador */}
             <button
-              className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-500 text-red-600 font-semibold hover:bg-red-50 transition ${
+              className={`w-full flex items-center justify-center gap-2 py-1 rounded-lg border border-red-500 text-red-600 font-medium hover:bg-red-50 transition ${
                 player.paymentType !== 'diarista' ? 'col-span-2' : ''
               }`}
               onClick={onRemovePlayer}
