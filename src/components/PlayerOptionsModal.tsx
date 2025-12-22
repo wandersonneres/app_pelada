@@ -34,8 +34,8 @@ export function PlayerOptionsModal({
   if (!isOpen || !player) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 md:items-center">
+      <div className="bg-white shadow-xl w-full h-full max-w-none max-h-none mx-0 rounded-none relative animate-fade-in flex flex-col md:rounded-2xl md:w-full md:max-w-md md:max-h-[90vh] md:mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-2 border-b">
           <h2 className="ml-2 font-medium text-sm text-gray-900">Opções do Jogador</h2>
