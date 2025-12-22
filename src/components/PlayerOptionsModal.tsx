@@ -49,10 +49,10 @@ export function PlayerOptionsModal({
         </div>
 
         {/* Conteúdo com scroll */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {/* Alterar Posição */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Alterar Posição</div>
+            <div className="font-medium mb-2 text-gray-600">Alterar Posição</div>
             <div className="grid grid-cols-3 gap-2">
               {(['defesa', 'meio', 'ataque'] as const).map((pos) => (
                 <button
@@ -78,7 +78,7 @@ export function PlayerOptionsModal({
 
           {/* Nível de Habilidade */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Nível de Habilidade</div>
+            <div className="font-medium mb-2 text-gray-600">Nível de Habilidade</div>
             <StarRating
               value={player.skillLevel}
               onChange={(level) => onUpdateSkillLevel(level as 1 | 2 | 3 | 4 | 5)}
@@ -91,8 +91,8 @@ export function PlayerOptionsModal({
 
           {/* Faixa Etária */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Faixa Etária</div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="font-medium mb-2 text-gray-600">Faixa Etária</div>
+            <div className="grid grid-cols-3 gap-2">
               {(['15-20', '21-30', '31-40', '41-50', '+50'] as const).map((age) => (
                 <button
                   key={age}
@@ -115,7 +115,7 @@ export function PlayerOptionsModal({
           <div>
             <div className="font-medium mb-3 text-gray-700">Ordem de Chegada</div>
             <div className="max-h-32 overflow-y-auto pr-1">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {[...Array(totalPlayers).keys()].map((i) => {
                   const order = i + 1;
                   return (
@@ -162,9 +162,12 @@ export function PlayerOptionsModal({
 
           <hr className="border-gray-200" />
 
-          {/* Pagamento do Diarista */}
-          {player.paymentType === 'diarista' && (
-            <div>
+          {/* Ações finais: Pagamento do Diarista + Remover Jogador
+              - Se tiver dois botões: cada um ocupa uma coluna
+              - Se tiver só o de remover: ele ocupa as duas colunas (100% da largura) */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Pagamento do Diarista */}
+            {player.paymentType === 'diarista' && (
               <button
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border text-white font-semibold transition"
                 onClick={onDiaristaPayment}
@@ -175,15 +178,13 @@ export function PlayerOptionsModal({
               >
                 {isDiaristaPaid ? 'Pago ✓' : 'Confirmar Pagamento'}
               </button>
-            </div>
-          )}
+            )}
 
-          <hr className="border-gray-200" />
-
-          {/* Remover Jogador */}
-          <div>
+            {/* Remover Jogador */}
             <button
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-500 text-red-600 font-semibold hover:bg-red-50 transition"
+              className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-500 text-red-600 font-semibold hover:bg-red-50 transition ${
+                player.paymentType !== 'diarista' ? 'col-span-2' : ''
+              }`}
               onClick={onRemovePlayer}
             >
               <FaUserMinus />
