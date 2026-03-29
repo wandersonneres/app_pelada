@@ -194,7 +194,7 @@ export function Home() {
         <>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Todas as Peladas</h2>
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>

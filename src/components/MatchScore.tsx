@@ -17,7 +17,7 @@ export function MatchScore({ match }: MatchScoreProps) {
   return (
     <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 bg-white rounded-xl shadow p-4 mb-4 border border-gray-100">
       <span className="font-bold text-lg sm:text-xl text-gray-700 whitespace-nowrap">
-        {match.teams[0]?.name || 'Time Branco'}
+        {match.teams[0]?.name || 'Time Azul'}
       </span>
       <div className="flex items-center gap-2 sm:gap-4 bg-gray-50 px-4 py-2 rounded-lg shadow-inner">
         <span className="text-2xl sm:text-3xl font-bold text-blue-600 min-w-[32px] text-center">
