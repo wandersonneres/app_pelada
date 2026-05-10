@@ -31,7 +31,7 @@ export function PrivateRoute({ children, requireAdmin = false, requireFinanceiro
     return <Navigate to="/" replace />;
   }
 
-  if (requireFinanceiro && user.username !=='cayto') {
+  if (requireFinanceiro && user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 

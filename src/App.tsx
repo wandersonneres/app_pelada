@@ -7,11 +7,11 @@ import { AppRoutes } from './AppRoutes';
 export function App() {
   return (
     // <ChakraProvider theme={theme}>
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
     // </ChakraProvider>
   );
 } 

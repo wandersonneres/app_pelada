@@ -33,7 +33,7 @@ export function Navbar() {
     { icon: <Calendar className="w-5 h-5" />, label: 'Nova Pelada', path: '/new-game' },
     ...(user?.role === 'admin' ? [
       { icon: <Users className="w-5 h-5" />, label: 'Jogadores', path: '/players' },
-      ...(user?.username === 'cayto' ? [
+      ...(user?.role === 'admin' ? [
         { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', path: '/financeiro' }
       ] : [])
     ] : [])
