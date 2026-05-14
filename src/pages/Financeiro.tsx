@@ -241,80 +241,80 @@ export function Financeiro() {
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
   };
 
+  const getFirstPaymentDate = (userId: string) => {
+    let firstYear: number | null = null;
+    let firstMonth: number | null = null;
+    Object.values(payments).forEach(p => {
+      if (p.userId === userId) {
+        if (firstYear === null || p.year < firstYear || (p.year === firstYear && p.month < firstMonth!)) {
+          firstYear = p.year;
+          firstMonth = p.month;
+        }
+      }
+    });
+    if (firstYear === null || firstMonth === null) return null;
+    return { month: firstMonth, year: firstYear };
+  };
+
   const calculateMonthsInDebt = (userId: string) => {
+    const firstPayment = getFirstPaymentDate(userId);
+    if (!firstPayment) return 0;
+
     let monthsInDebt = 0;
-    
-    // Verifica os 4 meses anteriores ao mês selecionado
+
     for (let i = 1; i <= 4; i++) {
       const checkMonth = selectedMonth - i;
-      const checkYear = selectedYear;
-      
-      // Se o mês for menor que 1, ajusta para o ano anterior
       let adjustedMonth = checkMonth;
-      let adjustedYear = checkYear;
-      
+      let adjustedYear = selectedYear;
       if (checkMonth < 1) {
         adjustedMonth = checkMonth + 12;
-        adjustedYear = checkYear - 1;
+        adjustedYear = selectedYear - 1;
       }
-      
+
+      // Para de contar se o mês verificado é anterior ao primeiro registro do jogador
+      if (adjustedYear < firstPayment.year || (adjustedYear === firstPayment.year && adjustedMonth < firstPayment.month)) {
+        break;
+      }
+
       const paymentId = `${userId}_${adjustedMonth}_${adjustedYear}`;
       const payment = payments[paymentId];
-      
-      // Se não existe pagamento ou o status não é 'paid', considera em atraso
       if (!payment || payment.status !== 'paid') {
         monthsInDebt++;
       } else {
-        break; // Para de contar quando encontra um pagamento
+        break;
       }
     }
-    
+
     return monthsInDebt;
   };
 
   const generateWhatsAppMessage = () => {
     const monthName = format(new Date(2024, selectedMonth - 1), 'MMMM', { locale: ptBR }).toUpperCase();
-    
-    let message = `MENSALIDADE DE ${monthName}\n\n`;
-    
-    // Filtra apenas os mensalistas que já pagaram no mês selecionado
-    const paidMensalistas = mensalistas.filter(m => {
-      const currentMonthPaymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-      const currentMonthPayment = payments[currentMonthPaymentId];
-      return currentMonthPayment?.status === 'paid';
-    });
 
-    // Ordena os mensalistas pagos por nome
-    const sortedMensalistas = paidMensalistas
+    let message = `MENSALIDADE DE ${monthName}\n\n`;
+
+    const sortedMensalistas = mensalistas
       .slice()
       .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''));
-
-    if (sortedMensalistas.length === 0) {
-      message += 'Nenhum mensalista pagou ainda este mês.';
-      return message;
-    }
 
     sortedMensalistas.forEach((m, index) => {
       const number = String(index + 1).padStart(2, '0');
       const name = m.playerInfo?.name?.toUpperCase() || '';
-      
-      // Verifica apenas os 4 meses anteriores (excluindo o mês atual)
-      let monthsInDebt = 0;
-      for (let i = 1; i <= 4; i++) {
-        const checkMonth = selectedMonth - i;
-        const paymentId = `${m.id}_${checkMonth}_${selectedYear}`;
-        const payment = payments[paymentId];
-        
-        // Se não existe pagamento ou o status não é 'paid', considera em atraso
-        if (!payment || payment.status !== 'paid') {
-          monthsInDebt++;
-        } else {
-          break;
-        }
+
+      const currentMonthPaymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+      const paidCurrentMonth = payments[currentMonthPaymentId]?.status === 'paid';
+
+      const monthsInDebt = calculateMonthsInDebt(m.id);
+
+      let statusStr = '';
+      if (paidCurrentMonth) {
+        statusStr = '✅';
+      } else if (monthsInDebt > 0) {
+        statusStr = '🚨'.repeat(Math.min(monthsInDebt, 4));
       }
 
-      //const debtStatus = monthsInDebt > 0 ? ' 🚨'.repeat(monthsInDebt) : '';
-      message += `${number} - ${name} ✅\n\n`;
+      const line = statusStr ? `${number} - ${name} ${statusStr}` : `${number} - ${name}`;
+      message += `${line}\n\n`;
     });
 
     return message;
