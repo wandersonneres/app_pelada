@@ -55,6 +55,7 @@ export interface Game {
   date: Date | Timestamp;
   location: string;
   maxPlayers: number;
+  playersPerTeam?: number;
   status: 'waiting' | 'in_progress' | 'finished';
   players: Player[];
   matches: Match[];

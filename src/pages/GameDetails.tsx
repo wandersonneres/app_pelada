@@ -278,6 +278,8 @@ export function GameDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [isGeneratingTeams, setIsGeneratingTeams] = useState(false);
+  const [playersPerTeam, setPlayersPerTeam] = useState<number>(7);
+  const [isPlayersPerTeamOpen, setIsPlayersPerTeamOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -316,6 +318,10 @@ export function GameDetails() {
     matchId: string;
     recordBy?: string;
   }>>({});
+
+  useEffect(() => {
+    if (game?.playersPerTeam) setPlayersPerTeam(game.playersPerTeam);
+  }, [game?.playersPerTeam]);
 
   useEffect(() => {
     console.log('diaristaPaymentValue', diaristaFree);
@@ -736,9 +742,9 @@ export function GameDetails() {
         return;
       }
 
-      // 1. Definir o horário de corte
+      // 1. Definir o horário de corte --> trocar o 4 por 8 para voltar a regra do horario;
       const prioridadeHorario = convertTimestampToDate(game.date);
-      prioridadeHorario.setHours(8, 35, 0, 0);
+      prioridadeHorario.setHours(4, 35, 0, 0);
 
       // 2. Identificar IDs de quem já jogou pelo menos uma partida
       const jogadoresJaJogaram = (game.matches || []).flatMap(m => m.teams.flatMap(t => t.players.map(p => p.id)));
@@ -775,45 +781,27 @@ export function GameDetails() {
       console.log('waitingList local (antes):', waitingList);
 
       if (isFirstMatch) {
-        // Verifica se tem menos de 18 jogadores
         const totalPlayers = game.players.length;
-        const isLowPlayerCount = totalPlayers < 18;
+        const totalPlayersInMatch = playersPerTeam * 2;
 
-        if (totalPlayers < 4) {
-          setToastMsg({ type: 'error', message: 'É necessário pelo menos 4 jogadores para gerar os times.' });
+        if (totalPlayers < totalPlayersInMatch) {
+          setToastMsg({
+            type: 'error',
+            message: `Jogadores insuficientes. São necessários ${totalPlayersInMatch} para ${playersPerTeam}x${playersPerTeam} (${totalPlayers} presentes).`,
+          });
           return;
         }
 
-        // Se tiver menos de 18 jogadores, divide pelo número máximo possível
-        let playersForFirstMatch;
-        if (isLowPlayerCount) {
-          // Calcula o número máximo de jogadores por time (par)
-          const maxPlayersPerTeam = Math.floor(totalPlayers / 2);
-          const totalPlayersInMatch = maxPlayersPerTeam * 2;
-          
-          // Pega os primeiros jogadores por ordem de chegada
-          playersForFirstMatch = [...game.players]
-            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
-            .slice(0, totalPlayersInMatch);
+        // Pega os primeiros jogadores por ordem de chegada
+        const playersForFirstMatch = [...game.players]
+          .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+          .slice(0, totalPlayersInMatch);
 
-          // Jogadores restantes vão para a lista de espera
-          waitingList = game.players
-            .filter(p => !playersForFirstMatch.map(p => p.id).includes(p.id))
-            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
-            .map(p => p.id);
-
-          console.log(`Adaptação para ${totalPlayers} jogadores: ${maxPlayersPerTeam} por time`);
-        } else {
-          // Comportamento normal para 18+ jogadores
-          playersForFirstMatch = jogadoresParaEntrar.slice(0, 18);
-
-        // Jogadores que não estão jogando vão para a lista de espera
-          const playingIds = playersForFirstMatch.map(p => p.id);
+        // Jogadores restantes vão para a lista de espera
         waitingList = game.players
-          .filter(p => !playingIds.includes(p.id))
-            .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+          .filter(p => !playersForFirstMatch.map(p => p.id).includes(p.id))
+          .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
           .map(p => p.id);
-        }
 
         console.log('Jogadores selecionados para primeira partida:', 
           playersForFirstMatch.map(p => ({ 
@@ -864,6 +852,7 @@ export function GameDetails() {
           currentMatch: newMatch.id,
           status: 'in_progress',
           waitingList,
+          playersPerTeam,
           updatedAt: serverTimestamp(),
         });
       } else {
@@ -897,13 +886,16 @@ export function GameDetails() {
         waitingList = [...waitingList, ...loserPlayers.map(p => p.id)];
         console.log('waitingList local (depois de adicionar perdedores):', waitingList);
 
-        const nextTeamIds = waitingList.slice(0, 9);
-        if (nextTeamIds.length < 4) {
-          setToastMsg({ type: 'error', message: 'Não há jogadores suficientes na lista de espera.' });
+        const nextTeamIds = waitingList.slice(0, playersPerTeam);
+        if (nextTeamIds.length < playersPerTeam) {
+          setToastMsg({
+            type: 'error',
+            message: `Não há jogadores suficientes na lista de espera para ${playersPerTeam}x${playersPerTeam}.`,
+          });
           return;
         }
 
-        waitingList = waitingList.slice(9);
+        waitingList = waitingList.slice(playersPerTeam);
         console.log('waitingList local (após remover quem entrou):', waitingList);
 
         // 5. Monta os times
@@ -947,6 +939,7 @@ export function GameDetails() {
           currentMatch: newMatch.id,
           status: 'in_progress',
           waitingList,
+          playersPerTeam,
           updatedAt: serverTimestamp(),
         });
       }
@@ -1428,6 +1421,48 @@ export function GameDetails() {
         ...prev,
         matches: game.matches
       } : null);
+    }
+  };
+
+  const handleRemoveGoal = async (matchId: string, goalId: string) => {
+    if (!game || !id) return;
+
+    try {
+      const updatedMatches = game.matches.map(match => {
+        if (match.id !== matchId) return match;
+
+        const goal = match.goals?.find(g => g.id === goalId);
+        if (!goal) return match;
+
+        const scoringTeam = match.teams.find(t => t.players.some(p => p.id === goal.scorerId));
+
+        const updatedTeams = match.teams.map(team => {
+          if (team.id === scoringTeam?.id) {
+            return { ...team, score: Math.max(0, (team.score || 0) - 1) };
+          }
+          return team;
+        });
+
+        return {
+          ...match,
+          goals: (match.goals ?? []).filter(g => g.id !== goalId),
+          teams: updatedTeams,
+          updatedAt: new Date()
+        };
+      });
+
+      setGame(prev => prev ? { ...prev, matches: updatedMatches } : null);
+
+      await updateDoc(doc(db, 'games', id), {
+        matches: updatedMatches,
+        updatedAt: serverTimestamp()
+      });
+
+      setToastMsg({ type: 'success', message: 'Gol removido com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao remover gol:', error);
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao remover o gol.' });
+      setGame(prev => prev ? { ...prev, matches: game.matches } : null);
     }
   };
 
@@ -2154,6 +2189,7 @@ export function GameDetails() {
                                 teamB={match.teams[1]}
                                 isFirstMatch={idx === 0}
                                 onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
+                                onRemoveGoal={(goalId) => handleRemoveGoal(match.id, goalId)}
                                 match={match}
                                 onTimerUpdate={createTimerUpdateHandler(match.id)}
                               />
@@ -2310,9 +2346,59 @@ export function GameDetails() {
             ) : (
               <div className="text-gray-500 text-center py-8">Nenhuma partida registrada ainda.</div>
             )}
-            {/* Botão Gerar Nova Partida */}
+            {/* Seletor de jogadores por time + Botão Gerar Nova Partida */}
             {selectedTab === 'partidas' && game.status !== 'finished' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-              <div className="flex justify-center mt-8">
+              <div className="flex flex-col items-center gap-3 mt-8">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="text-sm text-gray-500 font-medium">Jogadores por time</span>
+                  <button
+                    onClick={() => setIsPlayersPerTeamOpen(true)}
+                    className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition"
+                  >
+                    <span className="text-sm font-semibold text-gray-800">{playersPerTeam}x{playersPerTeam}</span>
+                    <svg className="w-2 h-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Bottom sheet seletor */}
+                {isPlayersPerTeamOpen && (
+                  <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={() => setIsPlayersPerTeamOpen(false)}>
+                    <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100">
+                        <div>
+                          <div className="font-bold text-base text-gray-800">Jogadores por time</div>
+                          <div className="text-xs text-gray-500">Selecione o formato da partida</div>
+                        </div>
+                        <button
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl font-bold"
+                          onClick={() => setIsPlayersPerTeamOpen(false)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {[4, 5, 6, 7, 8, 9, 10].map(n => (
+                          <button
+                            key={n}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-left ${
+                              playersPerTeam === n
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-50 hover:bg-blue-50 active:bg-blue-100 text-gray-800'
+                            }`}
+                            onClick={() => { setPlayersPerTeam(n); setIsPlayersPerTeamOpen(false); }}
+                          >
+                            <span className="font-semibold text-base">{n}x{n}</span>
+                            <span className={`text-xs ${playersPerTeam === n ? 'text-blue-100' : 'text-gray-400'}`}>
+                              {n * 2} jogadores em campo
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={generateTeams}
                   className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"

@@ -8,6 +8,7 @@ interface MatchTimerProps {
   teamB: Team;
   isFirstMatch: boolean;
   onGoalScored: (teamId: string, scorerId: string, assisterId?: string) => void;
+  onRemoveGoal: (goalId: string) => void;
   match: Match;
   onTimerUpdate?: (timerData: {
     isRunning: boolean;
@@ -17,15 +18,14 @@ interface MatchTimerProps {
   }) => void;
 }
 
-export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, onTimerUpdate }: MatchTimerProps) => {
-  // Usa o estado do timer persistido ou valores padrão
+export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveGoal, match, onTimerUpdate }: MatchTimerProps) => {
   const [time, setTime] = useState(() => {
     if (match.timer?.totalSeconds) {
       return Math.floor(match.timer.totalSeconds / 60);
     }
     return isFirstMatch ? 15 : 10;
   });
-  
+
   const [running, setRunning] = useState(match.timer?.isRunning || false);
   const [remainingSeconds, setRemainingSeconds] = useState(() => {
     if (match.timer?.remainingSeconds !== undefined) {
@@ -33,20 +33,18 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, on
     }
     return time * 60;
   });
-  
+
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Calcula os gols de cada time baseado nos dados reais da partida
-  const scoreA = match.goals?.filter(goal => 
+  const scoreA = match.goals?.filter(goal =>
     teamA.players.some(p => p.id === goal.scorerId)
   ).length || 0;
 
-  const scoreB = match.goals?.filter(goal => 
+  const scoreB = match.goals?.filter(goal =>
     teamB.players.some(p => p.id === goal.scorerId)
   ).length || 0;
 
-  // Atualiza o timer no Firebase quando o estado muda
   const updateTimerInFirebase = useCallback((newRunning: boolean, newRemainingSeconds: number, newTotalSeconds: number) => {
     if (onTimerUpdate) {
       onTimerUpdate({
@@ -77,7 +75,6 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, on
       interval = setInterval(() => {
         setRemainingSeconds((prev) => {
           const newRemaining = prev - 1;
-          // Atualiza o Firebase a cada segundo quando está rodando
           if (onTimerUpdate) {
             onTimerUpdate({
               isRunning: true,
@@ -123,6 +120,8 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, on
     setRemainingSeconds(newRemainingSeconds);
     updateTimerInFirebase(running, newRemainingSeconds, newTime * 60);
   };
+
+  const allPlayers = [...teamA.players, ...teamB.players];
 
   return (
     <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl shadow-lg mb-4 overflow-hidden border border-blue-200">
@@ -186,6 +185,44 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, on
           </button>
         </div>
       </div>
+
+      {/* Histórico de gols */}
+      {match.goals && match.goals.length > 0 && (
+        <div className="px-4 pb-4 space-y-1.5">
+          <div className="text-xs text-white/60 font-semibold uppercase tracking-wide mb-1">Gols</div>
+          {match.goals.map(goal => {
+            const scorer = allPlayers.find(p => p.id === goal.scorerId);
+            const assister = goal.assisterId
+              ? allPlayers.find(p => p.id === goal.assisterId)
+              : null;
+            const isTeamA = teamA.players.some(p => p.id === goal.scorerId);
+            return (
+              <div
+                key={goal.id}
+                className="flex items-center justify-between bg-white/10 rounded-lg px-3 py-2 text-xs text-white"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isTeamA ? 'bg-blue-300' : 'bg-orange-300'}`} />
+                  <span className="truncate">
+                    <span className="font-semibold">{scorer?.name.split(' ')[0] ?? '?'}</span>
+                    {assister && (
+                      <span className="text-white/70"> ({assister.name.split(' ')[0]})</span>
+                    )}
+                  </span>
+                </div>
+                <button
+                  onClick={() => onRemoveGoal(goal.id)}
+                  className="ml-3 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-red-300 hover:text-white hover:bg-red-500 transition font-bold text-sm"
+                  aria-label="Remover gol"
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Modal de Gols */}
       {selectedTeam && (
         <GoalScorerModal
@@ -197,4 +234,4 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, match, on
       )}
     </div>
   );
-}; 
+};

@@ -10,13 +10,31 @@ interface TacticalViewProps {
   isHomeTeam?: boolean;
 }
 
-const FORMATIONS = ['4-3-2', '3-3-3', '3-4-2', '2-4-3', '3-3-2', '2-3-3', '3-2-3'];
+const FORMATIONS_BY_COUNT: Record<number, string[]> = {
+  4:  ['2-1-1', '1-2-1'],
+  5:  ['2-2-1', '2-1-2'],
+  6:  ['3-2-1', '2-3-1'],
+  7:  ['3-3-1', '3-2-2'],
+  8:  ['4-3-1', '3-3-2'],
+  9:  ['4-3-1', '3-4-2'],
+  10: ['4-4-2', '4-3-3'],
+};
 
-export const TacticalView = ({ team, formation = '4-3-2', onFormationChange, goals = [], teamColor, isHomeTeam = false }: TacticalViewProps) => {
+export const TacticalView = ({ team, formation = '3-3-3', onFormationChange, goals = [], teamColor, isHomeTeam = false }: TacticalViewProps) => {
   const [positions, setPositions] = useState<Player[][]>([]);
 
+  const playerCount = team.players.length;
+  const availableFormations = FORMATIONS_BY_COUNT[playerCount] ?? FORMATIONS_BY_COUNT[9];
+
   useEffect(() => {
-    const formationArray = formation.split('-').map(Number);
+    if (availableFormations.length > 0 && !availableFormations.includes(formation)) {
+      onFormationChange(availableFormations[0]);
+    }
+  }, [availableFormations, formation, onFormationChange]);
+
+  useEffect(() => {
+    const activeFormation = availableFormations.includes(formation) ? formation : availableFormations[0];
+    const formationArray = activeFormation.split('-').map(Number);
     const sortedPlayers = [...team.players].sort((a, b) => {
       const positionOrder = { defesa: 1, meio: 2, ataque: 3 };
       if (positionOrder[a.position] !== positionOrder[b.position]) {
@@ -44,7 +62,7 @@ export const TacticalView = ({ team, formation = '4-3-2', onFormationChange, goa
       newPositions.push(line);
     });
     setPositions(newPositions);
-  }, [formation, team.players]);
+  }, [formation, team.players, availableFormations]);
 
   return (
     <div
@@ -54,10 +72,10 @@ export const TacticalView = ({ team, formation = '4-3-2', onFormationChange, goa
       <div className={`absolute top-2 right-2 z-10 ${isHomeTeam ? 'rotate-180' : ''}`}>
         <select
           className="text-xs bg-white/80 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          value={formation}
+          value={availableFormations.includes(formation) ? formation : availableFormations[0]}
           onChange={e => onFormationChange(e.target.value)}
         >
-          {FORMATIONS.map(f => (
+          {availableFormations.map(f => (
             <option key={f} value={f}>{f}</option>
           ))}
         </select>
@@ -95,4 +113,4 @@ export const TacticalView = ({ team, formation = '4-3-2', onFormationChange, goa
         ))}
     </div>
   );
-} 
+}
