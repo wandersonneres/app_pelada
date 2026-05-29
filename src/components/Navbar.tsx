@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  Calendar, 
-  Users, 
-  Menu as MenuIcon, 
-  User, 
+import {
+  Home,
+  Calendar,
+  Users,
+  Menu as MenuIcon,
+  User,
   LogOut,
   ChevronLeft,
-  DollarSign
+  DollarSign,
+  BarChart2,
 } from 'lucide-react';
 
 export function Navbar() {
@@ -27,34 +28,36 @@ export function Navbar() {
       console.error('Erro ao fazer logout:', error);
     }
   };
-  
-  const menuItems = [
+
+  const commonItems = [
     { icon: <Home className="w-5 h-5" />, label: 'Início', path: '/' },
     { icon: <Calendar className="w-5 h-5" />, label: 'Nova Pelada', path: '/new-game' },
-    ...(user?.role === 'admin' ? [
-      { icon: <Users className="w-5 h-5" />, label: 'Jogadores', path: '/players' },
-      ...(user?.role === 'admin' ? [
-        { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', path: '/financeiro' }
-      ] : [])
-    ] : [])
+    { icon: <BarChart2 className="w-5 h-5" />, label: 'Ranking', path: '/ranking' },
   ];
+
+  const adminItems = user?.role === 'admin'
+    ? [
+        { icon: <Users className="w-5 h-5" />, label: 'Jogadores', path: '/players' },
+        { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', path: '/financeiro' },
+      ]
+    : [];
+
+  const menuItems = [...commonItems, ...adminItems];
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-          {user?.role === 'admin' && (
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <MenuIcon className="w-6 h-6" />
-              </button>
-          )}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <MenuIcon className="w-6 h-6" />
+            </button>
           </div>
 
-        {user && (
+          {user && (
             <div className="flex items-center">
               <div className="relative">
                 <button
@@ -97,7 +100,7 @@ export function Navbar() {
                 )}
               </div>
             </div>
-        )}
+          )}
         </div>
       </div>
 
@@ -119,8 +122,8 @@ export function Navbar() {
             </button>
           </div>
           <div className="p-4">
-            <div className="space-y-2">
-              {menuItems.map((item) => (
+            <div className="space-y-1">
+              {menuItems.map(item => (
                 <button
                   key={item.path}
                   onClick={() => {
@@ -139,4 +142,4 @@ export function Navbar() {
       )}
     </nav>
   );
-} 
+}

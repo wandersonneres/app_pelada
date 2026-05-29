@@ -11,6 +11,7 @@ import { Navbar } from './components/Navbar';
 import { EditUser } from './pages/EditUser';
 import { Players } from './pages/Players';
 import { Financeiro } from './pages/Financeiro';
+import { Ranking } from './pages/Ranking';
 
 export function AppRoutes() {
   const location = useLocation();
@@ -94,6 +95,14 @@ export function AppRoutes() {
             element={
               <PrivateRoute requireFinanceiro>
                 <Financeiro />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ranking"
+            element={
+              <PrivateRoute>
+                <Ranking />
               </PrivateRoute>
             }
           />
