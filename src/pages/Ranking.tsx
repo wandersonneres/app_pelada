@@ -149,6 +149,8 @@ export function Ranking() {
   const [config, setConfig] = useState<RankingConfig>(DEFAULT_CONFIG);
   const [totalGames, setTotalGames] = useState(0);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set());
+  const [onlyRegistered, setOnlyRegistered] = useState(true);
 
   const [dateMode, setDateMode] = useState<DateFilterMode>('all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -164,6 +166,13 @@ export function Ranking() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   // Raw string values for weight inputs — avoids the "0 persists" controlled-input bug
   const [weightsRaw, setWeightsRaw] = useState<Record<string, string>>({});
+
+  // ── Load registered player IDs ────────────────────────────────────────────
+  useEffect(() => {
+    getDocs(collection(db, 'users')).then(snap => {
+      setRegisteredIds(new Set(snap.docs.map(d => d.id)));
+    }).catch(() => {});
+  }, []);
 
   // ── Load config ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -313,10 +322,12 @@ export function Ranking() {
     return () => { cancelled = true; };
   }, [effectiveStart, userDateRange.end, config]);
 
-  const ranked = useMemo(
-    () => [...allStats].sort((a, b) => primaryValue(b, rankType) - primaryValue(a, rankType)),
-    [allStats, rankType]
-  );
+  const ranked = useMemo(() => {
+    const base = onlyRegistered
+      ? allStats.filter(s => registeredIds.has(s.id))
+      : allStats;
+    return [...base].sort((a, b) => primaryValue(b, rankType) - primaryValue(a, rankType));
+  }, [allStats, rankType, onlyRegistered, registeredIds]);
 
   const top3 = ranked.slice(0, 3);
   const years = availableYears.length > 0 ? availableYears : [new Date().getFullYear()];
@@ -357,7 +368,7 @@ export function Ranking() {
               <h1 className="text-xl font-bold text-gray-900 leading-none">Ranking</h1>
               {!loading && (
                 <p className="text-xs text-gray-500 mt-0.5 truncate">
-                  {allStats.length} jogadores · {totalGames} jogo{totalGames !== 1 ? 's' : ''}
+                  {ranked.length} jogadores · {totalGames} jogo{totalGames !== 1 ? 's' : ''}
                 </p>
               )}
             </div>
@@ -593,6 +604,33 @@ export function Ranking() {
             </AnimatePresence>
           </CardContent>
         </Card>
+
+        {/* ── Apenas cadastrados ───────────────────────────────────────────── */}
+        <button
+          onClick={() => setOnlyRegistered(v => !v)}
+          className={cn(
+            'flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
+            onlyRegistered
+              ? 'bg-blue-50 border-blue-300 text-blue-700'
+              : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+          )}
+        >
+          <div className={cn(
+            'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
+            onlyRegistered ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+          )}>
+            {onlyRegistered && (
+              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <Users className="w-3.5 h-3.5 shrink-0" />
+          Considerar apenas jogadores cadastrados
+          {registeredIds.size > 0 && (
+            <span className="ml-auto text-gray-400 font-normal">{registeredIds.size} cadastrados</span>
+          )}
+        </button>
 
         {/* ── Ranking type selector ────────────────────────────────────────── */}
         <div className="relative overflow-hidden">
