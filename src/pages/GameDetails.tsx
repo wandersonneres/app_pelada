@@ -1357,7 +1357,7 @@ export function GameDetails() {
     }
   };
 
-  const handleGoalScored = async (matchId: string, teamId: string, scorerId: string, assisterId?: string) => {
+  const handleGoalScored = async (matchId: string, teamId: string, scorerId: string, assisterId?: string, ownGoal?: boolean) => {
     if (!game || !id) return;
 
     try {
@@ -1374,7 +1374,10 @@ export function GameDetails() {
         timestamp: new Date()
       };
 
-      if (assisterId) {
+      // Gol contra credita o ponto ao adversário (teamId) sem dar assistência
+      if (ownGoal) {
+        goalData.ownGoal = true;
+      } else if (assisterId) {
         goalData.assisterId = assisterId;
       }
 
@@ -1434,10 +1437,12 @@ export function GameDetails() {
         const goal = match.goals?.find(g => g.id === goalId);
         if (!goal) return match;
 
-        const scoringTeam = match.teams.find(t => t.players.some(p => p.id === goal.scorerId));
+        // Decrementa o time que o gol contabilizou (teamId), com fallback à posse para gols antigos
+        const scoringTeamId = goal.teamId
+          ?? match.teams.find(t => t.players.some(p => p.id === goal.scorerId))?.id;
 
         const updatedTeams = match.teams.map(team => {
-          if (team.id === scoringTeam?.id) {
+          if (team.id === scoringTeamId) {
             return { ...team, score: Math.max(0, (team.score || 0) - 1) };
           }
           return team;
@@ -2078,7 +2083,7 @@ export function GameDetails() {
                   const isExpanded = expandedMatchId === match.id;
                   // Função para contar gols e assistências de um jogador
                   const getPlayerStats = (playerId: string) => {
-                    const goals = match.goals?.filter(g => g.scorerId === playerId).length || 0;
+                    const goals = match.goals?.filter(g => g.scorerId === playerId && !g.ownGoal).length || 0;
                     const assists = match.goals?.filter(g => g.assisterId === playerId).length || 0;
                     return { goals, assists };
                   };
@@ -2188,9 +2193,10 @@ export function GameDetails() {
                                 teamA={match.teams[0]}
                                 teamB={match.teams[1]}
                                 isFirstMatch={idx === 0}
-                                onGoalScored={(teamId, scorerId, assisterId) => handleGoalScored(match.id, teamId, scorerId, assisterId)}
+                                onGoalScored={(teamId, scorerId, assisterId, ownGoal) => handleGoalScored(match.id, teamId, scorerId, assisterId, ownGoal)}
                                 onRemoveGoal={(goalId) => handleRemoveGoal(match.id, goalId)}
                                 match={match}
+                                roster={game.players}
                                 onTimerUpdate={createTimerUpdateHandler(match.id)}
                               />
                             )}

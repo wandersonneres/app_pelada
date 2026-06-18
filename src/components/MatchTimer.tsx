@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, StopCircle, Target } from 'lucide-react';
-import { Team, Match } from '../types';
+import { Team, Match, Player, getGoalTeamId } from '../types';
 import { GoalScorerModal } from './GoalScorerModal';
 
 interface MatchTimerProps {
   teamA: Team;
   teamB: Team;
   isFirstMatch: boolean;
-  onGoalScored: (teamId: string, scorerId: string, assisterId?: string) => void;
+  onGoalScored: (teamId: string, scorerId: string, assisterId?: string, ownGoal?: boolean) => void;
   onRemoveGoal: (goalId: string) => void;
   match: Match;
+  roster?: Player[]; // Elenco completo do jogo (para resolver nomes de jogadores substituídos)
   onTimerUpdate?: (timerData: {
     isRunning: boolean;
     remainingSeconds: number;
@@ -18,7 +19,7 @@ interface MatchTimerProps {
   }) => void;
 }
 
-export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveGoal, match, onTimerUpdate }: MatchTimerProps) => {
+export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveGoal, match, roster, onTimerUpdate }: MatchTimerProps) => {
   const [time, setTime] = useState(() => {
     if (match.timer?.totalSeconds) {
       return Math.floor(match.timer.totalSeconds / 60);
@@ -38,11 +39,11 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const scoreA = match.goals?.filter(goal =>
-    teamA.players.some(p => p.id === goal.scorerId)
+    getGoalTeamId(goal, match.teams) === teamA.id
   ).length || 0;
 
   const scoreB = match.goals?.filter(goal =>
-    teamB.players.some(p => p.id === goal.scorerId)
+    getGoalTeamId(goal, match.teams) === teamB.id
   ).length || 0;
 
   const updateTimerInFirebase = useCallback((newRunning: boolean, newRemainingSeconds: number, newTotalSeconds: number) => {
@@ -106,9 +107,9 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
     setIsModalOpen(true);
   };
 
-  const handleGoalConfirmed = (scorerId: string, assisterId?: string) => {
+  const handleGoalConfirmed = (scorerId: string, assisterId?: string, ownGoal?: boolean) => {
     if (selectedTeam) {
-      onGoalScored(selectedTeam.id, scorerId, assisterId);
+      onGoalScored(selectedTeam.id, scorerId, assisterId, ownGoal);
     }
     setIsModalOpen(false);
     setSelectedTeam(null);
@@ -121,7 +122,8 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
     updateTimerInFirebase(running, newRemainingSeconds, newTime * 60);
   };
 
-  const allPlayers = [...teamA.players, ...teamB.players];
+  // Inclui o elenco completo do jogo para resolver nomes de jogadores que já saíram da partida
+  const allPlayers = [...teamA.players, ...teamB.players, ...(roster ?? [])];
 
   return (
     <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl shadow-lg mb-4 overflow-hidden border border-blue-200">
@@ -195,7 +197,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
             const assister = goal.assisterId
               ? allPlayers.find(p => p.id === goal.assisterId)
               : null;
-            const isTeamA = teamA.players.some(p => p.id === goal.scorerId);
+            const isTeamA = getGoalTeamId(goal, match.teams) === teamA.id;
             return (
               <div
                 key={goal.id}
@@ -205,7 +207,9 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isTeamA ? 'bg-blue-300' : 'bg-orange-300'}`} />
                   <span className="truncate">
                     <span className="font-semibold">{scorer?.name.split(' ')[0] ?? '?'}</span>
-                    {assister && (
+                    {goal.ownGoal ? (
+                      <span className="text-red-300"> (contra)</span>
+                    ) : assister && (
                       <span className="text-white/70"> ({assister.name.split(' ')[0]})</span>
                     )}
                   </span>
@@ -229,6 +233,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
           isOpen={isModalOpen}
           onClose={() => { setIsModalOpen(false); setSelectedTeam(null); }}
           team={selectedTeam}
+          opponentTeam={selectedTeam.id === teamA.id ? teamB : teamA}
           onConfirm={handleGoalConfirmed}
         />
       )}

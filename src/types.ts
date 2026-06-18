@@ -28,8 +28,11 @@ export interface Team {
 
 export interface Goal {
   id: string;
+  matchId?: string;
+  teamId?: string;       // Time que o gol contabiliza (beneficiário). Ausente em gols antigos.
   scorerId: string;
   assisterId?: string;
+  ownGoal?: boolean;     // Gol contra: contabiliza para o adversário, não credita o autor.
   timestamp: Date;
 }
 
@@ -75,4 +78,14 @@ export function convertTimestampToDate(timestamp: Date | Timestamp): Date {
     return timestamp.toDate();
   }
   return new Date(timestamp);
-} 
+}
+
+// Time que um gol contabiliza. Prioriza o teamId salvo (resiste a substituições e
+// gols contra); cai para inferência pela posse do jogador em gols antigos sem teamId.
+export function getGoalTeamId(
+  goal: { teamId?: string; scorerId: string },
+  teams: { id: string; players: { id: string }[] }[]
+): string | undefined {
+  if (goal.teamId) return goal.teamId;
+  return teams.find(t => t.players.some(p => p.id === goal.scorerId))?.id;
+}

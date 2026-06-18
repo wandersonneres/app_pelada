@@ -1,4 +1,4 @@
-import { Game } from '../types';
+import { Game, getGoalTeamId } from '../types';
 import { Trophy, Users, Target, Award, Footprints, Crown, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,7 +96,8 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
       if (match.status === 'finished') {
         if (match.goals) {
           match.goals.forEach(goal => {
-            if (goal.scorerId && stats[goal.scorerId]) {
+            // Gol contra não credita o autor como artilheiro
+            if (goal.scorerId && stats[goal.scorerId] && !goal.ownGoal) {
               stats[goal.scorerId].goals += 1;
             }
             if (goal.assisterId && stats[goal.assisterId]) {
@@ -107,17 +108,12 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
 
         const teams = match.teams;
 
-        // Count goals per team from the goals array
+        // Count goals per team using each goal's teamId (resists substitutions / own goals)
         const teamGoals: Record<string, number> = {};
         teams.forEach(t => { teamGoals[t.id] = 0; });
         (match.goals ?? []).forEach(g => {
-          if (!g.scorerId) return;
-          for (const t of teams) {
-            if (t.players.some(p => p.id === g.scorerId)) {
-              teamGoals[t.id] = (teamGoals[t.id] ?? 0) + 1;
-              break;
-            }
-          }
+          const tid = getGoalTeamId(g, teams);
+          if (tid && tid in teamGoals) teamGoals[tid] += 1;
         });
 
         // Fall back to team.score if no goals recorded in goals array

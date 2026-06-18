@@ -1,17 +1,18 @@
-import { Match } from '../types';
+import { Match, getGoalTeamId } from '../types';
 
 interface MatchScoreProps {
   match: Match;
 }
 
 export function MatchScore({ match }: MatchScoreProps) {
-  // Calcula os gols de cada time
-  const teamAGoals = match.goals?.filter(goal => 
-    match.teams[0].players.some(p => p.id === goal.scorerId)
+  // Calcula os gols de cada time pelo time que o gol contabiliza (teamId),
+  // resistindo a substituições e gols contra.
+  const teamAGoals = match.goals?.filter(goal =>
+    getGoalTeamId(goal, match.teams) === match.teams[0].id
   ).length || 0;
 
-  const teamBGoals = match.goals?.filter(goal => 
-    match.teams[1].players.some(p => p.id === goal.scorerId)
+  const teamBGoals = match.goals?.filter(goal =>
+    getGoalTeamId(goal, match.teams) === match.teams[1].id
   ).length || 0;
 
   return (

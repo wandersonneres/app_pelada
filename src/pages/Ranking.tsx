@@ -23,6 +23,7 @@ interface PlayerRankStats {
   id: string;
   name: string;
   goals: number;
+  ownGoals: number;
   assists: number;
   victories: number;
   draws: number;
@@ -129,7 +130,9 @@ function primaryValue(stats: PlayerRankStats, type: RankingType): number {
 function secondaryStats(stats: PlayerRankStats, type: RankingType) {
   switch (type) {
     case 'points':    return [{ label: 'Gols', value: stats.goals }, { label: 'Assists', value: stats.assists }, { label: 'Vitórias', value: stats.victories }];
-    case 'goals':     return [{ label: 'Assists', value: stats.assists }, { label: 'Vitórias', value: stats.victories }];
+    case 'goals':     return stats.ownGoals > 0
+      ? [{ label: 'Assists', value: stats.assists }, { label: 'Contra', value: stats.ownGoals }]
+      : [{ label: 'Assists', value: stats.assists }, { label: 'Vitórias', value: stats.victories }];
     case 'assists':   return [{ label: 'Gols', value: stats.goals }, { label: 'Vitórias', value: stats.victories }];
     case 'victories': return [{ label: 'Empates', value: stats.draws }, { label: 'Derrotas', value: stats.defeats }];
     case 'draws':     return [{ label: 'Vitórias', value: stats.victories }, { label: 'Derrotas', value: stats.defeats }];
@@ -240,7 +243,7 @@ export function Ranking() {
             if (!statsMap[p.id]) {
               statsMap[p.id] = {
                 id: p.id, name: p.name,
-                goals: 0, assists: 0, victories: 0, draws: 0, defeats: 0,
+                goals: 0, ownGoals: 0, assists: 0, victories: 0, draws: 0, defeats: 0,
                 matches: 0, gamesAttended: 0, totalPoints: 0, winRate: 0,
               };
             }
@@ -253,25 +256,23 @@ export function Ranking() {
             if (match.status !== 'finished') return;
             const teams: any[] = match.teams ?? [];
 
-            // Goals & assists
+            // Goals & assists — gol contra vai para contador separado, não para artilheiro
             (match.goals ?? []).forEach((g: any) => {
-              if (g.scorerId  && statsMap[g.scorerId])  statsMap[g.scorerId].goals   += 1;
+              if (g.scorerId && statsMap[g.scorerId]) {
+                if (g.ownGoal) statsMap[g.scorerId].ownGoals += 1;
+                else           statsMap[g.scorerId].goals    += 1;
+              }
               if (g.assisterId && statsMap[g.assisterId]) statsMap[g.assisterId].assists += 1;
             });
 
             // Victory / Draw / Defeat — derived from goals per team (placar real)
             if (teams.length >= 2) {
-              // Count goals per team from the goals array
+              // Count goals per team using each goal's teamId (resists substitutions / own goals)
               const teamGoals: Record<string, number> = {};
               teams.forEach((t: any) => { teamGoals[t.id] = 0; });
               (match.goals ?? []).forEach((g: any) => {
-                if (!g.scorerId) return;
-                for (const team of teams) {
-                  if ((team.players ?? []).some((p: any) => p.id === g.scorerId)) {
-                    teamGoals[team.id] = (teamGoals[team.id] ?? 0) + 1;
-                    break;
-                  }
-                }
+                const tid = g.teamId ?? teams.find((t: any) => (t.players ?? []).some((p: any) => p.id === g.scorerId))?.id;
+                if (tid && tid in teamGoals) teamGoals[tid] += 1;
               });
               // Fall back to team.score only when no goals are recorded
               const totalGoals = Object.values(teamGoals).reduce((a: number, b: number) => a + b, 0);
