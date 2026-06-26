@@ -4,8 +4,43 @@ import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, ChevronLeft, Copy, Check, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronLeft, Copy, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { Portal } from '@/components/ui/Portal';
+
+const MONTHS_PT = [...Array(12)].map((_, i) => format(new Date(2024, i), 'MMMM', { locale: ptBR }));
+const YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
+
+function MonthSelect({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <Select value={String(value)} onValueChange={v => onChange(Number(v))}>
+      <SelectTrigger className="w-full">
+        <span className="flex-1 text-left capitalize">{MONTHS_PT[value - 1]}</span>
+      </SelectTrigger>
+      <SelectContent>
+        {MONTHS_PT.map((m, i) => (
+          <SelectItem key={i + 1} value={String(i + 1)} className="capitalize">{m}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function YearSelect({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <Select value={String(value)} onValueChange={v => onChange(Number(v))}>
+      <SelectTrigger className="w-full">
+        <span className="flex-1 text-left">{value}</span>
+      </SelectTrigger>
+      <SelectContent>
+        {YEARS.map(y => (
+          <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 interface Payment {
   userId: string;
@@ -399,11 +434,12 @@ export function Financeiro() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-2 sm:p-3 lg:p-4">
+    <div className="pelada-page">
+    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10 py-4">
       <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 lg:mb-6">
         <button
           onClick={() => navigate('/')}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -412,58 +448,36 @@ export function Financeiro() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Filtros */}
-        <div className="lg:col-span-3 bg-white rounded-xl shadow p-3 sm:p-4">
+        <div className="lg:col-span-3 bg-[var(--surface-solid)] rounded-xl shadow p-3 sm:p-4">
           {/* Mobile (default) */}
           <div className="sm:hidden">
             <div className="space-y-4">
               {/* Mês e Ano em linha */}
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <label className="block text-xs font-medium text-ink-soft mb-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Mês
                   </label>
                   <div className="relative">
-                    <select 
-                      value={selectedMonth} 
-                      onChange={e => setSelectedMonth(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
+                    <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
                   </div>
                 </div>
 
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <label className="block text-xs font-medium text-ink-soft mb-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Ano
                   </label>
                   <div className="relative">
-                    <select 
-                      value={selectedYear} 
-                      onChange={e => setSelectedYear(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[2025,2026,2027,2028,2029,2030].map(y => (
-                        <option key={y} value={y} className="py-1">{y}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
+                    <YearSelect value={selectedYear} onChange={setSelectedYear} />
                   </div>
                 </div>
               </div>
 
               {/* Status */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                <label className="block text-xs font-medium text-ink-soft mb-2 flex items-center gap-1">
                   <Check className="w-3 h-3" />
                   Filtrar por Status
                 </label>
@@ -472,8 +486,8 @@ export function Financeiro() {
                     onClick={() => setStatusFilter('all')}
                     className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                       ${statusFilter === 'all' 
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                        : 'bg-gray-50 text-gray-600 border border-gray-200'
+                        ? 'bg-team-blue/15 text-team-blue-soft border border-blue-200' 
+                        : 'bg-surface text-ink-soft border border-divider'
                       }`}
                   >
                     Todos
@@ -482,8 +496,8 @@ export function Financeiro() {
                     onClick={() => setStatusFilter('paid')}
                     className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                       ${statusFilter === 'paid' 
-                        ? 'bg-green-100 text-green-700 border border-green-200' 
-                        : 'bg-gray-50 text-gray-600 border border-gray-200'
+                        ? 'bg-success/15 text-success-soft border border-green-200' 
+                        : 'bg-surface text-ink-soft border border-divider'
                       }`}
                   >
                     Pagos
@@ -492,8 +506,8 @@ export function Financeiro() {
                     onClick={() => setStatusFilter('pending')}
                     className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                       ${statusFilter === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
-                        : 'bg-gray-50 text-gray-600 border border-gray-200'
+                        ? 'bg-warning/15 text-yellow-700 border border-yellow-200' 
+                        : 'bg-surface text-ink-soft border border-divider'
                       }`}
                   >
                     Pendentes
@@ -505,7 +519,7 @@ export function Financeiro() {
               <div>
                 <button
                   onClick={copyToClipboard}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-team-blue hover:brightness-110 text-white font-medium rounded-lg transition-colors"
                 >
                   {copySuccess ? (
                     <>
@@ -529,44 +543,22 @@ export function Financeiro() {
               {/* Primeira linha: Mês e Ano */}
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-team-blue-soft" />
                     Mês
                   </label>
                   <div className="relative">
-                    <select 
-                      value={selectedMonth} 
-                      onChange={e => setSelectedMonth(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
+                    <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
                   </div>
                 </div>
 
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-team-blue-soft" />
                     Ano
                   </label>
                   <div className="relative">
-                    <select 
-                      value={selectedYear} 
-                      onChange={e => setSelectedYear(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[2025,2026,2027,2028,2029,2030].map(y => (
-                        <option key={y} value={y} className="py-1">{y}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
+                    <YearSelect value={selectedYear} onChange={setSelectedYear} />
                   </div>
                 </div>
               </div>
@@ -574,8 +566,8 @@ export function Financeiro() {
               {/* Segunda linha: Status e Botão Copiar */}
               <div className="flex gap-4 items-end">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Check className="w-4 h-4 text-blue-600" />
+                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
+                    <Check className="w-4 h-4 text-team-blue-soft" />
                     Status
                   </label>
                   <div className="flex gap-2">
@@ -583,8 +575,8 @@ export function Financeiro() {
                       onClick={() => setStatusFilter('all')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'all' 
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                          : 'bg-gray-50 text-gray-600 border border-gray-200'
+                          ? 'bg-team-blue/15 text-team-blue-soft border border-blue-200' 
+                          : 'bg-surface text-ink-soft border border-divider'
                         }`}
                     >
                       Todos
@@ -593,8 +585,8 @@ export function Financeiro() {
                       onClick={() => setStatusFilter('paid')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'paid' 
-                          ? 'bg-green-100 text-green-700 border border-green-200' 
-                          : 'bg-gray-50 text-gray-600 border border-gray-200'
+                          ? 'bg-success/15 text-success-soft border border-green-200' 
+                          : 'bg-surface text-ink-soft border border-divider'
                         }`}
                     >
                       Pagos
@@ -603,8 +595,8 @@ export function Financeiro() {
                       onClick={() => setStatusFilter('pending')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
-                          : 'bg-gray-50 text-gray-600 border border-yellow-200'
+                          ? 'bg-warning/15 text-yellow-700 border border-yellow-200' 
+                          : 'bg-surface text-ink-soft border border-yellow-200'
                         }`}
                     >
                       Pendentes
@@ -614,7 +606,7 @@ export function Financeiro() {
 
                 <button
                   onClick={copyToClipboard}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                  className="px-4 py-2 bg-team-blue hover:brightness-110 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
                 >
                   {copySuccess ? (
                     <div className="flex items-center gap-2">
@@ -637,50 +629,28 @@ export function Financeiro() {
             <div className="flex items-end justify-between gap-4">
               <div className="flex gap-4">
                 <div className="w-40">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-team-blue-soft" />
                     Mês
                   </label>
                   <div className="relative">
-                    <select 
-                      value={selectedMonth} 
-                      onChange={e => setSelectedMonth(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
+                    <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
                   </div>
                 </div>
 
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-team-blue-soft" />
                     Ano
                   </label>
                   <div className="relative">
-                    <select 
-                      value={selectedYear} 
-                      onChange={e => setSelectedYear(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[2025,2026,2027,2028,2029,2030].map(y => (
-                        <option key={y} value={y} className="py-1">{y}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
+                    <YearSelect value={selectedYear} onChange={setSelectedYear} />
                   </div>
                 </div>
 
                 <div className="w-40">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Check className="w-4 h-4 text-blue-600" />
+                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
+                    <Check className="w-4 h-4 text-team-blue-soft" />
                     Status
                   </label>
                   <div className="flex gap-1.5">
@@ -688,8 +658,8 @@ export function Financeiro() {
                       onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'paid' 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                          ? 'bg-success/15 text-success-soft hover:bg-green-200 border border-green-200' 
+                          : 'bg-surface text-ink-soft hover:bg-surface-hover border border-divider'
                         }`}
                     >
                       Pagos
@@ -698,8 +668,8 @@ export function Financeiro() {
                       onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                         ${statusFilter === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                          ? 'bg-warning/15 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
+                          : 'bg-surface text-ink-soft hover:bg-surface-hover border border-divider'
                         }`}
                     >
                       Pendentes
@@ -710,7 +680,7 @@ export function Financeiro() {
 
               <button
                 onClick={copyToClipboard}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700 font-medium whitespace-nowrap"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-hover hover:bg-surface-hover transition-colors rounded-lg text-ink-soft font-medium whitespace-nowrap"
               >
                 {copySuccess ? (
                   <>
@@ -730,7 +700,7 @@ export function Financeiro() {
 
         {/* Lista de Mensalistas */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow">
+          <div className="bg-[var(--surface-solid)] rounded-xl shadow">
             {isLoading ? (
               <div className="text-center py-8">Carregando...</div>
             ) : (
@@ -739,14 +709,14 @@ export function Financeiro() {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="py-3 px-6 text-left font-semibold text-gray-900 min-w-[180px]">Nome</th>
-                        <th className="py-3 px-4 text-center font-semibold text-gray-900">Status</th>
-                        <th className="py-3 px-4 text-center font-semibold text-gray-900">Atrasos</th>
-                        <th className="py-3 px-4 text-center font-semibold text-gray-900 w-[120px]">Ação</th>
+                      <tr className="border-b border-divider bg-surface">
+                        <th className="py-3 px-6 text-left font-semibold text-heading min-w-[180px]">Nome</th>
+                        <th className="py-3 px-4 text-center font-semibold text-heading">Status</th>
+                        <th className="py-3 px-4 text-center font-semibold text-heading">Atrasos</th>
+                        <th className="py-3 px-4 text-center font-semibold text-heading w-[120px]">Ação</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-divider">
                       {mensalistas.filter(m => {
                         const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
                         const p = payments[paymentId];
@@ -764,32 +734,32 @@ export function Financeiro() {
                         return (
                           <tr
                             key={m.id}
-                            className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                            className={idx % 2 === 0 ? "bg-surface-hover" : ""}
                           >
-                            <td className="py-3 px-6 font-medium text-gray-900 min-w-[180px] truncate" title={m.playerInfo?.name || m.id}>
+                            <td className="py-3 px-6 font-medium text-heading min-w-[180px] truncate" title={m.playerInfo?.name || m.id}>
                               {m.playerInfo?.name || m.id}
                               {m.playerInfo?.paymentType === 'diarista' && (
-                                <span className="ml-2 text-xs text-gray-500">(Diarista)</span>
+                                <span className="ml-2 text-xs text-ink-muted">(Diarista)</span>
                               )}
                             </td>
                             <td className="py-3 px-4 text-center">
                               {m.playerInfo?.paymentType === 'diarista' ? (
                                 diaristaPayment ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
                                     Pago (R$ {diaristaPayment.value.toFixed(2)})
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
                                     Pendente
                                   </span>
                                 )
                               ) : (
                                 p && p.status === 'paid' ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
                                     Pago
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
                                     Pendente
                                   </span>
                                 )
@@ -797,15 +767,15 @@ export function Financeiro() {
                             </td>
                             <td className="py-3 px-4 text-center">
                               {m.playerInfo?.paymentType === 'diarista' ? (
-                                <span className="text-gray-400">-</span>
+                                <span className="text-ink-dim">-</span>
                               ) : (
                                 (() => {
                                   const monthsInDebt = calculateMonthsInDebt(m.id);
                                   if (monthsInDebt === 0) {
-                                    return <span className="text-gray-400">-</span>;
+                                    return <span className="text-ink-dim">-</span>;
                                   } else {
                                     return (
-                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-danger/15 text-danger-soft">
                                         {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
                                       </span>
                                     );
@@ -819,8 +789,8 @@ export function Financeiro() {
                                   onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
                                   className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
                                     ${diaristaPayment 
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                      ? 'bg-danger/15 text-danger-soft hover:bg-red-200' 
+                                      : 'bg-team-blue text-white hover:brightness-110'
                                     }`}
                                 >
                                   {diaristaPayment ? 'Voltar' : 'Pagou'}
@@ -830,8 +800,8 @@ export function Financeiro() {
                                   onClick={() => handleTogglePayment(m.id)}
                                   className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
                                     ${p && p.status === 'paid' 
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                      ? 'bg-danger/15 text-danger-soft hover:bg-red-200' 
+                                      : 'bg-team-blue text-white hover:brightness-110'
                                     }`}
                                 >
                                   {p && p.status === 'paid' ? 'Voltar' : 'Pagou'}
@@ -862,35 +832,35 @@ export function Financeiro() {
                     const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
                     
                     return (
-                      <div key={m.id} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                      <div key={m.id} className="bg-surface rounded-lg p-3 border border-divider shadow-sm">
                         {/* Cabeçalho com Nome e Status */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate text-base">
+                            <h3 className="font-semibold text-heading truncate text-base">
                               {m.playerInfo?.name || m.id}
                             </h3>
                             {m.playerInfo?.paymentType === 'diarista' && (
-                              <span className="inline-block mt-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Diarista</span>
+                              <span className="inline-block mt-1 text-xs text-ink-muted bg-surface-hover px-2 py-1 rounded-full">Diarista</span>
                             )}
                           </div>
                           <div className="ml-2">
                             {m.playerInfo?.paymentType === 'diarista' ? (
                               diaristaPayment ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
                                   Pago
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
                                   Pendente
                                 </span>
                               )
                             ) : (
                               p && p.status === 'paid' ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
                                   Pago
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
                                   Pendente
                                 </span>
                               )
@@ -903,8 +873,8 @@ export function Financeiro() {
                           {/* Valor (apenas para diaristas) */}
                           {m.playerInfo?.paymentType === 'diarista' && diaristaPayment && (
                             <div className="col-span-2">
-                              <span className="text-xs text-gray-500">Valor:</span>
-                              <div className="text-sm font-medium text-green-700">
+                              <span className="text-xs text-ink-muted">Valor:</span>
+                              <div className="text-sm font-medium text-success-soft">
                                 R$ {diaristaPayment.value.toFixed(2)}
                               </div>
                             </div>
@@ -912,18 +882,18 @@ export function Financeiro() {
 
                           {/* Atrasos */}
                           <div>
-                            <span className="text-xs text-gray-500">Atrasos:</span>
+                            <span className="text-xs text-ink-muted">Atrasos:</span>
                             <div className="mt-1">
                               {m.playerInfo?.paymentType === 'diarista' ? (
-                                <span className="text-gray-400 text-sm">-</span>
+                                <span className="text-ink-dim text-sm">-</span>
                               ) : (
                                 (() => {
                                   const monthsInDebt = calculateMonthsInDebt(m.id);
                                   if (monthsInDebt === 0) {
-                                    return <span className="text-gray-400 text-sm">Em dia</span>;
+                                    return <span className="text-ink-dim text-sm">Em dia</span>;
                                   } else {
                                     return (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-danger/15 text-danger-soft">
                                         {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
                                       </span>
                                     );
@@ -935,8 +905,8 @@ export function Financeiro() {
 
                           {/* Tipo de Pagamento */}
                           <div>
-                            <span className="text-xs text-gray-500">Tipo:</span>
-                            <div className="mt-1 text-sm font-medium text-gray-700">
+                            <span className="text-xs text-ink-muted">Tipo:</span>
+                            <div className="mt-1 text-sm font-medium text-ink-soft">
                               {m.playerInfo?.paymentType === 'diarista' ? 'Diarista' : 'Mensalista'}
                             </div>
                           </div>
@@ -949,8 +919,8 @@ export function Financeiro() {
                               onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
                               className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
                                 ${diaristaPayment 
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  ? 'bg-danger/15 text-danger-soft hover:bg-red-200 border border-red-200' 
+                                  : 'bg-team-blue text-white hover:brightness-110'
                                 }`}
                             >
                               {diaristaPayment ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
@@ -960,8 +930,8 @@ export function Financeiro() {
                               onClick={() => handleTogglePayment(m.id)}
                               className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
                                 ${p && p.status === 'paid' 
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  ? 'bg-danger/15 text-danger-soft hover:bg-red-200 border border-red-200' 
+                                  : 'bg-team-blue text-white hover:brightness-110'
                                 }`}
                               >
                                 {p && p.status === 'paid' ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
@@ -978,10 +948,10 @@ export function Financeiro() {
         </div>
 
         {/* Histórico */}
-        <div className="bg-white rounded-xl shadow">
-          <div className="p-4 border-b border-gray-200">
+        <div className="bg-[var(--surface-solid)] rounded-xl shadow">
+          <div className="p-4 border-b border-divider">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
+              <Calendar className="w-5 h-5 text-team-blue-soft" />
               Histórico de Pagamentos
             </h2>
           </div>
@@ -989,7 +959,7 @@ export function Financeiro() {
             <div className="space-y-6">
               {/* Mensalistas */}
               <div>
-                <h3 className="text-sm font-bold text-blue-700 mb-2">Mensalistas</h3>
+                <h3 className="text-sm font-bold text-team-blue-soft mb-2">Mensalistas</h3>
                 <div className="flex flex-col gap-2">
                   {Object.values(payments)
                     .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
@@ -1004,17 +974,17 @@ export function Financeiro() {
                       return (a.playerName || '').localeCompare(b.playerName || '');
                     })
                     .map((payment, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-blue-50 rounded-lg px-4 py-3 hover:bg-blue-100 transition-colors w-full">
+                      <div key={idx} className="flex items-center justify-between bg-team-blue/10 rounded-lg px-4 py-3 hover:bg-team-blue/15 transition-colors w-full">
                         <div className="flex flex-col min-w-0">
                           <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName || 'Usuário Removido'}>
                             {payment.playerName || 'Usuário Removido'}
                           </span>
-                          <span className="text-xs text-blue-500">{formatPaymentDate(payment.paidAt)}</span>
-                          <span className="text-xs text-gray-500">Registrado por: {payment.recordedBy}</span>
+                          <span className="text-xs text-team-blue">{formatPaymentDate(payment.paidAt)}</span>
+                          <span className="text-xs text-ink-muted">Registrado por: {payment.recordedBy}</span>
                         </div>
                         <div className="flex flex-col items-end">
                           <span className="text-sm font-medium text-blue-900">R$ {payment.value.toFixed(2)}</span>
-                          <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full mt-1">Pago</span>
+                          <span className="text-xs text-success-soft bg-success/15 px-2 py-0.5 rounded-full mt-1">Pago</span>
                         </div>
                       </div>
                     ))}
@@ -1035,11 +1005,11 @@ export function Financeiro() {
                               {payment.playerName}
                             </span>
                             <span className="text-xs text-purple-500">{formatPaymentDate(payment.date)}</span>
-                            <span className="text-xs text-gray-500">Registrado por: {payment.recordBy}</span>
+                            <span className="text-xs text-ink-muted">Registrado por: {payment.recordBy}</span>
                           </div>
                           <div className="flex flex-col items-end">
                             <span className="text-sm font-medium text-purple-900">R$ {payment.value.toFixed(2)}</span>
-                            <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full mt-1">Pago</span>
+                            <span className="text-xs text-success-soft bg-success/15 px-2 py-0.5 rounded-full mt-1">Pago</span>
                           </div>
                         </div>
                       ))}
@@ -1052,13 +1022,13 @@ export function Financeiro() {
 
         {/* Informativos */}
         <div className="lg:col-span-3">
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-[var(--surface-solid)] rounded-xl shadow p-4">
             <h2 className="text-lg font-semibold mb-4">Informativos do Mês</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Valor Arrecadado */}
-              <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="p-4 bg-team-blue/10 rounded-lg">
                 <h3 className="text-sm font-medium text-blue-900 mb-1">Valor Arrecadado</h3>
-                <p className="text-2xl font-bold text-blue-700">
+                <p className="text-2xl font-bold text-team-blue-soft">
                   R$ {Object.values(payments)
                     .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
                     .reduce((acc, p) => acc + p.value, 0)
@@ -1067,12 +1037,12 @@ export function Financeiro() {
               </div>
 
               {/* Custo da Pelada */}
-              <div className="p-4 bg-green-50 rounded-lg">
+              <div className="p-4 bg-success/10 rounded-lg">
                 <h3 className="text-sm font-medium text-green-900 mb-1">Custo da Pelada</h3>
-                <p className="text-2xl font-bold text-green-700">
+                <p className="text-2xl font-bold text-success-soft">
                   R$ {custoPelada.toFixed(2)}
                 </p>
-                <p className="text-xs text-green-600 mt-1">
+                <p className="text-xs text-success-soft mt-1">
                   {descricaoCusto}
                 </p>
               </div>
@@ -1092,9 +1062,9 @@ export function Financeiro() {
               </div>
 
               {/* Saldo */}
-              <div className="p-4 bg-orange-50 rounded-lg">
+              <div className="p-4 bg-team-orange/10 rounded-lg">
                 <h3 className="text-sm font-medium text-orange-900 mb-1">Saldo do Mês</h3>
-                <p className="text-2xl font-bold text-orange-700">
+                <p className="text-2xl font-bold text-team-orange-soft">
                   R$ {(() => {
                     const arrecadado = Object.values(payments)
                       .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
@@ -1111,15 +1081,16 @@ export function Financeiro() {
 
       {/* Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm mx-auto">
+        <Portal>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[80]">
+          <div className="bg-[var(--surface-solid)] rounded-xl p-6 w-full max-w-sm mx-auto">
             <h3 className="text-lg font-semibold mb-6">Confirmar Pagamento</h3>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink-soft mb-2">
                 Valor do Pagamento
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">R$</span>
                 <input
                   type="number"
                   value={paymentValue}
@@ -1142,27 +1113,29 @@ export function Financeiro() {
                   setShowPaymentModal(false);
                   setSelectedMensalista(null);
                 }}
-                className="flex-1 px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                className="flex-1 px-4 py-2.5 text-ink-soft hover:bg-surface-hover rounded-lg text-sm font-medium"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmPayment}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                className="flex-1 px-4 py-2.5 bg-team-blue text-white rounded-lg hover:brightness-110 text-sm font-medium"
               >
                 Confirmar
               </button>
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Modal de Pagamento do Diarista */}
       {showDiaristaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+        <Portal>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
+          <div className="bg-[var(--surface-solid)] rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
             <button
-              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+              className="absolute top-3 right-4 text-2xl text-ink-dim hover:text-ink-soft"
               onClick={() => setShowDiaristaModal(false)}
               aria-label="Fechar"
             >
@@ -1182,7 +1155,7 @@ export function Financeiro() {
               <div>
                 <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">R$</span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -1201,7 +1174,7 @@ export function Financeiro() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setShowDiaristaModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-ink-soft bg-surface-hover rounded-lg hover:bg-surface-hover transition-colors"
                 type="button"
               >
                 Cancelar
@@ -1213,7 +1186,7 @@ export function Financeiro() {
                     confirmDiaristaPayment();
                   }, 0);
                 }}
-                className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-success-soft bg-success/15 rounded-lg hover:bg-green-200 transition-colors"
                 type="button"
                 disabled={!selectedDiarista}
               >
@@ -1221,7 +1194,7 @@ export function Financeiro() {
               </button>
               <button
                 onClick={confirmDiaristaPayment}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-team-blue rounded-lg hover:brightness-110 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
                 disabled={!selectedDiarista}
               >
@@ -1230,7 +1203,9 @@ export function Financeiro() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
+    </div>
     </div>
   );
 } 

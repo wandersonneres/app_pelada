@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection, setDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
 import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, ArrowLeftRight, User, Plus, Target, Footprints } from 'lucide-react';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
+import { Portal } from '../components/ui/Portal';
+import { CombinedPitch } from '../components/CombinedPitch';
 import { StarRating } from '../components/StarRating';
 import { TacticalView } from '../components/TacticalView';
 import { MatchTimer } from '../components/MatchTimer';
@@ -43,30 +45,31 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 max-h-screen overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
+    <Portal>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black bg-opacity-40 max-h-screen overflow-y-auto">
+      <div className="bg-[var(--surface-solid)] text-ink rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Adicionar Jogador</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">×</button>
+          <h2 className="text-lg font-semibold text-heading">Adicionar Jogador</h2>
+          <button onClick={onClose} className="text-ink-dim hover:text-ink-soft text-xl">×</button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Nome do Jogador</label>
+            <label className="block text-sm font-medium mb-1 text-ink-soft">Nome do Jogador</label>
             <input
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="field-input"
                 value={playerName}
               onChange={e => setPlayerName(e.target.value)}
                 placeholder="Digite o nome do jogador"
               />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Posição</label>
+            <label className="block text-sm font-medium mb-1 text-ink-soft">Posição</label>
             <div className="grid grid-cols-3 gap-2">
               {['defesa', 'meio', 'ataque'].map(pos => (
                 <button
                   key={pos}
                   type="button"
-                  className={`px-3 py-2 rounded-lg border ${playerPosition === pos ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  className={`px-3 py-2 rounded-lg border ${playerPosition === pos ? 'bg-team-blue text-white' : 'bg-surface-hover text-ink-soft'} transition-colors`}
                   onClick={() => setPlayerPosition(pos as any)}
                 >
                   {pos.charAt(0).toUpperCase() + pos.slice(1)}
@@ -75,17 +78,17 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Nível de Habilidade</label>
+            <label className="block text-sm font-medium mb-1 text-ink-soft">Nível de Habilidade</label>
             <StarRating value={playerSkillLevel} onChange={handleSkillChange} size="md" showLabel={true} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Faixa Etária</label>
+            <label className="block text-sm font-medium mb-1 text-ink-soft">Faixa Etária</label>
             <div className="grid grid-cols-2 gap-2">
               {['15-20', '21-30', '31-40', '41-50', '+50'].map(age => (
                 <button
                   key={age}
                   type="button"
-                  className={`px-3 py-2 rounded-lg border ${playerAgeGroup === age ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  className={`px-3 py-2 rounded-lg border ${playerAgeGroup === age ? 'bg-team-blue text-white' : 'bg-surface-hover text-ink-soft'} transition-colors`}
                   onClick={() => setPlayerAgeGroup(age as any)}
                 >
                   {age} anos
@@ -94,13 +97,13 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Tipo de Pagamento</label>
+            <label className="block text-sm font-medium mb-1 text-ink-soft">Tipo de Pagamento</label>
             <div className="grid grid-cols-2 gap-2">
               {['mensalista', 'diarista'].map(type => (
                 <button
                   key={type}
                   type="button"
-                  className={`px-3 py-2 rounded-lg border ${playerPaymentType === type ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  className={`px-3 py-2 rounded-lg border ${playerPaymentType === type ? 'bg-team-blue text-white' : 'bg-surface-hover text-ink-soft'} transition-colors`}
                   onClick={() => setPlayerPaymentType(type as any)}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -112,14 +115,14 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-ink-soft bg-surface-hover rounded-lg hover:bg-surface-hover transition-colors"
             type="button"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-team-blue rounded-lg hover:brightness-110 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             disabled={isJoining || !playerName.trim()}
           >
@@ -128,6 +131,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 
@@ -155,12 +159,13 @@ export function PlayerSwapModal({
   if (!isOpen || !currentPlayer) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
+    <Portal>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
+      <div className="bg-[var(--surface-solid)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-bold text-lg text-gray-800">Trocar Jogador</h2>
+          <h2 className="font-bold text-lg text-ink-soft">Trocar Jogador</h2>
           <button
-            className="text-gray-400 hover:text-gray-700 text-xl font-bold"
+            className="text-ink-dim hover:text-ink-soft text-xl font-bold"
             onClick={onClose}
             aria-label="Fechar"
           >
@@ -171,73 +176,73 @@ export function PlayerSwapModal({
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Trocar com jogador do outro time */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Trocar com jogador do outro time</div>
+            <div className="font-medium mb-3 text-ink-soft">Trocar com jogador do outro time</div>
             <div className="space-y-2">
               {otherTeamPlayers.length === 0 ? (
-                <div className="text-gray-400 text-sm py-2">Nenhum jogador disponível no outro time.</div>
+                <div className="text-ink-dim text-sm py-2">Nenhum jogador disponível no outro time.</div>
               ) : (
                 otherTeamPlayers.map((player) => (
                   <button
                     key={player.id}
                     onClick={() => onSwapPlayers(player)}
-                    className="flex items-center w-full p-3 rounded-lg hover:bg-blue-50 transition-colors text-left border border-gray-100"
+                    className="flex items-center w-full p-3 rounded-lg hover:bg-team-blue/10 transition-colors text-left border border-divider"
                   >
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm mr-3">
+                    <div className="w-8 h-8 rounded-full bg-team-blue/15 flex items-center justify-center font-bold text-team-blue-soft text-sm mr-3">
                       {player.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{player.name}</div>
+                      <div className="font-medium text-heading truncate">{player.name}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
+                          player.position === 'defesa' ? 'bg-warning/15 text-warning-soft' :
+                          player.position === 'meio' ? 'bg-team-blue/15 text-team-blue-soft' :
+                          'bg-danger/15 text-danger-soft'
                         }`}>
                           {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
                         </span>
                         <div className="flex gap-0.5">
                           {[...Array(5)].map((_, i) => (
-                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-ink-dim'}`} fill="currentColor" viewBox="0 0 20 20">
                               <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
                             </svg>
                           ))}
                         </div>
                       </div>
                     </div>
-                    <ArrowLeftRight className="w-4 h-4 text-blue-500 ml-2" />
+                    <ArrowLeftRight className="w-4 h-4 text-team-blue ml-2" />
                   </button>
                 ))
               )}
             </div>
           </div>
 
-          <hr className="border-gray-200" />
+          <hr className="border-divider" />
 
           {/* Substituir por jogador da lista de espera */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Substituir por jogador da lista de espera</div>
+            <div className="font-medium mb-3 text-ink-soft">Substituir por jogador da lista de espera</div>
             <div className="space-y-2">
               {waitingPlayers.length === 0 ? (
-                <div className="text-gray-400 text-sm py-2">Nenhum jogador na lista de espera.</div>
+                <div className="text-ink-dim text-sm py-2">Nenhum jogador na lista de espera.</div>
               ) : (
                 waitingPlayers.map((player) => (
-                  <div key={player.id} className="flex items-center w-full p-3 rounded-lg border border-gray-100">
-                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-600 text-sm mr-3">
+                  <div key={player.id} className="flex items-center w-full p-3 rounded-lg border border-divider">
+                    <div className="w-8 h-8 rounded-full bg-success/15 flex items-center justify-center font-bold text-success-soft text-sm mr-3">
                       {player.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{player.name}</div>
+                      <div className="font-medium text-heading truncate">{player.name}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
+                          player.position === 'defesa' ? 'bg-warning/15 text-warning-soft' :
+                          player.position === 'meio' ? 'bg-team-blue/15 text-team-blue-soft' :
+                          'bg-danger/15 text-danger-soft'
                         }`}>
                           {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
                         </span>
                         <div className="flex gap-0.5">
                           {[...Array(5)].map((_, i) => (
-                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-ink-dim'}`} fill="currentColor" viewBox="0 0 20 20">
                               <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
                             </svg>
                           ))}
@@ -247,14 +252,14 @@ export function PlayerSwapModal({
                     <div className="flex gap-1 ml-2">
                       <button
                         onClick={() => onReplacePlayer(player)}
-                        className="p-2 rounded-lg hover:bg-green-50 transition-colors"
+                        className="p-2 rounded-lg hover:bg-success/10 transition-colors"
                         title="Substituir jogador"
                       >
                         <ArrowLeftRight className="w-4 h-4 text-green-500" />
                       </button>
                       <button
                         onClick={() => onRemoveFromWaitingList(player)}
-                        className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                        className="p-2 rounded-lg hover:bg-danger/10 transition-colors"
                         title="Remover da lista de espera"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
@@ -268,6 +273,7 @@ export function PlayerSwapModal({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 
@@ -303,6 +309,7 @@ export function GameDetails() {
   }>>([]);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'jogadores' | 'partidas' | 'analises'>('jogadores');
+  const partidaGridRef = useRef<HTMLDivElement>(null);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [waitingListMatchId, setWaitingListMatchId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -322,6 +329,38 @@ export function GameDetails() {
   useEffect(() => {
     if (game?.playersPerTeam) setPlayersPerTeam(game.playersPerTeam);
   }, [game?.playersPerTeam]);
+
+  // Tablet na horizontal (~1280x800): faz a aba Partidas caber na tela sem rolar
+  // a página — mede a posição do grid e fixa a altura para o restante do viewport.
+  // Cada coluna rola internamente (CSS). Fora dessa faixa, limpa a altura inline.
+  useLayoutEffect(() => {
+    const mql = window.matchMedia(
+      '(min-width: 1180px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape)'
+    );
+    const recompute = () => {
+      const el = partidaGridRef.current;
+      if (!el) return;
+      el.style.height = ''; // volta ao natural antes de medir
+      if (mql.matches && selectedTab === 'partidas') {
+        // Quanto a página transborda do viewport com o layout natural.
+        // Encolher o grid exatamente por esse valor faz tudo caber, sem depender
+        // da altura do que está acima/abaixo (offset-free nas duas pontas).
+        const overflow = document.documentElement.scrollHeight - window.innerHeight;
+        if (overflow > 0) {
+          const naturalH = el.getBoundingClientRect().height;
+          el.style.height = `${Math.max(320, naturalH - overflow - 8)}px`;
+        }
+      }
+    };
+    recompute();
+    window.addEventListener('resize', recompute);
+    mql.addEventListener('change', recompute);
+    return () => {
+      window.removeEventListener('resize', recompute);
+      mql.removeEventListener('change', recompute);
+      if (partidaGridRef.current) partidaGridRef.current.style.height = '';
+    };
+  }, [selectedTab, expandedMatchId, game?.matches?.length]);
 
   useEffect(() => {
     console.log('diaristaPaymentValue', diaristaFree);
@@ -1594,7 +1633,7 @@ export function GameDetails() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-team-blue"></div>
       </div>
     );
   }
@@ -1602,7 +1641,7 @@ export function GameDetails() {
   if (!game) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <span className="text-gray-500 text-lg">Jogo não encontrado</span>
+        <span className="text-ink-muted text-lg">Jogo não encontrado</span>
       </div>
     );
   }
@@ -1802,50 +1841,56 @@ export function GameDetails() {
 
   // Layout principal
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className={`pelada-page${selectedTab === 'partidas' ? ' partida-page' : ''}`}>
+    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10 py-5">
       {toastMsg && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>{toastMsg.message}</div>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-success/100' : 'bg-danger/100'}`}>{toastMsg.message}</div>
       )}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Voltar">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Detalhes da Pelada</h1>
-            <p className="text-sm text-gray-500">{game && formatDate(game.date)}</p>
-          </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
+        <button
+          onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-surface-hover transition-colors shrink-0" aria-label="Voltar">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-wide text-heading leading-none">Detalhes da Pelada</h1>
+          <p className="text-xs text-ink-muted mt-1">{game && formatDate(game.date)}</p>
         </div>
-        <div className="flex gap-3 w-full md:w-auto justify-end">
+        {/* Info em chips (compacto) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="glass-pill"><MapPin className="w-3.5 h-3.5 text-success" />{game?.location}</span>
+          <span className="glass-pill"><Users className="w-3.5 h-3.5 text-team-blue-soft" />{game?.players.length} / {game?.maxPlayers}</span>
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${game?.status === 'waiting' ? 'bg-warning/15 text-warning-soft border border-warning/30' : game?.status === 'in_progress' ? 'bg-team-blue/15 text-team-blue-soft border border-team-blue/30' : 'bg-success/15 text-success-soft border border-success/30'}`}>{game && getStatusText(game.status)}</span>
+        </div>
+        <div className="flex-1 hidden md:block" />
+        <div className="flex gap-2 w-full md:w-auto justify-end">
           {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
             <>
               <button
                 onClick={handleFinishGame}
-                className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   game?.status === 'finished'
-                    ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                    ? 'bg-warning/15 text-warning-soft hover:bg-warning/25'
+                    : 'bg-success/15 text-success-soft hover:bg-success/25'
                 }`}
                 aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
               >
-                <Check className="w-4 h-4 mr-2" />
+                <Check className="w-4 h-4 mr-1.5" />
                 {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
               </button>
               <button
                 onClick={() => navigate(`/game/${game?.id}/edit`)}
-                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium bg-team-blue/15 text-team-blue-soft hover:bg-team-blue/25 transition-colors"
                 aria-label="Editar pelada"
               >
-                <Edit className="w-4 h-4 mr-2" />
+                <Edit className="w-4 h-4 mr-1.5" />
                 Editar
               </button>
               <button
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium bg-danger/15 text-danger-soft hover:bg-danger/25 transition-colors"
                 aria-label="Excluir pelada"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="w-4 h-4 mr-1.5" />
                 Excluir
               </button>
             </>
@@ -1854,30 +1899,31 @@ export function GameDetails() {
       </div>
 
       {/* Modal de confirmação de exclusão */}
+      <Portal>
       <AnimatePresence>
         {isDeleteDialogOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4"
+              className="bg-[var(--surface-solid)] rounded-xl shadow-lg p-6 w-full max-w-md mx-4"
             >
-              <h2 className="text-lg font-bold text-gray-900 mb-2">
+              <h2 className="text-lg font-bold text-heading mb-2">
                 Excluir Pelada
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-ink-soft mb-6">
                 Tem certeza que deseja excluir esta pelada? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setIsDeleteDialogOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-ink-soft bg-surface-hover rounded-lg hover:bg-surface-hover transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1893,53 +1939,34 @@ export function GameDetails() {
           </motion.div>
         )}
       </AnimatePresence>
+      </Portal>
 
-      {/* Cards de informações */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
-          <div className="flex items-center gap-2 mb-2">
-            <MapPin className="w-5 h-5 text-green-500" />
-            <span className="font-medium">{game?.location}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-500" />
-            <span className="text-gray-600">{game?.players.length} / {game?.maxPlayers} jogadores</span>
-          </div>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-5 h-5 text-blue-500" />
-            <span className="font-medium">Status</span>
-          </div>
-          <span className={`badge ${game?.status === 'waiting' ? 'badge-waiting' : game?.status === 'in_progress' ? 'badge-in-progress' : 'badge-finished'}`}>{game && getStatusText(game.status)}</span>
-        </motion.div>
-      </div>
 
       {/* Observações */}
       {game?.observations && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card mb-6">
-          <span className="text-gray-600 text-sm">{game.observations}</span>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4 mb-4">
+          <span className="text-ink-soft text-sm">{game.observations}</span>
         </motion.div>
       )}
 
                         {/* Lista de Jogadores */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
+      <div className="glass-card p-4 sm:p-5 mb-4">
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b">
+        <div className="flex gap-2 mb-4 border-b border-divider">
           <button
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'jogadores' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'jogadores' ? 'border-team-blue text-team-blue-soft' : 'border-transparent text-ink-muted hover:text-team-blue'}`}
             onClick={() => setSelectedTab('jogadores')}
           >
             Jogadores
           </button>
           <button
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'partidas' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'partidas' ? 'border-team-blue text-team-blue-soft' : 'border-transparent text-ink-muted hover:text-team-blue'}`}
             onClick={() => setSelectedTab('partidas')}
           >
             Partidas
           </button>
           <button
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'analises' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'analises' ? 'border-team-blue text-team-blue-soft' : 'border-transparent text-ink-muted hover:text-team-blue'}`}
             onClick={() => setSelectedTab('analises')}
           >
             Análises
@@ -1950,12 +1977,12 @@ export function GameDetails() {
         {selectedTab === 'jogadores' && (
           <>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Jogadores Confirmados</h2>
+              <h2 className="text-lg font-semibold text-heading">Jogadores Confirmados</h2>
               {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' && (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowAddPlayerModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-team-blue text-white rounded-lg hover:brightness-110 transition-colors text-sm"
                     title="Adicionar Jogador"
                   >
                     <Plus className="w-4 h-3" />
@@ -1963,7 +1990,7 @@ export function GameDetails() {
                   </button>
                   <button
                     onClick={handleOpenSelectPlayerModal}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface-hover text-ink-soft rounded-lg hover:bg-surface-hover transition-colors text-sm"
                     title="Selecionar Jogador"
                   >
                     <User className="w-4 h-3" />
@@ -1973,7 +2000,7 @@ export function GameDetails() {
               )}
             </div>
                 {game.players && game.players.length > 0 ? (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-divider">
                 {game.players
                   .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
                   .map((player, idx) => (
@@ -1983,14 +2010,14 @@ export function GameDetails() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             {/* Ordem */}
-                            <span className="w-7 text-xs text-center font-mono text-gray-400">{String(player.arrivalOrder).padStart(2, '0')}</span>
+                            <span className="w-7 text-xs text-center font-mono text-ink-dim">{String(player.arrivalOrder).padStart(2, '0')}</span>
                             {/* Nome */}
-                            <span className="font-medium text-gray-800 text-sm truncate max-w-[200px] md:max-w-[250px]">
+                            <span className="font-medium text-ink-soft text-sm truncate max-w-[200px] md:max-w-[250px]">
                               {player.name}
-                              {/* <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${player.paymentType === 'mensalista' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{player.paymentType === 'mensalista' ? 'Mensalista' : 'Diarista'}</span> */}
+                              {/* <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${player.paymentType === 'mensalista' ? 'bg-success/15 text-success-soft' : 'bg-team-orange/15 text-team-orange-soft'}`}>{player.paymentType === 'mensalista' ? 'Mensalista' : 'Diarista'}</span> */}
                             </span>
                             {/* {player.paymentType === 'diarista' && diaristaPayments[player.id] && (
-                              <span className="ml-2 px-2 py-0.5 rounded-lg text-xs font-medium bg-green-100 text-green-800" title={`Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)}`}>
+                              <span className="ml-2 px-2 py-0.5 rounded-lg text-xs font-medium bg-success/15 text-success-soft" title={`Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)}`}>
                                 Pago ✓
                               </span>
                             )} */}
@@ -1999,21 +2026,21 @@ export function GameDetails() {
                             {/* Estrelas */}
                             <span className="flex items-center">
                               {[...Array(5)].map((_, i) => (
-                                <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-ink-dim'}`} fill="currentColor" viewBox="0 0 20 20">
                                   <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
                                 </svg>
                               ))}
                             </span>
                             {/* Idade */}
-                            <span className="text-xs text-gray-400">{player.ageGroup} anos</span>
-                            <span className="text-xs text-gray-400 ml-2">{player.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</span>
+                            <span className="text-xs text-ink-dim">{player.ageGroup} anos</span>
+                            <span className="text-xs text-ink-dim ml-2">{player.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</span>
                             {(player.paymentType === 'diarista') && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (                              
                               <button
                                 onClick={() => handleDiaristaPayment(player.id, player.name)}
                                 className={`ml-2 px-2 py-0.5 rounded-lg text-xs font-medium ${
                                   diaristaPayments[player.id]
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                    ? 'bg-success/15 text-success-soft'
+                                    : 'bg-team-blue/15 text-team-blue-soft hover:bg-team-blue/25'
                                 } transition-colors`}
                                 title={diaristaPayments[player.id] ? `Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)} - Registrado por: ${diaristaPayments[player.id].recordBy}` : 'Pagou'}
                               >
@@ -2024,11 +2051,11 @@ export function GameDetails() {
                         </div>
                         {/* Bloco direito: posição e botão */}
                         <div className="flex flex-col items-end justify-center gap-1 ml-2">
-                          <span className={`px-1.5 py-0.5 rounded-full font-semibold text-[10px] flex items-center ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+                          <span className={`px-1.5 py-0.5 rounded-full font-semibold text-[10px] flex items-center ${player.position === 'defesa' ? 'bg-warning/15 text-warning-soft' : player.position === 'meio' ? 'bg-team-blue/15 text-team-blue-soft' : 'bg-danger/15 text-danger-soft'}`}>
                             {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
                           </span>
                           <button
-                            className="p-2 rounded hover:bg-gray-100 flex items-center justify-center"
+                            className="p-2 rounded hover:bg-surface-hover flex items-center justify-center"
                             onClick={() => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
                             title="Editar/Remover"
                             style={{ display: (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' ? 'flex' : 'none' }}
@@ -2041,7 +2068,7 @@ export function GameDetails() {
                   ))}
               </ul>
             ) : (
-              <div className="text-gray-500 text-center py-8">Nenhum jogador confirmado ainda.</div>
+              <div className="text-ink-muted text-center py-8">Nenhum jogador confirmado ainda.</div>
             )}
             {/* Modal de opções do jogador */}
       <PlayerOptionsModal
@@ -2075,357 +2102,331 @@ export function GameDetails() {
                   )}
 
         {selectedTab === 'partidas' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Partidas</h2>
-              {game.matches && game.matches.length > 0 ? (
-              <ul className="space-y-4">
-                {game.matches.map((match, idx) => {
-                  const isExpanded = expandedMatchId === match.id;
-                  // Função para contar gols e assistências de um jogador
-                  const getPlayerStats = (playerId: string) => {
-                    const goals = match.goals?.filter(g => g.scorerId === playerId && !g.ownGoal).length || 0;
-                    const assists = match.goals?.filter(g => g.assisterId === playerId).length || 0;
-                    return { goals, assists };
-                  };
-                  
-                  // Métricas por time: score, média de idade e média de habilidade
-                  const team0 = match.teams[0];
-                  const team1 = match.teams[1];
-                  const team0Players = (team0?.players || []);
-                  const team1Players = (team1?.players || []);
-                  const average = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-                  const team0AvgAge = average(team0Players.map(p => getAgeValue(p.ageGroup)));
-                  const team0AvgSkill = average(team0Players.map(p => p.skillLevel));
-                  const team1AvgAge = average(team1Players.map(p => getAgeValue(p.ageGroup)));
-                  const team1AvgSkill = average(team1Players.map(p => p.skillLevel));
-                  const team0Score = calculateTeamScore(team0Players);
-                  const team1Score = calculateTeamScore(team1Players);
-                  const { players: waitingList, playersIn, playersOut } = getPlayersNotInNextMatch(match);
-                  return (
-                    <li key={match.id} className="bg-gray-50 rounded-xl p-4 shadow-sm relative">
-                      {/* Cabeçalho fixo da partida */}
-                      <div className="flex flex-col gap-2">
-                        {/* Primeira linha: Status e Ver Detalhes */}
-                        <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${match.status === 'finished' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                              {match.status === 'finished' ? 'Finalizada' : 'Em andamento'}
-                            </span>
-                        </div>
-                        {!isExpanded && (                         
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
-                            <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
-                            <span className="text-gray-400">x</span>
-                            <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
-                            <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
-                          </div>
-                        )}
-                          <button
-                              className="px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 transition"
-                              onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
-                            >
-                              {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
-                            </button>
-                        </div>
+          <div className="space-y-3">
+            {game.matches && game.matches.length > 0 ? (() => {
+              const matches = game.matches;
+              const selId = expandedMatchId && matches.some(m => m.id === expandedMatchId)
+                ? expandedMatchId
+                : matches[matches.length - 1].id;
+              const match = matches.find(m => m.id === selId)!;
+              const idx = matches.findIndex(m => m.id === match.id);
+              const team0 = match.teams[0];
+              const team1 = match.teams[1];
+              const team0Players = team0?.players || [];
+              const team1Players = team1?.players || [];
+              const avg = (vals: number[]) => (vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0);
+              const t0Age = avg(team0Players.map(p => getAgeValue(p.ageGroup)));
+              const t1Age = avg(team1Players.map(p => getAgeValue(p.ageGroup)));
+              const t0Skill = avg(team0Players.map(p => p.skillLevel));
+              const t1Skill = avg(team1Players.map(p => p.skillLevel));
+              const t0Score = calculateTeamScore(team0Players);
+              const t1Score = calculateTeamScore(team1Players);
+              const scoreA = team0?.score ?? 0;
+              const scoreB = team1?.score ?? 0;
+              const stats = (id: string) => ({
+                goals: match.goals?.filter(g => g.scorerId === id && !g.ownGoal).length || 0,
+                assists: match.goals?.filter(g => g.assisterId === id).length || 0,
+              });
+              const isAdmin = user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista';
+              const canManage = isAdmin && game.status !== 'finished';
+              const posOrder = { defesa: 0, meio: 1, ataque: 2 } as const;
+              const sortRoster = (ps: typeof team0Players) => [...ps].sort((a, b) => posOrder[a.position] - posOrder[b.position]);
+              const posBadge = (pos: string) =>
+                pos === 'defesa' ? 'bg-team-blue/15 text-team-blue-soft' : pos === 'meio' ? 'bg-meio/15 text-meio-soft' : 'bg-danger/15 text-danger-soft';
+              const h2hRows = [
+                { label: 'Força do time', a: t0Score, b: t1Score },
+                { label: 'Média de idade', a: t0Age, b: t1Age },
+                { label: 'Habilidade média', a: t0Skill, b: t1Skill },
+              ];
 
-                        {/* Botões de ação (só aparecem quando expandido) */}
-                        {isExpanded && (
-                          <div className="flex items-center justify-end gap-2">
+              const rosterCard = (team: typeof team0, players: typeof team0Players, isTeamA: boolean, scoreVal: number, ageVal: number, skillVal: number) => (
+                <div className={`glass-card p-3.5 ${isTeamA ? 'bg-team-blue/[0.06] border-team-blue/20' : 'bg-team-orange/[0.06] border-team-orange/20'}`}>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center font-heading font-extrabold text-white shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.35)]" style={{ background: isTeamA ? 'linear-gradient(155deg,#5b9bf6,#2c5fb0)' : 'linear-gradient(155deg,#fba56a,#d2691e)' }}>{(team?.name || (isTeamA ? 'A' : 'B')).charAt(0).toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-heading font-extrabold text-base text-heading truncate leading-tight">{team?.name || (isTeamA ? 'Time Azul' : 'Time Laranja')}</h3>
+                      <span className="text-[11px] text-ink-muted">Idade {ageVal.toFixed(1)} · Habilidade {skillVal.toFixed(1)}</span>
+                    </div>
+                    <span className={`font-heading font-extrabold text-xl ${isTeamA ? 'text-team-blue-soft' : 'text-team-orange-soft'}`}>{scoreVal.toFixed(1)}</span>
+                  </div>
+                  {sortRoster(players).map(player => {
+                    const st = stats(player.id);
+                    return (
+                      <div key={player.id} className="flex items-center gap-2 py-1 border-t border-divider">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center font-heading font-bold text-white text-xs shrink-0" style={{ background: isTeamA ? 'linear-gradient(155deg,#5b9bf6,#2c5fb0)' : 'linear-gradient(155deg,#fba56a,#d2691e)' }}>{player.name.charAt(0).toUpperCase()}</div>
+                        <span className="flex-1 min-w-0 text-sm font-medium text-ink-soft truncate">{player.name}</span>
+                        <span className={`w-9 text-center shrink-0 px-1 py-0.5 rounded text-[10px] font-bold font-heading tracking-wide ${posBadge(player.position)}`}>{player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}</span>
+                        <span className="w-8 shrink-0 flex items-center justify-end gap-0.5 text-xs font-bold text-ink-soft">
+                          {st.goals > 0 && (<><Target className="w-3 h-3" />{st.goals}</>)}
+                        </span>
+                        <span className="w-7 shrink-0 flex justify-center">
+                          {st.assists > 0 && (<span className="text-[11px] font-extrabold text-ink-muted px-1.5 py-0.5 rounded bg-surface-hover">A{st.assists > 1 ? st.assists : ''}</span>)}
+                        </span>
+                        {match.status === 'in_progress' && canManage && (
                           <button
-                            className="p-2 rounded-full hover:bg-gray-200 transition"
-                            title="Ver lista de espera"
-                            onClick={() => setWaitingListMatchId(match.id)}
+                            className="shrink-0 p-1.5 rounded-full hover:bg-team-blue/15 transition"
+                            title="Trocar jogador"
+                            onClick={() => { setIsPlayerSwapOpen(true); setSelectedPlayer(player); setSelectedTeam(team); setSelectedMatch(match); }}
                           >
-                            <Users className="w-5 h-5 text-blue-500" />
+                            <ArrowLeftRight className="w-4 h-4 text-team-blue" />
                           </button>
-                          <button
-                            className="p-2 rounded-full hover:bg-red-100 transition"
-                            title="Excluir partida"
-                            onClick={() => {
-                              if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
-                                deleteMatch(match.id);
-                              }
-                            }}
-                            style={{ display: (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' ? 'block' : 'none' }}
-                          >
-                            <Trash2 className="w-5 h-5 text-red-500" />
-                          </button>
-                              </div>
-                            )}
-                              </div>
-
-                      {/* Conteúdo expandido */}
-                      <AnimatePresence initial={false}>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden mt-4"
-                          >
-                            <div className="mt-4">
-                              <MatchScore match={match} />
-                            </div>
-                            {/* Campinho, etc... */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                              <TacticalView
-                                team={match.teams[0]}
-                                formation={match.teams[0].formation?.tactical || '4-3-2'}
-                                onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[0].id, newFormation)}
-                                goals={match.goals}
-                                teamColor="#3b82f6"
-                                isHomeTeam={false}
-                              />
-                              <TacticalView
-                                team={match.teams[1]}
-                                formation={match.teams[1].formation?.tactical || '4-3-2'}
-                                onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[1].id, newFormation)}
-                                    goals={match.goals}
-                                teamColor="#f59e42"
-                                isHomeTeam={false}
-                              />
-                            </div>
-                            {/* MatchTimer apenas para partidas em progresso */}
-                            {match.status === 'in_progress' && (
-                              <MatchTimer
-                                teamA={match.teams[0]}
-                                teamB={match.teams[1]}
-                                isFirstMatch={idx === 0}
-                                onGoalScored={(teamId, scorerId, assisterId, ownGoal) => handleGoalScored(match.id, teamId, scorerId, assisterId, ownGoal)}
-                                onRemoveGoal={(goalId) => handleRemoveGoal(match.id, goalId)}
-                                match={match}
-                                roster={game.players}
-                                onTimerUpdate={createTimerUpdateHandler(match.id)}
-                              />
-                            )}
-
-                            {/* Lista de jogadores dos times - visível em partidas em progresso e finalizadas */}
-                            {(match.status === 'in_progress' || match.status === 'finished') && (
-                              <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                  <div>
-                                    <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[0]?.name}</h3>
-                                    <div className="mb-2 flex flex-wrap gap-2 text-xs">
-                                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700">Score: {team0Score.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média idade: {team0AvgAge.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média habilidade: {team0AvgSkill.toFixed(1)}</span>
-                                    </div>
-                                    <ul className="space-y-2">
-                                      {[...(match.teams[0]?.players || [])]
-                                        .sort((a, b) => {
-                                          const posOrder = { defesa: 0, meio: 1, ataque: 2 };
-                                          return posOrder[a.position] - posOrder[b.position];
-                                        })
-                                        .map((player) => {
-                                          const stats = getPlayerStats(player.id);
-                                          return (
-                                            <li key={player.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
-                                              {/* Avatar */}
-                                              <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
-                                                   style={{ backgroundColor: '#3b82f6' }}>
-                                                {player.name.charAt(0).toUpperCase()}
-                                              </div>
-                                              {/* Nome + posição */}
-                                              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ml-1 ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-                                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                                              </span>
-                                              <span className="font-medium truncate max-w-[200px]">{player.name}</span>
-                                              {/* Gols */}
-                                              {stats.goals > 0 && (
-                                                <span className="flex items-center gap-1 text-blue-600 ml-1">
-                                                  <Target className="w-3 h-3" /> {stats.goals}
-                                                </span>
-                                              )}
-                                              {/* Assistências */}
-                                              {stats.assists > 0 && (
-                                                <span className="flex items-center gap-1 text-green-600 ml-1">
-                                                  <Footprints className="w-3 h-3" /> {stats.assists}
-                                                </span>
-                                              )}
-                                              {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                                                <button
-                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                  title="Trocar jogador"
-                                                  onClick={() => {
-                                                    setIsPlayerSwapOpen(true);
-                                                    setSelectedPlayer(player);
-                                                    setSelectedTeam(match.teams[0]);
-                                                    setSelectedMatch(match);
-                                                  }}
-                                                >
-                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                                </button>
-                                              )}
-                                            </li>
-                                          );
-                                        })}
-                                    </ul>
-                                  </div>
-                                  <div>
-                                    <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[1]?.name}</h3>
-                                    <div className="mb-2 flex flex-wrap gap-2 text-xs">
-                                      <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700">Score: {team1Score.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média idade: {team1AvgAge.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média habilidade: {team1AvgSkill.toFixed(1)}</span>
-                                    </div>
-                                    <ul className="space-y-2">
-                                      {[...(match.teams[1]?.players || [])]
-                                        .sort((a, b) => {
-                                          const posOrder = { defesa: 0, meio: 1, ataque: 2 };
-                                          return posOrder[a.position] - posOrder[b.position];
-                                        })
-                                        .map((player) => {
-                                          const stats = getPlayerStats(player.id);
-                                          return (
-                                            <li key={player.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
-                                              {/* Avatar */}
-                                              <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
-                                                   style={{ backgroundColor: '#f59e42' }}>
-                                                {player.name.charAt(0).toUpperCase()}
-                                              </div>
-                                              {/* Nome + posição */}
-                                              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ml-1 ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-                                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                                              </span>
-                                              <span className="font-medium truncate max-w-[200px]">{player.name}</span>
-                                              {/* Gols */}
-                                              {stats.goals > 0 && (
-                                                <span className="flex items-center gap-1 text-blue-600 ml-1">
-                                                  <Target className="w-3 h-3" /> {stats.goals}
-                                                </span>
-                                              )}
-                                              {/* Assistências */}
-                                              {stats.assists > 0 && (
-                                                <span className="flex items-center gap-1 text-green-600 ml-1">
-                                                  <Footprints className="w-3 h-3" /> {stats.assists}
-                                                </span>
-                                              )}
-                                              {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                                                <button
-                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                  title="Trocar jogador"
-                                                  onClick={() => {
-                                                    setIsPlayerSwapOpen(true);
-                                                    setSelectedPlayer(player);
-                                                    setSelectedTeam(match.teams[1]);
-                                                    setSelectedMatch(match);
-                                                  }}
-                                                >
-                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                                </button>
-                                              )}
-                                            </li>
-                                          );
-                                        })}
-                                    </ul>
-                                  </div>
-                                </div>
-
-                                {/* Botões de finalização - apenas para partidas em andamento */}
-                                {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                                  <div className="flex flex-col md:flex-row gap-2 mt-4">
-                                    <button
-                                      className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-                                      onClick={() => finishMatch(match.id, match.teams[0].id)}
-                                    >
-                                      {match.teams[0]?.name} Venceu
-                                    </button>
-                                    <button
-                                      className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
-                                      onClick={() => finishMatch(match.id, match.teams[1].id)}
-                                    >
-                                      {match.teams[1]?.name} Venceu
-                                    </button>
-                                  </div>
-                                )}
-                  </>
-                )}
-                          </motion.div>
                         )}
-                      </AnimatePresence>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <div className="text-gray-500 text-center py-8">Nenhuma partida registrada ainda.</div>
-            )}
-            {/* Seletor de jogadores por time + Botão Gerar Nova Partida */}
-            {selectedTab === 'partidas' && game.status !== 'finished' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-              <div className="flex flex-col items-center gap-3 mt-8">
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-sm text-gray-500 font-medium">Jogadores por time</span>
-                  <button
-                    onClick={() => setIsPlayersPerTeamOpen(true)}
-                    className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition"
-                  >
-                    <span className="text-sm font-semibold text-gray-800">{playersPerTeam}x{playersPerTeam}</span>
-                    <svg className="w-2 h-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                      </div>
+                    );
+                  })}
                 </div>
+              );
 
-                {/* Bottom sheet seletor */}
-                {isPlayersPerTeamOpen && (
-                  <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={() => setIsPlayersPerTeamOpen(false)}>
-                    <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100">
-                        <div>
-                          <div className="font-bold text-base text-gray-800">Jogadores por time</div>
-                          <div className="text-xs text-gray-500">Selecione o formato da partida</div>
-                        </div>
-                        <button
-                          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl font-bold"
-                          onClick={() => setIsPlayersPerTeamOpen(false)}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="p-3 space-y-2">
-                        {[4, 5, 6, 7, 8, 9, 10].map(n => (
+              return (
+                <div className="space-y-4">
+                  {/* Faixa superior: seletor de jogos + ações */}
+                  <div className="glass-card p-2.5 flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+                      <span className="font-heading font-bold text-[11px] uppercase tracking-wider text-ink-muted shrink-0 px-1 hidden sm:inline">Jogos</span>
+                      {matches.map((mm, i) => {
+                        const sel = mm.id === match.id;
+                        return (
                           <button
-                            key={n}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-left ${
-                              playersPerTeam === n
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-50 hover:bg-blue-50 active:bg-blue-100 text-gray-800'
-                            }`}
-                            onClick={() => { setPlayersPerTeam(n); setIsPlayersPerTeamOpen(false); }}
+                            key={mm.id}
+                            onClick={() => { setExpandedMatchId(mm.id); }}
+                            className={`flex flex-col items-center gap-0.5 px-3.5 py-1.5 rounded-xl border shrink-0 transition-all ${sel ? 'bg-surface-strong border-divider-strong shadow-[0_8px_20px_-12px_rgba(0,0,0,0.7)]' : 'bg-surface border-divider hover:bg-surface-hover'}`}
                           >
-                            <span className="font-semibold text-base">{n}x{n}</span>
-                            <span className={`text-xs ${playersPerTeam === n ? 'text-blue-100' : 'text-gray-400'}`}>
-                              {n * 2} jogadores em campo
+                            <span className="font-heading font-semibold text-[10px] uppercase tracking-wider text-ink-muted">Jogo {i + 1}</span>
+                            <span className="flex items-baseline gap-1 font-heading font-extrabold text-base leading-none">
+                              <span className="text-team-blue-soft">{mm.teams[0]?.score ?? 0}</span>
+                              <span className="text-ink-dim text-[11px]">×</span>
+                              <span className="text-team-orange-soft">{mm.teams[1]?.score ?? 0}</span>
                             </span>
                           </button>
-                        ))}
-                      </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {canManage && (
+                        <>
+                          <button
+                            onClick={() => setIsPlayersPerTeamOpen(true)}
+                            title="Jogadores por time"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-divider text-sm font-semibold text-ink-soft hover:bg-surface-hover transition"
+                          >
+                            {playersPerTeam}x{playersPerTeam}
+                            <svg className="w-2.5 h-2.5 text-ink-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                          </button>
+                          <button
+                            onClick={generateTeams}
+                            disabled={isGeneratingTeams || game.players.length < 4 || (game.matches && game.matches.length > 0 && game.matches[game.matches.length - 1].status !== 'finished')}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-team-blue text-white text-sm font-semibold hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          >
+                            {isGeneratingTeams ? (
+                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+                            ) : (
+                              <Plus className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">Nova partida</span>
+                          </button>
+                          <div className="w-px h-6 bg-divider mx-0.5" />
+                        </>
+                      )}
+                      <button className="p-2 rounded-lg hover:bg-surface-hover transition" title="Lista de espera" onClick={() => setWaitingListMatchId(match.id)}>
+                        <Users className="w-4 h-4 text-team-blue-soft" />
+                      </button>
+                      {canManage && (
+                        <button
+                          className="p-2 rounded-lg hover:bg-danger/15 transition"
+                          title="Excluir partida"
+                          onClick={() => { if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) deleteMatch(match.id); }}
+                        >
+                          <Trash2 className="w-4 h-4 text-danger-soft" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
-                <button
-                  onClick={generateTeams}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  disabled={isGeneratingTeams || game.players.length < 4 || (game.matches && game.matches.length > 0 && game.matches[game.matches.length - 1].status !== 'finished')}
-                >
-                  {isGeneratingTeams && (
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+
+                  {/* Grid principal */}
+                  <div ref={partidaGridRef} className="partida-fit grid grid-cols-1 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
+                  {/* COLUNA ESQUERDA */}
+                  <div className="flex flex-col gap-3">
+                    {/* Placar / Timer */}
+                    {match.status === 'in_progress' ? (
+                      <MatchTimer
+                        teamA={team0}
+                        teamB={team1}
+                        isFirstMatch={idx === 0}
+                        onGoalScored={(teamId, scorerId, assisterId, ownGoal) => handleGoalScored(match.id, teamId, scorerId, assisterId, ownGoal)}
+                        onRemoveGoal={(goalId) => handleRemoveGoal(match.id, goalId)}
+                        match={match}
+                        roster={game.players}
+                        onTimerUpdate={createTimerUpdateHandler(match.id)}
+                      />
+                    ) : (
+                      <div className="glass-card p-4 sm:p-5">
+                        <div className="flex justify-center mb-3">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-success/15 text-success-soft border border-success/25">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success" /> Finalizada
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-heading font-extrabold text-xl text-white shadow-[0_6px_16px_rgba(0,0,0,0.4)]" style={{ background: 'linear-gradient(155deg,#5b9bf6,#2c5fb0)' }}>{(team0?.name || 'A').charAt(0).toUpperCase()}</div>
+                            <span className="font-heading font-bold text-xs uppercase tracking-wide text-ink-soft text-center leading-tight">{team0?.name || 'Time Azul'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 font-heading font-extrabold leading-none">
+                            <span className="text-4xl text-team-blue-soft">{scoreA}</span>
+                            <span className="text-xl text-ink-dim">×</span>
+                            <span className="text-4xl text-team-orange-soft">{scoreB}</span>
+                          </div>
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-heading font-extrabold text-xl text-white shadow-[0_6px_16px_rgba(0,0,0,0.4)]" style={{ background: 'linear-gradient(155deg,#fba56a,#d2691e)' }}>{(team1?.name || 'B').charAt(0).toUpperCase()}</div>
+                            <span className="font-heading font-bold text-xs uppercase tracking-wide text-ink-soft text-center leading-tight">{team1?.name || 'Time Laranja'}</span>
+                          </div>
+                        </div>
+                        <div className="h-px bg-divider my-3" />
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="flex flex-col gap-1.5 items-end">
+                            {team0Players.filter(p => stats(p.id).goals > 0).map(p => (
+                              <span key={p.id} className="flex items-center gap-1.5 text-ink-soft"><span className="font-medium">{p.name.split(' ')[0]}</span>{stats(p.id).goals > 1 && <span className="text-ink-muted">×{stats(p.id).goals}</span>}<Target className="w-3 h-3 text-team-blue-soft" /></span>
+                            ))}
+                            {team0Players.filter(p => stats(p.id).goals > 0).length === 0 && <span className="text-ink-dim">Sem gols</span>}
+                          </div>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {team1Players.filter(p => stats(p.id).goals > 0).map(p => (
+                              <span key={p.id} className="flex items-center gap-1.5 text-ink-soft"><Target className="w-3 h-3 text-team-orange-soft" /><span className="font-medium">{p.name.split(' ')[0]}</span>{stats(p.id).goals > 1 && <span className="text-ink-muted">×{stats(p.id).goals}</span>}</span>
+                            ))}
+                            {team1Players.filter(p => stats(p.id).goals > 0).length === 0 && <span className="text-ink-dim">Sem gols</span>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Confronto dos times — compacto, preenche a coluna esquerda */}
+                    <div className="glass-card p-3 grid grid-cols-3 gap-3">
+                      {h2hRows.map(row => {
+                        const tot = (row.a + row.b) || 1;
+                        return (
+                          <div key={row.label} className="flex flex-col gap-1.5">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted text-center truncate">{row.label}</div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-heading font-extrabold text-base leading-none text-team-blue-soft">{row.a.toFixed(1)}</span>
+                              <span className="font-heading font-extrabold text-base leading-none text-team-orange-soft">{row.b.toFixed(1)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="flex-1 h-1.5 rounded-full bg-surface-hover overflow-hidden flex justify-end"><div className="h-full rounded-full" style={{ width: `${(row.a / tot) * 100}%`, background: '#3B82F6' }} /></div>
+                              <div className="flex-1 h-1.5 rounded-full bg-surface-hover overflow-hidden flex justify-start"><div className="h-full rounded-full" style={{ width: `${(row.b / tot) * 100}%`, background: '#F97316' }} /></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Botões de finalização — desktop (na coluna); no mobile aparecem no fim */}
+                    {match.status === 'in_progress' && canManage && (
+                      <div className="hidden xl:flex flex-col gap-2 mt-auto pt-2">
+                        <button className="py-2.5 rounded-xl bg-team-blue text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team0.id)}>{team0?.name} Venceu</button>
+                        <button className="py-2.5 rounded-xl bg-team-orange text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team1.id)}>{team1?.name} Venceu</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* COLUNA CENTRAL: campo */}
+                  <CombinedPitch
+                    teamA={team0}
+                    teamB={team1}
+                    goals={match.goals}
+                    formationA={team0?.formation?.tactical || '4-3-2'}
+                    formationB={team1?.formation?.tactical || '4-3-2'}
+                    onFormationChange={(teamId, f) => handleFormationChange(match.id, teamId, f)}
+                  />
+
+                  {/* COLUNA DIREITA: escalações */}
+                  <div className="space-y-3">
+                    {rosterCard(team0, team0Players, true, t0Score, t0Age, t0Skill)}
+                    {rosterCard(team1, team1Players, false, t1Score, t1Age, t1Skill)}
+                  </div>
+                  </div>
+
+                  {/* Botões de finalização — só mobile/tablet (no desktop ficam na coluna esquerda) */}
+                  {match.status === 'in_progress' && canManage && (
+                    <div className="flex flex-col sm:flex-row gap-2 xl:hidden">
+                      <button className="flex-1 py-2.5 rounded-xl bg-team-blue text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team0.id)}>{team0?.name} Venceu</button>
+                      <button className="flex-1 py-2.5 rounded-xl bg-team-orange text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team1.id)}>{team1?.name} Venceu</button>
+                    </div>
                   )}
-                  Gerar Nova Partida
-                </button>
+                </div>
+              );
+            })() : (
+              <div className="glass-card text-center py-12 px-6">
+                <p className="text-ink-muted mb-5">Nenhuma partida registrada ainda.</p>
+                {game.status !== 'finished' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      onClick={() => setIsPlayersPerTeamOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-divider text-sm font-semibold text-ink-soft hover:bg-surface-hover transition"
+                    >
+                      {playersPerTeam}x{playersPerTeam}
+                      <svg className="w-2.5 h-2.5 text-ink-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <button
+                      onClick={generateTeams}
+                      disabled={isGeneratingTeams || game.players.length < 4}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-team-blue text-white text-sm font-semibold hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingTeams ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      Gerar Nova Partida
+                    </button>
+                  </div>
+                )}
               </div>
+            )}
+
+            {/* Modal: jogadores por time (acionado pela barra de jogos / estado vazio) */}
+            {isPlayersPerTeamOpen && (
+              <Portal>
+              <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50" onClick={() => setIsPlayersPerTeamOpen(false)}>
+                <div className="bg-[var(--surface-solid)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-divider">
+                    <div>
+                      <div className="font-bold text-base text-ink-soft">Jogadores por time</div>
+                      <div className="text-xs text-ink-muted">Selecione o formato da partida</div>
+                    </div>
+                    <button
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-ink-dim hover:text-ink-soft hover:bg-surface-hover text-xl font-bold"
+                      onClick={() => setIsPlayersPerTeamOpen(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    {[4, 5, 6, 7, 8, 9, 10].map(n => (
+                      <button
+                        key={n}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-left ${
+                          playersPerTeam === n
+                            ? 'bg-team-blue text-white'
+                            : 'bg-surface hover:bg-team-blue/10 active:bg-team-blue/15 text-ink-soft'
+                        }`}
+                        onClick={() => { setPlayersPerTeam(n); setIsPlayersPerTeamOpen(false); }}
+                      >
+                        <span className="font-semibold text-base">{n}x{n}</span>
+                        <span className={`text-xs ${playersPerTeam === n ? 'text-white/80' : 'text-ink-dim'}`}>
+                          {n * 2} jogadores em campo
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              </Portal>
             )}
           </div>
         )}
 
         {selectedTab === 'analises' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Análises e Estatísticas</h2>
+            <h2 className="text-lg font-semibold text-heading mb-4">Análises e Estatísticas</h2>
             <GameAnalytics game={game} />
           </div>
         )}
@@ -2467,12 +2468,13 @@ export function GameDetails() {
       />
       {/* Modal de seleção de jogador */}
       {isSelectPlayerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-lg w-full h-full ">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-bold text-lg text-gray-800">Selecionar Jogador</h2>
+        <Portal>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
+          <div className="bg-[var(--surface-solid)] text-ink shadow-xl w-full h-full rounded-none flex flex-col md:rounded-2xl md:w-full md:max-w-md md:h-auto md:max-h-[85vh] md:mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-divider">
+              <h2 className="font-bold text-lg text-heading">Selecionar Jogador</h2>
               <button
-                className="text-gray-400 hover:text-gray-700 text-xl font-bold"
+                className="text-ink-dim hover:text-ink-soft text-xl font-bold"
                 onClick={() => {
                   setIsSelectPlayerModalOpen(false);
                   setSearchTerm('');
@@ -2484,18 +2486,17 @@ export function GameDetails() {
             </div>
             
             {/* Campo de busca */}
-            <div className="p-4 border-b">
+            <div className="p-4 border-b border-divider">
               <div className="relative">
                 <input
                   type="text"
                   placeholder="Buscar por nome ou email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  //className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  className="w-full px-4 py-2 pl-10 text-base md:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="field-input pl-10 text-base md:text-sm"
                 />
                 <svg
-                  className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
+                  className="absolute left-3 top-2.5 w-4 h-4 text-ink-dim"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2513,11 +2514,11 @@ export function GameDetails() {
             <div className="flex-1 overflow-y-auto p-4">
               {isLoadingPlayers ? (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-team-blue"></div>
                 </div>
               ) : filteredPlayers.length > 0 ? (
                 <>
-                  <div className="text-sm text-gray-500 mb-2">
+                  <div className="text-sm text-ink-muted mb-2">
                     {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? 'es' : ''} disponível{filteredPlayers.length !== 1 ? 'is' : ''}
                   </div>
                   <ul className="space-y-2">
@@ -2525,26 +2526,26 @@ export function GameDetails() {
                       <li key={user.id}>
                         <button
                           onClick={() => handleAddExistingPlayer(user)}
-                          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-surface transition-colors text-left"
                         >
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+                          <div className="w-10 h-10 rounded-full bg-team-blue/15 flex items-center justify-center font-bold text-team-blue-soft">
                             {user.playerInfo?.name?.charAt(0).toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">{user.playerInfo?.name}</div>
-                            <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                            <div className="font-medium text-heading truncate">{user.playerInfo?.name}</div>
+                            <div className="text-sm text-ink-muted truncate">{user.email}</div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              user.playerInfo?.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                              user.playerInfo?.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
+                              user.playerInfo?.position === 'defesa' ? 'bg-team-blue/15 text-team-blue-soft' :
+                              user.playerInfo?.position === 'meio' ? 'bg-meio/15 text-meio-soft' :
+                              'bg-danger/15 text-danger-soft'
                             }`}>
                               {user.playerInfo?.position?.toUpperCase() || 'N/A'}
                             </span>
                             <div className="flex gap-0.5">
                               {[...Array(5)].map((_, i) => (
-                                <svg key={i} className={`w-3 h-3 ${i < (user.playerInfo?.skillLevel || 0) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <svg key={i} className={`w-3 h-3 ${i < (user.playerInfo?.skillLevel || 0) ? 'text-yellow-400' : 'text-ink-dim'}`} fill="currentColor" viewBox="0 0 20 20">
                                   <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
                                 </svg>
                               ))}
@@ -2556,7 +2557,7 @@ export function GameDetails() {
                   </ul>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-ink-muted">
                   {searchTerm 
                     ? 'Nenhum jogador encontrado com esse termo.' 
                     : 'Nenhum jogador disponível para adicionar.'}
@@ -2565,16 +2566,18 @@ export function GameDetails() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Modal da Lista de Espera */}
       {waitingListMatchId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
+        <Portal>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
+          <div className="bg-[var(--surface-solid)] rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-bold text-lg text-gray-800">Lista de Espera</h2>
+              <h2 className="font-bold text-lg text-ink-soft">Lista de Espera</h2>
               <button
-                className="text-gray-400 hover:text-gray-700 text-xl font-bold"
+                className="text-ink-dim hover:text-ink-soft text-xl font-bold"
                 onClick={() => setWaitingListMatchId(null)}
                 aria-label="Fechar"
               >
@@ -2595,29 +2598,29 @@ export function GameDetails() {
                     .filter(Boolean) as Player[];
 
                   if (waitingPlayers.length === 0) {
-                    return <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>;
+                    return <div className="text-ink-dim text-sm">Nenhum jogador na lista de espera.</div>;
                   }
 
                   return (
                     <div className="space-y-2">
                       {waitingPlayers.map((player) => (
-                        <div key={player.id} className="flex items-center p-3 rounded-lg bg-gray-50 border border-gray-100">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm mr-3">
+                        <div key={player.id} className="flex items-center p-3 rounded-lg bg-surface border border-divider">
+                          <div className="w-8 h-8 rounded-full bg-team-blue/15 flex items-center justify-center font-bold text-team-blue-soft text-sm mr-3">
                             {player.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">{player.name}</div>
+                            <div className="font-medium text-heading truncate">{player.name}</div>
                             <div className="flex items-center gap-2 mt-1">
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
+                                player.position === 'defesa' ? 'bg-warning/15 text-warning-soft' :
+                                player.position === 'meio' ? 'bg-team-blue/15 text-team-blue-soft' :
+                                'bg-danger/15 text-danger-soft'
                               }`}>
                                 {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
                               </span>
                               <div className="flex gap-0.5">
                                 {[...Array(5)].map((_, i) => (
-                                  <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                  <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-ink-dim'}`} fill="currentColor" viewBox="0 0 20 20">
                                     <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
                                   </svg>
                                 ))}
@@ -2631,7 +2634,7 @@ export function GameDetails() {
                                 // Fecha o modal após remover
                                 setTimeout(() => setWaitingListMatchId(null), 500);
                               }}
-                              className="p-2 rounded-lg hover:bg-red-50 transition-colors ml-2"
+                              className="p-2 rounded-lg hover:bg-danger/10 transition-colors ml-2"
                               title="Remover da lista de espera"
                             >
                               <Trash2 className="w-4 h-4 text-red-500" />
@@ -2651,16 +2654,16 @@ export function GameDetails() {
                       <div className="font-medium mb-2">Jogadores que saíram</div>
                       <div className="space-y-2">
                         {playersOut.length === 0 ? (
-                          <div className="text-gray-400 text-sm">Nenhum jogador saiu.</div>
+                          <div className="text-ink-dim text-sm">Nenhum jogador saiu.</div>
                         ) : (
                           playersOut.map((player) => (
-                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-red-50">
+                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-danger/10">
                               <User className="w-5 h-5 text-red-400 mr-2" />
                               <span className="flex-1 text-left">{player.name}</span>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
+                                player.position === 'defesa' ? 'bg-warning/15 text-warning-soft' :
+                                player.position === 'meio' ? 'bg-team-blue/15 text-team-blue-soft' :
+                                'bg-danger/15 text-danger-soft'
                               }`}>
                                 {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
                               </span>
@@ -2674,16 +2677,16 @@ export function GameDetails() {
                       <div className="font-medium mb-2">Jogadores que entraram</div>
                       <div className="space-y-2">
                         {playersIn.length === 0 ? (
-                          <div className="text-gray-400 text-sm">Nenhum jogador entrou.</div>
+                          <div className="text-ink-dim text-sm">Nenhum jogador entrou.</div>
                         ) : (
                           playersIn.map((player) => (
-                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-green-50">
+                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-success/10">
                               <User className="w-5 h-5 text-green-400 mr-2" />
                               <span className="flex-1 text-left">{player.name}</span>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
+                                player.position === 'defesa' ? 'bg-warning/15 text-warning-soft' :
+                                player.position === 'meio' ? 'bg-team-blue/15 text-team-blue-soft' :
+                                'bg-danger/15 text-danger-soft'
                               }`}>
                                 {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
                               </span>
@@ -2698,39 +2701,41 @@ export function GameDetails() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Modal de Pagamento do Diarista */}
       {showDiaristaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+        <Portal>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
+          <div className="bg-[var(--surface-solid)] text-ink rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
             <button
-              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+              className="absolute top-3 right-4 text-2xl text-ink-dim hover:text-ink-soft"
               onClick={() => setShowDiaristaModal(false)}
               aria-label="Fechar"
             >
               ×
             </button>
-            <h2 className="text-lg font-semibold mb-4">Confirmar Pagamento</h2>
+            <h2 className="text-lg font-semibold mb-4 text-heading">Confirmar Pagamento</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Nome do Diarista</label>
+                <label className="block text-sm font-medium mb-1 text-ink-soft">Nome do Diarista</label>
                 <input
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="field-input"
                   value={selectedDiarista?.name || ''}
                   readOnly
                   placeholder="Nome do diarista"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
+                <label className="block text-sm font-medium mb-1 text-ink-soft">Valor do Pagamento</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">R$</span>
                   <input
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className="w-full border rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="field-input pl-9"
                     value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '');
@@ -2744,7 +2749,7 @@ export function GameDetails() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setShowDiaristaModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-ink-soft bg-surface-hover rounded-lg hover:bg-surface-hover transition-colors"
                 type="button"
               >
                 Cancelar
@@ -2753,7 +2758,7 @@ export function GameDetails() {
                 onClick={() => {              
                   setDiaristaFree(true);                  
                 }}
-                className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-green-700 bg-success/15 rounded-lg hover:bg-success/25 transition-colors"
                 type="button"
                 disabled={!selectedDiarista}
               >
@@ -2761,7 +2766,7 @@ export function GameDetails() {
               </button>
               <button
                 onClick={confirmDiaristaPayment}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-team-blue rounded-lg hover:brightness-110 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
                 disabled={!selectedDiarista}
               >
@@ -2770,7 +2775,9 @@ export function GameDetails() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
+    </div>
   );
-} 
+}

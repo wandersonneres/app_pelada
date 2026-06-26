@@ -1,5 +1,6 @@
 import { Team } from '../types';
 import { useState, useEffect } from 'react';
+import { Portal } from './ui/Portal';
 
 interface GoalScorerModalProps {
   isOpen: boolean;
@@ -53,7 +54,8 @@ export const GoalScorerModal = ({ isOpen, onClose, team, opponentTeam, onConfirm
   const scorer = team.players.find(p => p.id === scorerId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
+    <Portal>
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50">
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100">
@@ -161,5 +163,6 @@ export const GoalScorerModal = ({ isOpen, onClose, team, opponentTeam, onConfirm
         </div>
       </div>
     </div>
+    </Portal>
   );
 };

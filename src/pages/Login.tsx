@@ -53,24 +53,27 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-10">
+    <div className="pelada-page flex flex-col items-center justify-center px-4 py-10">
 
       {/* Logo */}
-      <div className="flex flex-col items-center mb-7">
-        <img
-          src="/logo.png"
-          alt="Inimigos Bola FC"
-          className="w-28 h-28 object-contain drop-shadow-lg mb-3"
-        />
-        <h1 className="text-2xl font-extrabold text-gray-900 tracking-wide">Inimigos Bola FC</h1>
+      <div className="relative z-10 flex flex-col items-center mb-8">
+        <div className="rounded-3xl bg-surface border border-divider p-4 mb-4 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.8)]">
+          <img
+            src="/logo.png"
+            alt="Inimigos Bola FC"
+            className="w-24 h-24 object-contain drop-shadow-lg"
+          />
+        </div>
+        <h1 className="font-heading text-3xl font-extrabold text-heading tracking-wide">Inimigos Bola FC</h1>
+        <p className="text-sm text-ink-muted mt-1">Entre para gerenciar suas peladas</p>
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-md border border-gray-200 p-6 sm:p-8">
+      <div className="glass-card relative z-10 w-full max-w-sm p-6 sm:p-8">
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div className="space-y-1.5">
-            <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="username" className="text-sm font-medium text-ink-soft">
               Usuário
             </Label>
             <Input
@@ -85,17 +88,17 @@ export function Login() {
                 setError('');
               }}
               className={cn(
-                'h-11',
-                fieldErrors.username && 'border-red-400 focus-visible:ring-red-300'
+                'h-11 bg-surface border-divider text-ink placeholder:text-ink-dim focus-visible:border-team-blue focus-visible:ring-team-blue/30',
+                fieldErrors.username && 'border-danger/70 focus-visible:ring-danger/30'
               )}
             />
             {fieldErrors.username && (
-              <p className="text-xs text-red-500">{fieldErrors.username}</p>
+              <p className="text-xs text-danger-soft">{fieldErrors.username}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="password" className="text-sm font-medium text-ink-soft">
               Senha
             </Label>
             <div className="relative">
@@ -111,26 +114,26 @@ export function Login() {
                   setError('');
                 }}
                 className={cn(
-                  'h-11 pr-10',
-                  fieldErrors.password && 'border-red-400 focus-visible:ring-red-300'
+                  'h-11 pr-10 bg-surface border-divider text-ink placeholder:text-ink-dim focus-visible:border-team-blue focus-visible:ring-team-blue/30',
+                  fieldErrors.password && 'border-danger/70 focus-visible:ring-danger/30'
                 )}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
                 tabIndex={-1}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-dim hover:text-ink-soft transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {fieldErrors.password && (
-              <p className="text-xs text-red-500">{fieldErrors.password}</p>
+              <p className="text-xs text-danger-soft">{fieldErrors.password}</p>
             )}
           </div>
 
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <p className="text-xs text-danger-soft bg-danger/10 border border-danger/25 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -138,7 +141,7 @@ export function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full h-11 rounded-xl bg-team-blue hover:brightness-110 active:brightness-95 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)] disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -153,7 +156,7 @@ export function Login() {
         </form>
       </div>
 
-      <p className="text-gray-400 text-xs mt-8">© {new Date().getFullYear()} Inimigos Bola FC</p>
+      <p className="relative z-10 text-ink-dim text-xs mt-8">© {new Date().getFullYear()} Inimigos Bola FC</p>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { StarRating } from '../components/StarRating';
 import { Timestamp } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
 export function PlayerConfirmation() {
   const { id } = useParams<{ id: string }>();
@@ -90,17 +91,19 @@ export function PlayerConfirmation() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Faixa Etária</label>
-              <select
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
+              <Select
                 value={playerAgeGroup}
-                onChange={(e) => setPlayerAgeGroup(e.target.value as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
+                onValueChange={(v) => setPlayerAgeGroup(v as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
               >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <span className="flex-1 text-left">{playerAgeGroup} anos</span>
+                </SelectTrigger>
+                <SelectContent>
+                  {(['15-20', '21-30', '31-40', '41-50', '+50'] as const).map(a => (
+                    <SelectItem key={a} value={a}>{a} anos</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <button
               type="submit"
@@ -138,17 +141,19 @@ export function PlayerConfirmation() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Faixa Etária</label>
-            <select
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
+            <Select
               value={playerAgeGroup}
-              onChange={(e) => setPlayerAgeGroup(e.target.value as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
+              onValueChange={(v) => setPlayerAgeGroup(v as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
             >
-              <option value="15-20">15-20 anos</option>
-              <option value="21-30">21-30 anos</option>
-              <option value="31-40">31-40 anos</option>
-              <option value="41-50">41-50 anos</option>
-              <option value="+50">+50 anos</option>
-            </select>
+              <SelectTrigger className="w-full">
+                <span className="flex-1 text-left">{playerAgeGroup} anos</span>
+              </SelectTrigger>
+              <SelectContent>
+                {(['15-20', '21-30', '31-40', '41-50', '+50'] as const).map(a => (
+                  <SelectItem key={a} value={a}>{a} anos</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <button
             type="submit"

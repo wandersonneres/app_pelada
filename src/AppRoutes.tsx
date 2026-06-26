@@ -12,6 +12,7 @@ import { EditUser } from './pages/EditUser';
 import { Players } from './pages/Players';
 import { Financeiro } from './pages/Financeiro';
 import { Ranking } from './pages/Ranking';
+import { DevTest } from './pages/DevTest';
 
 export function AppRoutes() {
   const location = useLocation();
@@ -32,6 +33,7 @@ export function AppRoutes() {
         className={`${isAuthRoute ? 'flex items-center justify-center min-h-screen' : ''} ${shouldCenterContent ? 'flex items-center justify-center min-h-screen' : 'min-h-screen'}`}
       >
         <Routes>
+          <Route path="/dev-test" element={<DevTest />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route

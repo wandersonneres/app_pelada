@@ -85,8 +85,8 @@ export function Players() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      <div className="pelada-page flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-team-blue"></div>
       </div>
     );
   }
@@ -94,25 +94,25 @@ export function Players() {
   const getPositionColor = (position: string) => {
     switch (position) {
       case 'defesa':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-team-blue/15 text-team-blue-soft';
       case 'meio':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-meio/15 text-meio-soft';
       case 'ataque':
-        return 'bg-red-100 text-red-800';
+        return 'bg-danger/15 text-danger-soft';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-hover text-ink-muted';
     }
   };
 
   return (
-    <div className="w-full py-4 sm:py-6">
-      <div className="max-w-4xl mx-auto px-2 sm:px-4">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+    <div className="pelada-page w-full py-6 sm:py-8">
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10">
+        <div className="glass-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-5 sm:mb-6">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Jogadores</h1>
-              <p className="text-sm sm:text-base text-gray-500 mt-0.5 sm:mt-1">
-                {filteredPlayers.length === players.length 
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-wide text-heading">Jogadores</h1>
+              <p className="text-sm sm:text-base text-ink-muted mt-0.5 sm:mt-1">
+                {filteredPlayers.length === players.length
                   ? `${players.length} jogador${players.length !== 1 ? 'es' : ''} cadastrado${players.length !== 1 ? 's' : ''}`
                   : `${filteredPlayers.length} de ${players.length} jogador${players.length !== 1 ? 'es' : ''} encontrado${filteredPlayers.length !== 1 ? 's' : ''}`
                 }
@@ -120,7 +120,7 @@ export function Players() {
             </div>
             <button
               onClick={() => navigate('/register')}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-team-blue hover:brightness-110 text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)]"
             >
               <FaUserPlus className="w-4 h-4" />
               Novo Jogador
@@ -128,7 +128,7 @@ export function Players() {
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
             {/* Barra de Busca */}
             <div className="relative flex-1">
               <div className="relative">
@@ -137,15 +137,15 @@ export function Players() {
                   placeholder="Buscar jogador por nome ou email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="field-input pl-10 text-sm sm:text-base"
                 />
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-dim w-4 h-4" />
               </div>
               {searchTerm && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="text-gray-400 hover:text-gray-600 text-sm"
+                    className="text-ink-muted hover:text-heading text-sm"
                   >
                     Limpar
                   </button>
@@ -155,47 +155,47 @@ export function Players() {
 
             {/* Filtro de Tipo de Pagamento */}
             <div className="w-full sm:w-auto">
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:flex">
                 <button
                   onClick={() => setPaymentTypeFilter('all')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl border transition-colors ${
                     paymentTypeFilter === 'all'
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-team-blue/15 border-team-blue/30 text-team-blue-soft'
+                      : 'bg-surface border-divider text-ink-muted hover:bg-surface-hover'
                   }`}
                 >
-                  <FaUsers className="w-4 h-4" />
+                  <FaUsers className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-medium">Todos</span>
                 </button>
                 <button
                   onClick={() => setPaymentTypeFilter('mensalista')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl border transition-colors ${
                     paymentTypeFilter === 'mensalista'
-                      ? 'bg-green-50 border-green-200 text-green-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-success/15 border-success/30 text-success-soft'
+                      : 'bg-surface border-divider text-ink-muted hover:bg-surface-hover'
                   }`}
                 >
-                  <FaUserCheck className="w-4 h-4" />
+                  <FaUserCheck className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-medium">Mensalistas</span>
                 </button>
                 <button
                   onClick={() => setPaymentTypeFilter('diarista')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl border transition-colors ${
                     paymentTypeFilter === 'diarista'
-                      ? 'bg-orange-50 border-orange-200 text-orange-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-team-orange/15 border-team-orange/30 text-team-orange-soft'
+                      : 'bg-surface border-divider text-ink-muted hover:bg-surface-hover'
                   }`}
                 >
-                  <FaUserClock className="w-4 h-4" />
+                  <FaUserClock className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-medium">Diaristas</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:gap-4">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {filteredPlayers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-ink-muted md:col-span-2 lg:col-span-3 2xl:col-span-4">
                 Nenhum jogador encontrado
               </div>
             ) : (
@@ -204,66 +204,57 @@ export function Players() {
                   key={player.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:shadow-md transition-shadow"
+                  className="bg-surface border border-divider rounded-2xl p-4 hover:border-divider-strong transition-colors"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-base sm:text-lg">
-                        {player.playerInfo?.name?.charAt(0).toUpperCase() || player.username.charAt(0).toUpperCase()}
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full avatar-grad flex items-center justify-center text-white font-heading font-bold text-xl ring-1 ring-black/10 shrink-0">
+                      {player.playerInfo?.name?.charAt(0).toUpperCase() || player.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-heading leading-snug break-words">
+                        {player.playerInfo?.name || player.username}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                          {player.playerInfo?.name || player.username}
-                          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${player.playerInfo?.paymentType === 'mensalista' ? 'bg-green-100 text-green-800' : player.playerInfo?.paymentType === 'diarista' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500'}`}>{player.playerInfo?.paymentType === 'mensalista' ? 'Mensalista' : player.playerInfo?.paymentType === 'diarista' ? 'Diarista' : 'Tipo não informado'}</span>
-                        </div>
-                        <div className="text-xs sm:text-sm text-gray-500 truncate">
-                          {player.email}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
-                          {player.playerInfo?.position && (
-                            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${getPositionColor(player.playerInfo.position)}`}>
-                              {player.playerInfo.position === 'defesa' ? 'DEF' : 
-                               player.playerInfo.position === 'meio' ? 'MEI' : 'ATA'}
-                            </span>
-                          )}
-                          {player.playerInfo?.ageGroup && (
-                            <span className="text-[10px] sm:text-xs text-gray-500">{player.playerInfo.ageGroup} anos</span>
-                          )}
-                          {player.playerInfo?.skillLevel && (
-                            <div className="scale-75 sm:scale-100 origin-left">
-                              <StarRating 
-                                value={player.playerInfo.skillLevel} 
-                                size="sm" 
-                                showLabel={false}
-                                onChange={() => {}}
-                              />
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        {player.playerInfo?.position && (
+                          <span className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold font-heading tracking-wide ${getPositionColor(player.playerInfo.position)}`}>
+                            {player.playerInfo.position === 'defesa' ? 'DEF' :
+                             player.playerInfo.position === 'meio' ? 'MEI' : 'ATA'}
+                          </span>
+                        )}
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${player.playerInfo?.paymentType === 'mensalista' ? 'bg-success/15 text-success-soft' : player.playerInfo?.paymentType === 'diarista' ? 'bg-team-orange/15 text-team-orange-soft' : 'bg-surface-hover text-ink-muted'}`}>{player.playerInfo?.paymentType === 'mensalista' ? 'Mensalista' : player.playerInfo?.paymentType === 'diarista' ? 'Diarista' : 'N/D'}</span>
+                        {player.playerInfo?.ageGroup && (
+                          <span className="text-[11px] text-ink-muted">{player.playerInfo.ageGroup} anos</span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center justify-end gap-1 sm:gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => navigate(`/users/${player.id}/edit`)}
-                        className="p-1.5 sm:p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-ink-muted hover:text-team-blue-soft hover:bg-team-blue/10 rounded-lg transition-colors"
                         title="Editar jogador"
                       >
-                        <FaEdit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <FaEdit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeletePlayer(player.id)}
                         disabled={isDeleting === player.id}
-                        className="p-1.5 sm:p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2 text-ink-muted hover:text-danger-soft hover:bg-danger/10 rounded-lg transition-colors disabled:opacity-50"
                         title="Remover jogador"
                       >
                         {isDeleting === player.id ? (
-                          <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-danger border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <FaTrash className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <FaTrash className="w-4 h-4" />
                         )}
                       </button>
                     </div>
                   </div>
+                  {player.playerInfo?.skillLevel && (
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-divider">
+                      <span className="text-xs font-medium text-ink-muted uppercase tracking-wide">Habilidade</span>
+                      <StarRating value={player.playerInfo.skillLevel} size="sm" readOnly />
+                    </div>
+                  )}
                 </motion.div>
               ))
             )}

@@ -61,13 +61,13 @@ export function StarRating({ value, onChange, size = 'md', showLabel = true }: S
             type="button"
           >
             <Star
-              className={`${level <= (hoverValue || value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'} transition-colors duration-200`}
+              className={`${level <= (hoverValue || value) ? 'text-yellow-400 fill-yellow-400' : 'text-ink-dim'} transition-colors duration-200`}
             />
           </button>
         ))}
       </div>
       {showLabel && (
-        <span className="text-sm text-gray-500 mt-1">
+        <span className="text-sm text-ink-muted mt-1">
           {getLabel(hoverValue || value)}
         </span>
       )}
@@ -167,127 +167,136 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
     pos === 'defesa' ? 'DEF' : pos === 'meio' ? 'MEI' : 'ATA';
   const posBadgeClass = (pos: string) =>
     pos === 'defesa'
-      ? 'bg-yellow-100 text-yellow-700'
+      ? 'bg-team-blue/15 text-team-blue-soft'
       : pos === 'meio'
-      ? 'bg-blue-100 text-blue-700'
-      : 'bg-red-100 text-red-700';
+      ? 'bg-meio/15 text-meio-soft'
+      : 'bg-danger/15 text-danger-soft';
+  // Medalhas de pódio (ouro/prata/bronze) — cores neutras que funcionam nos 2 temas
+  const rankClass = (i: number) =>
+    i === 0
+      ? 'bg-[#f59e0b]/20 text-[#f59e0b]'
+      : i === 1
+      ? 'bg-[#94a3b8]/25 text-[#9aa6b6]'
+      : i === 2
+      ? 'bg-[#d97706]/20 text-[#d97706]'
+      : 'text-ink-dim';
 
   return (
     <div className="space-y-5">
       {/* Cards de destaque */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {/* Partidas */}
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-divider shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <div className="p-1 bg-blue-100 rounded-md">
-                <Trophy className="w-3.5 h-3.5 text-blue-600" />
+              <div className="p-1 bg-team-blue/15 rounded-md">
+                <Trophy className="w-3.5 h-3.5 text-team-blue-soft" />
               </div>
-              <span className="text-xs text-gray-500 font-medium">Partidas</span>
+              <span className="text-xs text-ink-muted font-medium">Partidas</span>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{totalMatches}</p>
+            <p className="text-3xl font-bold text-heading">{totalMatches}</p>
           </CardContent>
         </Card>
 
         {/* Gols */}
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-divider shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <div className="p-1 bg-green-100 rounded-md">
-                <Target className="w-3.5 h-3.5 text-green-600" />
+              <div className="p-1 bg-success/15 rounded-md">
+                <Target className="w-3.5 h-3.5 text-success-soft" />
               </div>
-              <span className="text-xs text-gray-500 font-medium">Gols</span>
+              <span className="text-xs text-ink-muted font-medium">Gols</span>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{totalGoals}</p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-3xl font-bold text-heading">{totalGoals}</p>
+            <p className="text-xs text-ink-dim mt-0.5">
               {totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0.0'}/jogo
             </p>
           </CardContent>
         </Card>
 
         {/* Jogadores */}
-        <Card className="border-gray-100 shadow-sm col-span-2 sm:col-span-1">
+        <Card className="border-divider shadow-sm col-span-2 sm:col-span-1">
           <CardContent className="p-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <div className="p-1 bg-purple-100 rounded-md">
-                <Users className="w-3.5 h-3.5 text-purple-600" />
+              <div className="p-1 bg-meio/15 rounded-md">
+                <Users className="w-3.5 h-3.5 text-meio-soft" />
               </div>
-              <span className="text-xs text-gray-500 font-medium">Jogadores</span>
+              <span className="text-xs text-ink-muted font-medium">Jogadores</span>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{game.players.length}</p>
+            <p className="text-3xl font-bold text-heading">{game.players.length}</p>
           </CardContent>
         </Card>
 
         {/* Artilheiro */}
         {topScorer ? (
-          <Card className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-sm">
+          <Card className="border-warning/30 bg-warning/10 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="p-1 bg-yellow-200 rounded-md">
-                  <Crown className="w-3.5 h-3.5 text-yellow-700" />
+                <div className="p-1 bg-warning/20 rounded-md">
+                  <Crown className="w-3.5 h-3.5 text-warning-soft" />
                 </div>
-                <span className="text-xs text-yellow-700 font-medium">Artilheiro</span>
+                <span className="text-xs text-warning-soft font-medium">Artilheiro</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-yellow-200 flex items-center justify-center text-sm font-bold text-yellow-800 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center text-sm font-bold text-warning-soft shrink-0">
                   {topScorer.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-heading truncate">
                     {topScorer.name.split(' ')[0]}
                   </p>
-                  <p className="text-xs text-yellow-700 font-medium">{topScorer.goals} gols</p>
+                  <p className="text-xs text-warning-soft font-medium">{topScorer.goals} gols</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-gray-100 shadow-sm opacity-60">
+          <Card className="border-divider shadow-sm opacity-60">
             <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="p-1 bg-gray-100 rounded-md">
-                  <Crown className="w-3.5 h-3.5 text-gray-400" />
+                <div className="p-1 bg-surface-hover rounded-md">
+                  <Crown className="w-3.5 h-3.5 text-ink-dim" />
                 </div>
-                <span className="text-xs text-gray-400 font-medium">Artilheiro</span>
+                <span className="text-xs text-ink-dim font-medium">Artilheiro</span>
               </div>
-              <p className="text-xs text-gray-400">Sem gols</p>
+              <p className="text-xs text-ink-dim">Sem gols</p>
             </CardContent>
           </Card>
         )}
 
         {/* Melhor Assistente */}
         {topAssister ? (
-          <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm">
+          <Card className="border-team-blue/30 bg-team-blue/10 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="p-1 bg-blue-200 rounded-md">
-                  <Footprints className="w-3.5 h-3.5 text-blue-700" />
+                <div className="p-1 bg-team-blue/20 rounded-md">
+                  <Footprints className="w-3.5 h-3.5 text-team-blue-soft" />
                 </div>
-                <span className="text-xs text-blue-700 font-medium">Assistente</span>
+                <span className="text-xs text-team-blue-soft font-medium">Assistente</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-sm font-bold text-blue-800 shrink-0">
+                <div className="w-8 h-8 rounded-full bg-team-blue/20 flex items-center justify-center text-sm font-bold text-team-blue-soft shrink-0">
                   {topAssister.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-heading truncate">
                     {topAssister.name.split(' ')[0]}
                   </p>
-                  <p className="text-xs text-blue-700 font-medium">{topAssister.assists} assists</p>
+                  <p className="text-xs text-team-blue-soft font-medium">{topAssister.assists} assists</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-gray-100 shadow-sm opacity-60">
+          <Card className="border-divider shadow-sm opacity-60">
             <CardContent className="p-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="p-1 bg-gray-100 rounded-md">
-                  <Footprints className="w-3.5 h-3.5 text-gray-400" />
+                <div className="p-1 bg-surface-hover rounded-md">
+                  <Footprints className="w-3.5 h-3.5 text-ink-dim" />
                 </div>
-                <span className="text-xs text-gray-400 font-medium">Assistente</span>
+                <span className="text-xs text-ink-dim font-medium">Assistente</span>
               </div>
-              <p className="text-xs text-gray-400">Sem assists</p>
+              <p className="text-xs text-ink-dim">Sem assists</p>
             </CardContent>
           </Card>
         )}
@@ -295,57 +304,62 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
 
       {/* Mais Vitorioso — banner destacado */}
       {topWinner && (
-        <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 shadow-sm">
+        <Card className="border-success/30 bg-success/10 shadow-sm">
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-emerald-200 rounded-lg shrink-0">
-              <Award className="w-5 h-5 text-emerald-700" />
+            <div className="p-2 bg-success/20 rounded-lg shrink-0">
+              <Award className="w-5 h-5 text-success-soft" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-emerald-600 font-medium mb-0.5">Mais Vitorioso da Pelada</p>
-              <p className="text-base font-bold text-gray-900 truncate">{topWinner.name}</p>
+              <p className="text-xs text-success-soft font-medium mb-0.5">Mais Vitorioso da Pelada</p>
+              <p className="text-base font-bold text-heading truncate">{topWinner.name}</p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-2xl font-bold text-emerald-700">{topWinner.victories}</p>
-              <p className="text-xs text-emerald-600">vitórias</p>
+              <p className="text-2xl font-bold text-success-soft">{topWinner.victories}</p>
+              <p className="text-xs text-success-soft">vitórias</p>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Tabela simplificada */}
-      <Card className="border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <Target className="w-4 h-4 text-blue-500" />
-          <h2 className="text-sm font-semibold text-gray-900">Estatísticas dos Jogadores</h2>
+      <Card className="border-divider shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-divider flex items-center gap-2">
+          <Target className="w-4 h-4 text-team-blue" />
+          <h2 className="text-sm font-semibold text-heading">Estatísticas dos Jogadores</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-gray-500">
-                <th className="px-3 py-2 text-left text-xs font-medium w-8">#</th>
+              <tr className="bg-surface text-ink-muted">
+                <th className="px-3 py-2 text-left text-xs font-medium w-10">#</th>
                 <th className="px-3 py-2 text-left text-xs font-medium">Jogador</th>
                 <th className="px-3 py-2 text-left text-xs font-medium w-14">Pos</th>
-                <th className="px-3 py-2 text-center text-xs font-medium w-12">
+                <th className="px-2 py-2 text-center text-xs font-medium w-12" title="Gols">
                   <Target className="w-3.5 h-3.5 mx-auto" />
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-medium w-12">
+                <th className="px-2 py-2 text-center text-xs font-medium w-12" title="Assistências">
                   <Footprints className="w-3.5 h-3.5 mx-auto" />
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-medium w-12">
+                <th className="px-2 py-2 text-center text-xs font-medium w-12" title="Vitórias">
                   <Award className="w-3.5 h-3.5 mx-auto" />
                 </th>
+                <th className="px-3 py-2 text-center text-xs font-medium w-16">Aprov.</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-divider">
               {playerStats.map((player, index) => (
-                <tr key={player.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-3 py-2.5 text-gray-400 text-xs font-medium">{index + 1}</td>
+                <tr key={player.id} className={`transition-colors ${index === 0 ? 'bg-warning/5 hover:bg-warning/10' : 'hover:bg-surface/50'}`}>
+                  <td className="px-3 py-2.5">
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${rankClass(index)}`}>
+                      {index + 1}
+                    </span>
+                  </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700 shrink-0">
+                      <div className="w-7 h-7 rounded-full avatar-grad flex items-center justify-center text-xs font-bold text-white shrink-0 ring-1 ring-black/10">
                         {player.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium text-gray-900 truncate max-w-[120px]">
+                      <span className="font-medium text-heading truncate max-w-[120px]">
                         {player.name}
                       </span>
                     </div>
@@ -355,25 +369,32 @@ export function GameAnalytics({ game }: GameAnalyticsProps) {
                       {posLabel(player.position)}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-center font-semibold text-gray-900">
+                  <td className="px-2 py-2.5 text-center font-semibold">
                     {player.goals > 0 ? (
-                      <span className="text-green-700">{player.goals}</span>
+                      <span className="text-success-soft">{player.goals}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-ink-dim">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-center font-semibold text-gray-900">
+                  <td className="px-2 py-2.5 text-center font-semibold">
                     {player.assists > 0 ? (
-                      <span className="text-blue-700">{player.assists}</span>
+                      <span className="text-team-blue-soft">{player.assists}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-ink-dim">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-center font-semibold text-gray-900">
+                  <td className="px-2 py-2.5 text-center font-semibold">
                     {player.victories > 0 ? (
-                      <span className="text-emerald-700">{player.victories}</span>
+                      <span className="text-success-soft">{player.victories}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-ink-dim">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    {player.matches > 0 ? (
+                      <span className="text-xs font-semibold text-ink-soft">{player.winRate}%</span>
+                    ) : (
+                      <span className="text-ink-dim text-xs">—</span>
                     )}
                   </td>
                 </tr>

@@ -16,20 +16,20 @@ export function MatchScore({ match }: MatchScoreProps) {
   ).length || 0;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 bg-white rounded-xl shadow p-4 mb-4 border border-gray-100">
-      <span className="font-bold text-lg sm:text-xl text-gray-700 whitespace-nowrap">
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 glass-card p-4 mb-4">
+      <span className="font-heading font-bold text-lg sm:text-xl text-team-blue-soft whitespace-nowrap">
         {match.teams[0]?.name || 'Time Azul'}
       </span>
-      <div className="flex items-center gap-2 sm:gap-4 bg-gray-50 px-4 py-2 rounded-lg shadow-inner">
-        <span className="text-2xl sm:text-3xl font-bold text-blue-600 min-w-[32px] text-center">
+      <div className="flex items-center gap-2 sm:gap-4 bg-surface px-4 py-2 rounded-lg border border-divider">
+        <span className="font-heading text-2xl sm:text-3xl font-extrabold text-team-blue-soft min-w-[32px] text-center">
           {teamAGoals}
         </span>
-        <span className="text-2xl font-bold text-gray-400">x</span>
-        <span className="text-2xl sm:text-3xl font-bold text-orange-500 min-w-[32px] text-center">
+        <span className="text-2xl font-bold text-ink-dim">×</span>
+        <span className="font-heading text-2xl sm:text-3xl font-extrabold text-team-orange-soft min-w-[32px] text-center">
           {teamBGoals}
         </span>
       </div>
-      <span className="font-bold text-lg sm:text-xl text-orange-500 whitespace-nowrap">
+      <span className="font-heading font-bold text-lg sm:text-xl text-team-orange-soft whitespace-nowrap">
         {match.teams[1]?.name || 'Time Laranja'}
       </span>
     </div>

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,9 +8,55 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['"Hanken Grotesk"', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['"Saira Condensed"', '"Hanken Grotesk"', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Design system "pelada" — token-driven (flips light/dark via CSS vars).
+        // Bases stay hex (used with /opacity); -soft text tints + surfaces/ink/borders are vars.
+        pitch: {
+          bg: '#0d1320',
+          deep: '#090c14',
+          panel: '#1b2740',
+        },
+        team: {
+          blue: '#3B82F6',
+          'blue-soft': 'var(--team-blue-soft)',
+          orange: '#F97316',
+          'orange-soft': 'var(--team-orange-soft)',
+        },
+        heading: 'var(--heading)',
+        ink: {
+          DEFAULT: 'var(--ink)',
+          soft: 'var(--ink-soft)',
+          muted: 'var(--ink-muted)',
+          dim: 'var(--ink-dim)',
+        },
+        surface: {
+          DEFAULT: 'var(--surface)',
+          strong: 'var(--surface-strong)',
+          hover: 'var(--surface-hover)',
+        },
+        divider: {
+          DEFAULT: 'var(--divider)',
+          strong: 'var(--divider-strong)',
+        },
+        success: {
+          DEFAULT: '#34d399',
+          soft: 'var(--success-soft)',
+        },
+        warning: {
+          DEFAULT: '#fbbf24',
+          soft: 'var(--warning-soft)',
+        },
+        danger: {
+          DEFAULT: '#f43f5e',
+          soft: 'var(--danger-soft)',
+        },
+        meio: {
+          DEFAULT: '#8b5cf6',
+          soft: 'var(--meio-soft)',
+        },
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         border: 'var(--border)',

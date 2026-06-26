@@ -1,17 +1,17 @@
 // import { ChakraProvider } from '@chakra-ui/react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { theme } from './theme';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { AppRoutes } from './AppRoutes';
 
 export function App() {
   return (
-    // <ChakraProvider theme={theme}>
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider>
         <Router>
           <AppRoutes />
         </Router>
-      </AuthProvider>
-    // </ChakraProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 } 

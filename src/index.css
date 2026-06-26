@@ -8,8 +8,8 @@
     @apply antialiased bg-white text-gray-900;
   }
   .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Inter', sans-serif;
+    --font-heading: 'Saira Condensed', sans-serif;
+    --font-sans: 'Hanken Grotesk', 'Inter', sans-serif;
   }
   :root {
     --background: oklch(1 0 0);
@@ -78,8 +78,87 @@
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
   }
+
+  /* ===== Pelada design tokens — flip with .dark / .light on <html> ===== */
+  .dark {
+    color-scheme: dark;
+    --page-grad: radial-gradient(125% 60% at 50% -8%, #1b2740 0%, #0d1320 52%, #090c14 100%);
+    --glow-blue: rgba(59, 130, 246, 0.45);
+    --glow-orange: rgba(249, 115, 22, 0.38);
+    --heading: #ffffff;
+    --ink: #e9edf6;
+    --ink-soft: #c4ccdd;
+    --ink-muted: #8b94aa;
+    --ink-dim: #5d6680;
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-strong: rgba(255, 255, 255, 0.07);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --divider: rgba(255, 255, 255, 0.10);
+    --divider-strong: rgba(255, 255, 255, 0.20);
+    --card-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+    --card-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.7);
+    --navbar-bg: rgba(13, 19, 32, 0.95);
+    --surface-solid: #1b2740;
+    --menu-grad: radial-gradient(120% 50% at 0% 0%, #1b2740 0%, #0d1320 60%, #090c14 100%);
+    --team-blue-soft: #7eb0ff;
+    --team-orange-soft: #fdba74;
+    --success-soft: #5ee7b0;
+    --warning-soft: #fcd34d;
+    --danger-soft: #fb7185;
+    --meio-soft: #c4b5fd;
+    --star-empty: rgba(255, 255, 255, 0.16);
+    --avatar-grad: linear-gradient(155deg, #3b6fd4, #2a4a8c);
+    /* Campo (CombinedPitch) — tema escuro: estádio noturno azul-marinho */
+    --pitch-grad: linear-gradient(180deg, #1d2636, #10151f);
+    --pitch-stripe: rgba(255, 255, 255, 0.045);
+    --pitch-line: rgba(255, 255, 255, 0.18);
+    --pitch-line-soft: rgba(255, 255, 255, 0.16);
+    --pitch-center-dot: rgba(255, 255, 255, 0.3);
+    --pitch-pill-bg: rgba(13, 19, 32, 0.6);
+    --pitch-label: rgba(255, 255, 255, 0.94);
+    --pitch-label-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  }
+  .light {
+    color-scheme: light;
+    --page-grad: radial-gradient(125% 60% at 50% -8%, #f4f7fd 0%, #eaf0f9 52%, #e3eaf4 100%);
+    --glow-blue: rgba(59, 130, 246, 0.16);
+    --glow-orange: rgba(249, 115, 22, 0.12);
+    --heading: #0f1830;
+    --ink: #1f2840;
+    --ink-soft: #3c465f;
+    --ink-muted: #6a7388;
+    --ink-dim: #99a1b4;
+    --surface: rgba(255, 255, 255, 0.7);
+    --surface-strong: #ffffff;
+    --surface-hover: rgba(15, 24, 48, 0.05);
+    --divider: rgba(15, 24, 48, 0.10);
+    --divider-strong: rgba(15, 24, 48, 0.18);
+    --card-grad: linear-gradient(180deg, #ffffff, #f6f8fc);
+    --card-shadow: 0 12px 30px -16px rgba(15, 24, 48, 0.22);
+    --navbar-bg: rgba(255, 255, 255, 0.95);
+    --surface-solid: #ffffff;
+    --menu-grad: linear-gradient(180deg, #ffffff 0%, #f3f6fc 100%);
+    --team-blue-soft: #2563eb;
+    --team-orange-soft: #c2560f;
+    --success-soft: #0f9d6b;
+    --warning-soft: #b45309;
+    --danger-soft: #dc2626;
+    --meio-soft: #6d28d9;
+    --star-empty: #d8dee9;
+    --avatar-grad: linear-gradient(155deg, #4d7fe0, #3358b3);
+    /* Campo (CombinedPitch) — tema claro: prancheta cinza-azulada clara */
+    --pitch-grad: linear-gradient(180deg, #d3ddee, #bccadf);
+    --pitch-stripe: rgba(15, 24, 48, 0.05);
+    --pitch-line: rgba(15, 24, 48, 0.22);
+    --pitch-line-soft: rgba(15, 24, 48, 0.18);
+    --pitch-center-dot: rgba(15, 24, 48, 0.35);
+    --pitch-pill-bg: rgba(255, 255, 255, 0.85);
+    --pitch-label: #1f2840;
+    --pitch-label-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+  }
+
   * {
-    @apply border-gray-200;
+    @apply border-divider;
   }
   html {
     @apply font-sans;
@@ -87,6 +166,81 @@
 }
 
 @layer components {
+  /* ===== Design system "pelada" — dark immersive surfaces ===== */
+  /* Full-bleed dark pitch background with ambient blue/orange glow.
+     Apply per-page (Login, Home, …) — not globally — during the step-by-step rollout. */
+  .pelada-page {
+    position: relative;
+    min-height: 100vh;
+    background: var(--page-grad);
+    color: var(--ink);
+    overflow-x: hidden;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  }
+  .pelada-page::before,
+  .pelada-page::after {
+    content: '';
+    position: absolute;
+    top: -60px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    filter: blur(34px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .pelada-page::before {
+    left: -50px;
+    background: radial-gradient(circle, var(--glow-blue), transparent 68%);
+  }
+  .pelada-page::after {
+    right: -60px;
+    background: radial-gradient(circle, var(--glow-orange), transparent 68%);
+  }
+
+  /* Layered card surface — adapts to the active theme */
+  .glass-card {
+    background: var(--card-grad);
+    border: 1px solid var(--divider);
+    border-radius: 22px;
+    box-shadow: var(--card-shadow);
+  }
+
+  .glass-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+    background: var(--surface-strong);
+    border: 1px solid var(--divider);
+    color: var(--ink-soft);
+  }
+
+  /* Avatar / initials chip — refined single-hue, theme-aware */
+  .avatar-grad {
+    background: var(--avatar-grad);
+  }
+
+  /* Form fields */
+  .field-label {
+    @apply block text-sm font-medium text-ink-soft cursor-default select-none;
+  }
+  .field-input {
+    @apply w-full rounded-lg px-4 py-2.5 transition-colors;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    color: var(--ink);
+  }
+  .field-input::placeholder {
+    color: var(--ink-dim);
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  }
+
+  .section-title {
+    @apply font-heading text-lg font-bold text-heading flex items-center gap-2 tracking-wide cursor-default select-none;
+  }
+
   .btn {
     @apply px-4 py-2 rounded-lg font-medium transition-colors;
   }
@@ -124,6 +278,23 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+  /* Tablet na horizontal (~1280x800): a aba Partidas cabe na tela sem rolar a
+     página — a altura do grid é definida via JS (innerHeight - top) e cada
+     coluna rola internamente. Só atua nessa faixa de resolução. */
+  @media (min-width: 1180px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape) {
+    /* remove o piso de min-height:100vh (que somado à navbar gera ~64px de rolagem) —
+       tanto na .pelada-page quanto no wrapper .min-h-screen do AppRoutes (escopo via :has) */
+    .partida-page,
+    .min-h-screen:has(.partida-page) {
+      min-height: 0;
+    }
+    .partida-fit > * {
+      min-height: 0;
+      max-height: 100%;
+      overflow-y: auto;
+    }
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.2s ease-out;
   }
@@ -141,25 +312,12 @@
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Hanken Grotesk', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Removido o bloco que centralizava tudo e o padding do #root */
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
 }

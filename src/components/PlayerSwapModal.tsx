@@ -6,6 +6,7 @@
 
 import { Player } from '../types';
 import { User, ArrowLeftRight } from 'lucide-react';
+import { Portal } from './ui/Portal';
 
 interface PlayerSwapModalProps {
   isOpen: boolean;
@@ -29,7 +30,8 @@ export function PlayerSwapModal({
   if (!isOpen || !currentPlayer) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <Portal>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-bold text-lg text-gray-800">Trocar Jogador</h2>
@@ -131,5 +133,6 @@ export function PlayerSwapModal({
         </div>
       </div>
     </div>
+    </Portal>
   );
-} 
+}

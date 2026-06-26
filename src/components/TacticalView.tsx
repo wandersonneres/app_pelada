@@ -1,5 +1,6 @@
 import { Player, Team, Goal } from '../types';
 import { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
 
 interface TacticalViewProps {
   team: Team;
@@ -66,19 +67,26 @@ export const TacticalView = ({ team, formation = '3-3-3', onFormationChange, goa
 
   return (
     <div
-      className={`relative w-full max-w-xl mx-auto h-72 bg-gradient-to-b from-green-200 to-green-400 rounded-xl border border-green-300 shadow-inner overflow-hidden ${isHomeTeam ? 'rotate-180' : ''}`}
+      className={`relative w-full max-w-xl mx-auto h-72 rounded-xl border border-white/10 shadow-lg overflow-hidden ${isHomeTeam ? 'rotate-180' : ''}`}
+      style={{ background: 'linear-gradient(180deg,#1d2636,#10151f)' }}
     >
+      {/* Faixas do gramado */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.04) 0 38px, rgba(255,255,255,0) 38px 76px)' }} />
       {/* Seletor de Formação */}
       <div className={`absolute top-2 right-2 z-10 ${isHomeTeam ? 'rotate-180' : ''}`}>
-        <select
-          className="text-xs bg-white/80 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        <Select
           value={availableFormations.includes(formation) ? formation : availableFormations[0]}
-          onChange={e => onFormationChange(e.target.value)}
+          onValueChange={v => { if (v) onFormationChange(v); }}
         >
-          {availableFormations.map(f => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
+          <SelectTrigger className="h-7 gap-1 rounded border-white/20 bg-black/40 text-xs text-white backdrop-blur data-[size=default]:h-7 [&>svg]:size-3 [&>svg]:opacity-80">
+            <span>{availableFormations.includes(formation) ? formation : availableFormations[0]}</span>
+          </SelectTrigger>
+          <SelectContent>
+            {availableFormations.map(f => (
+              <SelectItem key={f} value={f}>{f}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {/* Linhas do campo */}
       <div className="absolute inset-0 pointer-events-none">

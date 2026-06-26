@@ -3,9 +3,11 @@ import { useState } from 'react';
 
 interface StarRatingProps {
   value: number;
-  onChange: (value: number) => void;
+  onChange?: (value: number) => void;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
+  /** info-only: render static stars with no hover/click */
+  readOnly?: boolean;
 }
 
 const sizes = {
@@ -25,9 +27,34 @@ const getLabel = (level: number) => {
   }
 };
 
-export function StarRating({ value, onChange, size = 'md', showLabel = true }: StarRatingProps) {
+export function StarRating({ value, onChange, size = 'md', showLabel = true, readOnly = false }: StarRatingProps) {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const starSize = sizes[size] || sizes.md;
+  const shown = readOnly ? value : (hoverValue || value);
+
+  const Star = ({ level }: { level: number }) => (
+    <svg
+      width={starSize}
+      height={starSize}
+      viewBox="0 0 24 24"
+      fill={shown >= level ? '#facc15' : 'var(--star-empty)'}
+      stroke="#facc15"
+      strokeWidth="1"
+      className="transition-colors duration-150"
+    >
+      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </svg>
+  );
+
+  if (readOnly) {
+    return (
+      <div className="flex items-center gap-0.5 select-none" aria-label={`Nível ${value} de 5`}>
+        {[1, 2, 3, 4, 5].map((level) => (
+          <Star key={level} level={level} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center select-none">
@@ -38,28 +65,18 @@ export function StarRating({ value, onChange, size = 'md', showLabel = true }: S
             type="button"
             aria-label={`Selecionar nível ${level}`}
             tabIndex={0}
-            onClick={() => onChange(level)}
+            onClick={() => onChange?.(level)}
             onMouseEnter={() => setHoverValue(level)}
             onMouseLeave={() => setHoverValue(null)}
             className="focus:outline-none"
             style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0, cursor: 'pointer' }}
           >
-            <svg
-              width={starSize}
-              height={starSize}
-              viewBox="0 0 24 24"
-              fill={(hoverValue || value) >= level ? '#facc15' : '#e5e7eb'}
-              stroke="#facc15"
-              strokeWidth="1"
-              className="transition-colors duration-150"
-            >
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>
+            <Star level={level} />
           </button>
         ))}
       </div>
       {showLabel && (
-        <span className="text-sm text-gray-500 mt-1">
+        <span className="text-sm text-ink-muted mt-1">
           {getLabel(hoverValue || value)}
         </span>
       )}

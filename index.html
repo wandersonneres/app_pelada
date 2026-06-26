@@ -5,8 +5,22 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Gerencie suas peladas de forma simples e eficiente" />
-    <meta name="theme-color" content="#b91c1c" />
+    <meta name="theme-color" content="#0d1320" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>Inimigos Bola FC</title>
+    <script>
+      // Apply saved theme before React mounts (avoids flash). Default: dark.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme') || 'dark';
+          document.documentElement.classList.add(t === 'light' ? 'light' : 'dark');
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

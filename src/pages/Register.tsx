@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { StarRating } from '../components/StarRating';
-import { FaChevronLeft, FaUser, FaEnvelope, FaLock, FaFutbol, FaBirthdayCake, FaStar } from 'react-icons/fa';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { FaChevronLeft, FaUser, FaEnvelope, FaLock, FaFutbol, FaStar } from 'react-icons/fa';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from '../config/firebase';
@@ -145,29 +146,30 @@ export function Register() {
   };
 
   return (
-    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+    <div className="pelada-page w-full flex items-start justify-center px-4 py-10">
+      <div className="glass-card relative z-10 w-full max-w-2xl p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-full text-ink-muted hover:bg-surface-hover transition-colors"
         >
-          <FaChevronLeft className="w-5 h-5 text-gray-500" />
+          <FaChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-center flex-1">Cadastrar Usuário</h1>
-        <div className="w-8" />
+        <h1 className="font-heading text-2xl font-extrabold tracking-wide text-heading text-center flex-1">Cadastrar Usuário</h1>
+        <div className="w-9" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informações Básicas */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaUser className="w-4 h-4 text-blue-600" />
+          <h2 className="section-title">
+            <FaUser className="w-4 h-4 text-team-blue" />
             Informações Básicas
           </h2>
 
           <div className="space-y-2">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="username" className="field-label">
               Nome de Usuário
             </label>
             <div className="relative">
@@ -177,15 +179,15 @@ export function Register() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Digite o nome de usuário"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="field-input pl-10"
               />
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-dim w-4 h-4" />
             </div>
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
+            {errors.username && <p className="text-danger-soft text-sm mt-1">{errors.username}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="field-label">
               Email
             </label>
             <div className="relative">
@@ -195,15 +197,15 @@ export function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Digite o email"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="field-input pl-10"
               />
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-dim w-4 h-4" />
             </div>
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-danger-soft text-sm mt-1">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="field-label">
               Senha
             </label>
             <div className="relative">
@@ -213,39 +215,36 @@ export function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite a senha"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="field-input pl-10"
               />
-              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-dim w-4 h-4" />
             </div>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            {errors.password && <p className="text-danger-soft text-sm mt-1">{errors.password}</p>}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-              Papel
-            </label>
-            <select
-              id="role"
+            <label className="field-label">Papel</label>
+            <SegmentedControl
               value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="player">Jogador</option>
-              <option value="admin">Administrador</option>
-            </select>
-            {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role}</p>}
+              onChange={(v) => setRole(v as Role)}
+              options={[
+                { value: 'player', label: 'Jogador' },
+                { value: 'admin', label: 'Administrador' },
+              ]}
+            />
+            {errors.role && <p className="text-danger-soft text-sm mt-1">{errors.role}</p>}
           </div>
         </div>
 
         {/* Informações do Jogador */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaFutbol className="w-4 h-4 text-blue-600" />
+          <h2 className="section-title">
+            <FaFutbol className="w-4 h-4 text-team-blue" />
             Informações do Jogador
           </h2>
 
           <div className="space-y-2">
-            <label htmlFor="playerInfo.name" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="playerInfo.name" className="field-label">
               Nome Completo
             </label>
             <input
@@ -254,53 +253,46 @@ export function Register() {
               value={playerInfo.name}
               onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Digite o nome completo"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="field-input"
             />
-            {errors['playerInfo.name'] && <p className="text-red-500 text-sm mt-1">{errors['playerInfo.name']}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.position" className="block text-sm font-medium text-gray-700">
-                Posição
-              </label>
-              <select
-                id="playerInfo.position"
-                value={playerInfo.position}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="defesa">Defesa</option>
-                <option value="meio">Meio Campo</option>
-                <option value="ataque">Ataque</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-gray-700">
-                Faixa Etária
-              </label>
-              <select
-                id="playerInfo.ageGroup"
-                value={playerInfo.ageGroup}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
-              </select>
-            </div>
+            {errors['playerInfo.name'] && <p className="text-danger-soft text-sm mt-1">{errors['playerInfo.name']}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-              <FaStar className="w-4 h-4 text-yellow-500" />
+            <label className="field-label">Posição</label>
+            <SegmentedControl
+              value={playerInfo.position}
+              onChange={(v) => setPlayerInfo(prev => ({ ...prev, position: v as Position }))}
+              options={[
+                { value: 'defesa', label: 'Defesa' },
+                { value: 'meio', label: 'Meio Campo' },
+                { value: 'ataque', label: 'Ataque' },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="field-label">Faixa Etária</label>
+            <SegmentedControl
+              wrap
+              value={playerInfo.ageGroup}
+              onChange={(v) => setPlayerInfo(prev => ({ ...prev, ageGroup: v as AgeGroup }))}
+              options={[
+                { value: '15-20', label: '15-20' },
+                { value: '21-30', label: '21-30' },
+                { value: '31-40', label: '31-40' },
+                { value: '41-50', label: '41-50' },
+                { value: '+50', label: '+50' },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="field-label flex items-center gap-2">
+              <FaStar className="w-4 h-4 text-warning" />
               Nível de Habilidade
             </label>
-            <div className="p-2 bg-gray-50 rounded-lg">
+            <div className="p-3 bg-surface border border-divider rounded-lg">
               <StarRating
                 value={playerInfo.skillLevel}
                 onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
@@ -311,24 +303,21 @@ export function Register() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-gray-700">
-              Tipo de Pagamento
-            </label>
-            <select
-              id="playerInfo.paymentType"
+            <label className="field-label">Tipo de Pagamento</label>
+            <SegmentedControl
               value={playerInfo.paymentType}
-              onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="mensalista">Mensalista</option>
-              <option value="diarista">Diarista</option>
-            </select>
+              onChange={(v) => setPlayerInfo(prev => ({ ...prev, paymentType: v as PaymentType }))}
+              options={[
+                { value: 'mensalista', label: 'Mensalista' },
+                { value: 'diarista', label: 'Diarista' },
+              ]}
+            />
           </div>
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full bg-team-blue hover:brightness-110 text-white font-semibold py-3 rounded-xl transition-all shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)] disabled:opacity-60 flex items-center justify-center gap-2"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -341,6 +330,7 @@ export function Register() {
           )}
         </button>
       </form>
+      </div>
     </div>
   );
 } 

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, StopCircle, Target } from 'lucide-react';
-import { Team, Match, Player, getGoalTeamId } from '../types';
+import { useState } from 'react';
+import { Play, RotateCcw, Target } from 'lucide-react';
+import { Team, Match, Player, getGoalTeamId, convertTimestampToDate } from '../types';
 import { GoalScorerModal } from './GoalScorerModal';
+import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
 
 interface MatchTimerProps {
   teamA: Team;
@@ -20,86 +21,44 @@ interface MatchTimerProps {
 }
 
 export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveGoal, match, roster, onTimerUpdate }: MatchTimerProps) => {
-  const [time, setTime] = useState(() => {
-    if (match.timer?.totalSeconds) {
-      return Math.floor(match.timer.totalSeconds / 60);
-    }
+  // Duração apenas para calcular o horário de término previsto (sem contagem regressiva)
+  const [durationMin, setDurationMin] = useState(() => {
+    if (match.timer?.totalSeconds) return Math.floor(match.timer.totalSeconds / 60);
     return isFirstMatch ? 15 : 10;
-  });
-
-  const [running, setRunning] = useState(match.timer?.isRunning || false);
-  const [remainingSeconds, setRemainingSeconds] = useState(() => {
-    if (match.timer?.remainingSeconds !== undefined) {
-      return match.timer.remainingSeconds;
-    }
-    return time * 60;
   });
 
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const scoreA = match.goals?.filter(goal =>
-    getGoalTeamId(goal, match.teams) === teamA.id
-  ).length || 0;
+  const startedAt = match.timer?.startedAt ? convertTimestampToDate(match.timer.startedAt) : null;
+  const started = !!startedAt;
+  const endsAt = startedAt ? new Date(startedAt.getTime() + durationMin * 60000) : null;
 
-  const scoreB = match.goals?.filter(goal =>
-    getGoalTeamId(goal, match.teams) === teamB.id
-  ).length || 0;
+  const scoreA = match.goals?.filter(goal => getGoalTeamId(goal, match.teams) === teamA.id).length || 0;
+  const scoreB = match.goals?.filter(goal => getGoalTeamId(goal, match.teams) === teamB.id).length || 0;
 
-  const updateTimerInFirebase = useCallback((newRunning: boolean, newRemainingSeconds: number, newTotalSeconds: number) => {
-    if (onTimerUpdate) {
-      onTimerUpdate({
-        isRunning: newRunning,
-        remainingSeconds: newRemainingSeconds,
-        totalSeconds: newTotalSeconds,
-        startedAt: newRunning ? new Date() : undefined
-      });
-    }
-  }, [onTimerUpdate]);
+  const allPlayers = [...teamA.players, ...teamB.players, ...(roster ?? [])];
 
-  const resetTimer = useCallback(() => {
-    const newRemainingSeconds = time * 60;
-    setRemainingSeconds(newRemainingSeconds);
-    setRunning(false);
-    updateTimerInFirebase(false, newRemainingSeconds, time * 60);
-  }, [time, updateTimerInFirebase]);
+  const fmtTime = (d: Date | null) =>
+    d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
-  const toggleRunning = useCallback(() => {
-    const newRunning = !running;
-    setRunning(newRunning);
-    updateTimerInFirebase(newRunning, remainingSeconds, time * 60);
-  }, [running, remainingSeconds, time, updateTimerInFirebase]);
+  const handleStart = () => {
+    onTimerUpdate?.({
+      isRunning: true,
+      remainingSeconds: durationMin * 60,
+      totalSeconds: durationMin * 60,
+      startedAt: new Date(),
+    });
+  };
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (running && remainingSeconds > 0) {
-      interval = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          const newRemaining = prev - 1;
-          if (onTimerUpdate) {
-            onTimerUpdate({
-              isRunning: true,
-              remainingSeconds: newRemaining,
-              totalSeconds: time * 60,
-              startedAt: match.timer?.startedAt
-            });
-          }
-          return newRemaining;
-        });
-      }, 1000);
-    } else if (remainingSeconds === 0) {
-      setRunning(false);
-      updateTimerInFirebase(false, 0, time * 60);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [running, remainingSeconds, time, updateTimerInFirebase, match.timer?.startedAt, onTimerUpdate]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const handleDurationChange = (m: number) => {
+    setDurationMin(m);
+    onTimerUpdate?.({
+      isRunning: started,
+      remainingSeconds: m * 60,
+      totalSeconds: m * 60,
+      startedAt: startedAt ?? undefined,
+    });
   };
 
   const handleGoalScored = (team: Team) => {
@@ -115,108 +74,104 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
     setSelectedTeam(null);
   };
 
-  const handleTimeChange = (newTime: number) => {
-    setTime(newTime);
-    const newRemainingSeconds = newTime * 60;
-    setRemainingSeconds(newRemainingSeconds);
-    updateTimerInFirebase(running, newRemainingSeconds, newTime * 60);
-  };
-
-  // Inclui o elenco completo do jogo para resolver nomes de jogadores que já saíram da partida
-  const allPlayers = [...teamA.players, ...teamB.players, ...(roster ?? [])];
+  const initialA = (teamA.name || 'A').charAt(0).toUpperCase();
+  const initialB = (teamB.name || 'B').charAt(0).toUpperCase();
 
   return (
-    <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl shadow-lg mb-4 overflow-hidden border border-blue-200">
-      <div className="flex w-full justify-between items-center px-4 py-6 gap-2">
-        {/* Time A */}
-        <div className="flex flex-col items-center w-1/3">
-          <span className="font-bold text-white text-lg mb-1">{teamA.name}</span>
-          <span className="text-5xl font-extrabold text-white drop-shadow mb-2">{scoreA}</span>
-          <button
-            className={`flex items-center gap-1 px-3 py-1 rounded bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition ${!running ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={() => handleGoalScored(teamA)}
-            disabled={!running}
-          >
-            <Target className="w-4 h-4" /> Gol
-          </button>
-        </div>
-        {/* Timer */}
-        <div className="flex flex-col items-center w-1/3 relative">
-          <select
-            className="absolute -top-4 left-15 text-xs bg-white/80 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={time}
-            onChange={e => handleTimeChange(Number(e.target.value))}
-            disabled={running}
-          >
-            <option value={10}>10 min</option>
-            <option value={15}>15 min</option>
-            <option value={20}>20 min</option>
-            <option value={30}>30 min</option>
-          </select>
-          <span className="text-4xl font-mono font-bold text-white mt-4 mb-2">{formatTime(remainingSeconds)}</span>
-          <div className="flex gap-2 mt-1">
+    <div className="glass-card p-4 sm:p-5 mb-4">
+      {/* Topo: status + horário de início/término */}
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-team-blue/15 text-team-blue-soft border border-team-blue/25">
+          <span className="w-1.5 h-1.5 rounded-full bg-team-blue" /> Em andamento
+        </span>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+          {!started ? (
             <button
-              className={`p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition ${running ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}`}
-              onClick={toggleRunning}
-              aria-label={running ? 'Pausar' : 'Iniciar'}
+              onClick={handleStart}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-team-blue text-white text-sm font-semibold hover:brightness-110 transition-all shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)]"
             >
-              {running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              <Play className="w-4 h-4" /> Iniciar partida
             </button>
-            <button
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition bg-red-500 hover:bg-red-600"
-              onClick={resetTimer}
-              aria-label="Parar"
-            >
-              <StopCircle className="w-5 h-5" />
-            </button>
+          ) : (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-ink-muted">Início</span>
+              <span className="font-heading font-extrabold text-lg text-heading leading-none">{fmtTime(startedAt)}</span>
+              <span className="text-ink-dim">→</span>
+              <span className="text-ink-muted">Fim</span>
+              <span className="font-heading font-extrabold text-lg text-heading leading-none">{fmtTime(endsAt)}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <Select value={String(durationMin)} onValueChange={v => handleDurationChange(Number(v))}>
+              <SelectTrigger className="h-7 text-xs">
+                <span className="flex-1 text-left">{durationMin} min</span>
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 15, 20, 30].map(m => (
+                  <SelectItem key={m} value={String(m)}>{m} min</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {started && (
+              <button onClick={handleStart} title="Redefinir horário de início" className="p-1.5 rounded-lg text-ink-muted hover:text-team-blue-soft hover:bg-surface-hover transition-colors">
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <span className={`mt-2 text-xs font-semibold px-2 py-0.5 rounded ${running ? 'bg-green-500 text-white' : remainingSeconds === 0 ? 'bg-red-500 text-white' : 'bg-yellow-400 text-gray-900'}`}>
-            {running ? 'Em Andamento' : remainingSeconds === 0 ? 'Finalizado' : 'Aguardando'}
+        </div>
+      </div>
+
+      {/* Placar interativo — clique no time para marcar um gol */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2 sm:gap-3">
+        <button
+          onClick={() => handleGoalScored(teamA)}
+          className="group flex flex-col items-center gap-1 rounded-2xl p-2.5 border bg-team-blue/10 border-team-blue/25 hover:bg-team-blue/20 active:scale-[0.98] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-heading font-extrabold text-lg text-white shadow-[0_6px_16px_rgba(0,0,0,0.4)]" style={{ background: 'linear-gradient(155deg,#5b9bf6,#2c5fb0)' }}>{initialA}</div>
+          <span className="font-heading font-bold text-xs sm:text-sm uppercase tracking-wide text-team-blue-soft text-center leading-tight">{teamA.name || 'Time Azul'}</span>
+          <span className="font-heading font-extrabold text-4xl text-team-blue-soft leading-none">{scoreA}</span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted group-hover:text-team-blue-soft transition-colors">
+            <Target className="w-3 h-3" /> Marcar gol
           </span>
-        </div>
-        {/* Time B */}
-        <div className="flex flex-col items-center w-1/3">
-          <span className="font-bold text-white text-lg mb-1">{teamB.name}</span>
-          <span className="text-5xl font-extrabold text-white drop-shadow mb-2">{scoreB}</span>
-          <button
-            className={`flex items-center gap-1 px-3 py-1 rounded bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition ${!running ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={() => handleGoalScored(teamB)}
-            disabled={!running}
-          >
-            <Target className="w-4 h-4" /> Gol
-          </button>
-        </div>
+        </button>
+        <div className="flex items-center font-heading font-extrabold text-2xl sm:text-3xl text-ink-dim">×</div>
+        <button
+          onClick={() => handleGoalScored(teamB)}
+          className="group flex flex-col items-center gap-1 rounded-2xl p-2.5 border bg-team-orange/10 border-team-orange/25 hover:bg-team-orange/20 active:scale-[0.98] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-heading font-extrabold text-lg text-white shadow-[0_6px_16px_rgba(0,0,0,0.4)]" style={{ background: 'linear-gradient(155deg,#fba56a,#d2691e)' }}>{initialB}</div>
+          <span className="font-heading font-bold text-xs sm:text-sm uppercase tracking-wide text-team-orange-soft text-center leading-tight">{teamB.name || 'Time Laranja'}</span>
+          <span className="font-heading font-extrabold text-4xl text-team-orange-soft leading-none">{scoreB}</span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted group-hover:text-team-orange-soft transition-colors">
+            <Target className="w-3 h-3" /> Marcar gol
+          </span>
+        </button>
       </div>
 
       {/* Histórico de gols */}
       {match.goals && match.goals.length > 0 && (
-        <div className="px-4 pb-4 space-y-1.5">
-          <div className="text-xs text-white/60 font-semibold uppercase tracking-wide mb-1">Gols</div>
+        <div className="mt-4 space-y-1.5">
+          <div className="text-[11px] text-ink-muted font-semibold uppercase tracking-wide mb-1">Gols</div>
           {match.goals.map(goal => {
             const scorer = allPlayers.find(p => p.id === goal.scorerId);
-            const assister = goal.assisterId
-              ? allPlayers.find(p => p.id === goal.assisterId)
-              : null;
+            const assister = goal.assisterId ? allPlayers.find(p => p.id === goal.assisterId) : null;
             const isTeamA = getGoalTeamId(goal, match.teams) === teamA.id;
             return (
-              <div
-                key={goal.id}
-                className="flex items-center justify-between bg-white/10 rounded-lg px-3 py-2 text-xs text-white"
-              >
+              <div key={goal.id} className="flex items-center justify-between bg-surface border border-divider rounded-lg px-3 py-2 text-xs text-ink-soft">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isTeamA ? 'bg-blue-300' : 'bg-orange-300'}`} />
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isTeamA ? 'bg-team-blue' : 'bg-team-orange'}`} />
                   <span className="truncate">
-                    <span className="font-semibold">{scorer?.name.split(' ')[0] ?? '?'}</span>
+                    <span className="font-semibold text-heading">{scorer?.name.split(' ')[0] ?? '?'}</span>
                     {goal.ownGoal ? (
-                      <span className="text-red-300"> (contra)</span>
+                      <span className="text-danger-soft"> (contra)</span>
                     ) : assister && (
-                      <span className="text-white/70"> ({assister.name.split(' ')[0]})</span>
+                      <span className="text-ink-muted"> ({assister.name.split(' ')[0]})</span>
                     )}
                   </span>
                 </div>
                 <button
                   onClick={() => onRemoveGoal(goal.id)}
-                  className="ml-3 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-red-300 hover:text-white hover:bg-red-500 transition font-bold text-sm"
+                  className="ml-3 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-danger-soft hover:text-white hover:bg-danger transition font-bold text-sm"
                   aria-label="Remover gol"
                 >
                   ✕
