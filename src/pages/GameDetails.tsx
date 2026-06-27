@@ -335,7 +335,7 @@ export function GameDetails() {
   // Cada coluna rola internamente (CSS). Fora dessa faixa, limpa a altura inline.
   useLayoutEffect(() => {
     const mql = window.matchMedia(
-      '(min-width: 1180px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape)'
+      '(min-width: 1180px) and (max-width: 1366px) and (max-height: 750px) and (orientation: landscape)'
     );
     const recompute = () => {
       const el = partidaGridRef.current;
@@ -348,7 +348,7 @@ export function GameDetails() {
         const overflow = document.documentElement.scrollHeight - window.innerHeight;
         if (overflow > 0) {
           const naturalH = el.getBoundingClientRect().height;
-          el.style.height = `${Math.max(320, naturalH - overflow - 8)}px`;
+          el.style.height = `${Math.max(310, naturalH - overflow - 8)}px`;
         }
       }
     };
