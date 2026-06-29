@@ -14,9 +14,9 @@ export function PrivateRoute({ children, requireAdmin = false, requireFinanceiro
   // Se estiver carregando, mostra um indicador de carregamento
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <span className="text-gray-500 text-lg">Carregando...</span>
+      <div className="pelada-page flex flex-col items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-team-blue mb-4"></div>
+        <span className="text-ink-muted text-lg">Carregando...</span>
       </div>
     );
   }

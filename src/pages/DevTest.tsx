@@ -45,15 +45,15 @@ export function DevTest() {
 
   return (
     <div className={`pelada-page${tab === 'partidas' ? ' partida-page' : ''}`}>
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10 py-5">
+      <div className="pelada-inner relative z-10 w-full px-4 sm:px-6 lg:px-10 py-5">
         {/* header (faithful-ish) */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
+        <div className="pelada-header flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
           <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-heading">Detalhes da Pelada</h1>
           <span className="glass-pill">Local</span>
           <span className="glass-pill">14 / 20</span>
         </div>
-        <div className="glass-card p-4 sm:p-5 mb-4">
-          <div className="flex gap-2 mb-4 border-b border-divider">
+        <div className="pelada-content-card glass-card p-4 sm:p-5 mb-4">
+          <div className="pelada-tabs flex gap-2 mb-4 border-b border-divider">
             <button onClick={() => setTab('jogadores')} className={`px-4 py-2 font-medium border-b-2 ${tab === 'jogadores' ? 'border-team-blue text-team-blue-soft' : 'border-transparent text-ink-muted'}`}>Jogadores</button>
             <button onClick={() => setTab('partidas')} className={`px-4 py-2 font-medium border-b-2 ${tab === 'partidas' ? 'border-team-blue text-team-blue-soft' : 'border-transparent text-ink-muted'}`}>Partidas</button>
           </div>

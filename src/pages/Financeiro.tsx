@@ -169,7 +169,7 @@ export function Financeiro() {
     const paymentRef = doc(db, 'payments', paymentId);
     const paymentDoc = await getDoc(paymentRef);
     const alreadyPaid = paymentDoc.exists() && paymentDoc.data().status === 'paid';
-    
+
     if (alreadyPaid) {
       // Se já está pago, apenas desmarca
       await setDoc(paymentRef, {
@@ -204,11 +204,11 @@ export function Financeiro() {
 
   const confirmPayment = async () => {
     if (!selectedMensalista) return;
-    
+
     const paymentId = `${selectedMensalista}_${selectedMonth}_${selectedYear}`;
     const paymentRef = doc(db, 'payments', paymentId);
     const playerName = mensalistas.find(m => m.id === selectedMensalista)?.playerInfo?.name || 'Usuário Removido';
-    
+
     await setDoc(paymentRef, {
       userId: selectedMensalista,
       playerName,
@@ -245,7 +245,7 @@ export function Financeiro() {
 
   const confirmDiaristaPayment = async () => {
     if (!selectedDiarista || !user) return;
-    
+
     try {
       const paymentRef = doc(collection(db, 'diaristaPayments'));
       const paymentData: DiaristaPayment = {
@@ -430,343 +430,181 @@ export function Financeiro() {
   }
 
   if (!user || user.role !== 'admin') {
-    return <div className="p-8 text-center text-red-500 font-bold">Acesso restrito ao administrador.</div>;
+    return (
+      <div className="pelada-page">
+        <div className="relative z-10 flex items-center justify-center min-h-[60vh] px-4">
+          <div className="glass-card p-8 text-center max-w-sm">
+            <p className="text-danger-soft font-bold">Acesso restrito ao administrador.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
+  // Totais derivados (somente apresentação — usa os mesmos dados já calculados)
+  const totalArrecadado = Object.values(payments)
+    .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
+    .reduce((acc, p) => acc + p.value, 0);
+  const totalDiaristas = diaristaPayments
+    .filter(p => p.status === 'paid')
+    .reduce((acc, p) => acc + p.value, 0);
+  const saldo = totalArrecadado - custoPelada;
+
+  const filteredMensalistas = mensalistas
+    .filter(m => {
+      const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+      const p = payments[paymentId];
+      if (statusFilter === 'all') return true;
+      if (statusFilter === 'paid') return p && p.status === 'paid';
+      if (statusFilter === 'pending') return !p || p.status !== 'paid';
+      return true;
+    })
+    .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''));
+
+  const statusOptions: { key: 'all' | 'paid' | 'pending'; label: string }[] = [
+    { key: 'all', label: 'Todos' },
+    { key: 'paid', label: 'Pagos' },
+    { key: 'pending', label: 'Pendentes' },
+  ];
+
+  // Painel sólido e discreto — visual mais sóbrio que o glass-card
+  const panel = 'rounded-xl border border-divider bg-[var(--surface-solid)] shadow-sm';
+
   return (
-    <div className="pelada-page">
-    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10 py-4">
-      <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 lg:mb-6">
+    <div className="pelada-page pb-10">
+    <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-5 space-y-4">
+
+      {/* Header */}
+      <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/')}
-          className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
+          className="p-2 rounded-lg hover:bg-surface-hover transition-colors shrink-0"
+          aria-label="Voltar"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">Financeiro</h1>
+        <div className="min-w-0">
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-wide text-heading leading-none">Financeiro</h1>
+          <p className="text-xs text-ink-muted mt-1 capitalize">{MONTHS_PT[selectedMonth - 1]} de {selectedYear}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        {/* Filtros */}
-        <div className="lg:col-span-3 bg-[var(--surface-solid)] rounded-xl shadow p-3 sm:p-4">
-          {/* Mobile (default) */}
-          <div className="sm:hidden">
-            <div className="space-y-4">
-              {/* Mês e Ano em linha */}
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    Mês
-                  </label>
-                  <div className="relative">
-                    <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
-                  </div>
-                </div>
+      {/* Filtros */}
+      <div className={`${panel} p-3 sm:p-4`}>
+        <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-4">
+          <div className="w-full md:w-44">
+            <label className="block text-xs font-medium text-ink-soft mb-1.5 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-team-blue-soft" /> Mês
+            </label>
+            <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
+          </div>
 
-                <div className="w-24">
-                  <label className="block text-xs font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <YearSelect value={selectedYear} onChange={setSelectedYear} />
-                  </div>
-                </div>
-              </div>
+          <div className="w-full md:w-28">
+            <label className="block text-xs font-medium text-ink-soft mb-1.5 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-team-blue-soft" /> Ano
+            </label>
+            <YearSelect value={selectedYear} onChange={setSelectedYear} />
+          </div>
 
-              {/* Status */}
-              <div>
-                <label className="block text-xs font-medium text-ink-soft mb-2 flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  Filtrar por Status
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setStatusFilter('all')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                      ${statusFilter === 'all' 
-                        ? 'bg-team-blue/15 text-team-blue-soft border border-blue-200' 
-                        : 'bg-surface text-ink-soft border border-divider'
-                      }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('paid')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                      ${statusFilter === 'paid' 
-                        ? 'bg-success/15 text-success-soft border border-green-200' 
-                        : 'bg-surface text-ink-soft border border-divider'
-                      }`}
-                  >
-                    Pagos
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('pending')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                      ${statusFilter === 'pending' 
-                        ? 'bg-warning/15 text-yellow-700 border border-yellow-200' 
-                        : 'bg-surface text-ink-soft border border-divider'
-                      }`}
-                  >
-                    Pendentes
-                  </button>
-                </div>
-              </div>
-
-              {/* Botão Copiar */}
-              <div>
+          <div className="flex-1 min-w-0">
+            <label className="block text-xs font-medium text-ink-soft mb-1.5 flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-team-blue-soft" /> Status
+            </label>
+            <div className="flex gap-1.5 p-1 rounded-xl bg-surface border border-divider">
+              {statusOptions.map(opt => (
                 <button
-                  onClick={copyToClipboard}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-team-blue hover:brightness-110 text-white font-medium rounded-lg transition-colors"
+                  key={opt.key}
+                  onClick={() => setStatusFilter(opt.key)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    statusFilter === opt.key
+                      ? 'bg-team-blue text-white shadow-sm'
+                      : 'text-ink-soft hover:bg-surface-hover'
+                  }`}
                 >
-                  {copySuccess ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Copiado!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span>Copiar Lista WhatsApp</span>
-                    </>
-                  )}
+                  {opt.label}
                 </button>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Tablet (sm) */}
-          <div className="hidden sm:block md:hidden">
-            <div className="space-y-4">
-              {/* Primeira linha: Mês e Ano */}
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-team-blue-soft" />
-                    Mês
-                  </label>
-                  <div className="relative">
-                    <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
-                  </div>
-                </div>
-
-                <div className="w-28">
-                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-team-blue-soft" />
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <YearSelect value={selectedYear} onChange={setSelectedYear} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Segunda linha: Status e Botão Copiar */}
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Check className="w-4 h-4 text-team-blue-soft" />
-                    Status
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setStatusFilter('all')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'all' 
-                          ? 'bg-team-blue/15 text-team-blue-soft border border-blue-200' 
-                          : 'bg-surface text-ink-soft border border-divider'
-                        }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('paid')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'paid' 
-                          ? 'bg-success/15 text-success-soft border border-green-200' 
-                          : 'bg-surface text-ink-soft border border-divider'
-                        }`}
-                    >
-                      Pagos
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('pending')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'pending' 
-                          ? 'bg-warning/15 text-yellow-700 border border-yellow-200' 
-                          : 'bg-surface text-ink-soft border border-yellow-200'
-                        }`}
-                    >
-                      Pendentes
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  onClick={copyToClipboard}
-                  className="px-4 py-2 bg-team-blue hover:brightness-110 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
-                >
-                  {copySuccess ? (
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4" />
-                      <span>Copiado!</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Copy className="w-4 h-4" />
-                      <span>Copiar</span>
-                    </div>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop (md e lg) */}
-          <div className="hidden md:block">
-            <div className="flex items-end justify-between gap-4">
-              <div className="flex gap-4">
-                <div className="w-40">
-                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-team-blue-soft" />
-                    Mês
-                  </label>
-                  <div className="relative">
-                    <MonthSelect value={selectedMonth} onChange={setSelectedMonth} />
-                  </div>
-                </div>
-
-                <div className="w-28">
-                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-team-blue-soft" />
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <YearSelect value={selectedYear} onChange={setSelectedYear} />
-                  </div>
-                </div>
-
-                <div className="w-40">
-                  <label className="block text-sm font-medium text-ink-soft mb-1 flex items-center gap-1">
-                    <Check className="w-4 h-4 text-team-blue-soft" />
-                    Status
-                  </label>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'paid' 
-                          ? 'bg-success/15 text-success-soft hover:bg-green-200 border border-green-200' 
-                          : 'bg-surface text-ink-soft hover:bg-surface-hover border border-divider'
-                        }`}
-                    >
-                      Pagos
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'pending' 
-                          ? 'bg-warning/15 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
-                          : 'bg-surface text-ink-soft hover:bg-surface-hover border border-divider'
-                        }`}
-                    >
-                      Pendentes
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-hover hover:bg-surface-hover transition-colors rounded-lg text-ink-soft font-medium whitespace-nowrap"
-              >
-                {copySuccess ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Copiado!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copiar Lista</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={copyToClipboard}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-team-blue hover:brightness-110 text-white text-sm font-semibold rounded-xl transition whitespace-nowrap"
+          >
+            {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span>{copySuccess ? 'Copiado!' : 'Copiar Lista'}</span>
+          </button>
         </div>
+      </div>
 
+      {/* Conteúdo principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Lista de Mensalistas */}
         <div className="lg:col-span-2">
-          <div className="bg-[var(--surface-solid)] rounded-xl shadow">
+          <div className={`${panel} overflow-hidden`}>
+            <div className="px-5 py-3 border-b border-divider flex items-center gap-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Mensalistas</h2>
+              <span className="ml-auto text-xs text-ink-dim tabular-nums">{filteredMensalistas.length}</span>
+            </div>
+
             {isLoading ? (
-              <div className="text-center py-8">Carregando...</div>
+              <div className="text-center py-12 text-ink-muted">Carregando...</div>
+            ) : filteredMensalistas.length === 0 ? (
+              <div className="text-center py-12 text-ink-dim text-sm">Nenhum jogador neste filtro.</div>
             ) : (
               <>
                 {/* Desktop: Tabela */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block max-h-[460px] overflow-y-auto overflow-x-auto scroll-custom">
                   <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-divider bg-surface">
-                        <th className="py-3 px-6 text-left font-semibold text-heading min-w-[180px]">Nome</th>
-                        <th className="py-3 px-4 text-center font-semibold text-heading">Status</th>
-                        <th className="py-3 px-4 text-center font-semibold text-heading">Atrasos</th>
-                        <th className="py-3 px-4 text-center font-semibold text-heading w-[120px]">Ação</th>
+                    <thead className="sticky top-0 z-10 bg-[var(--surface-solid)]">
+                      <tr className="border-b border-divider text-ink-muted">
+                        <th className="py-2.5 px-5 text-left text-xs font-semibold uppercase tracking-wide min-w-[180px]">Nome</th>
+                        <th className="py-2.5 px-4 text-center text-xs font-semibold uppercase tracking-wide">Status</th>
+                        <th className="py-2.5 px-4 text-center text-xs font-semibold uppercase tracking-wide">Atrasos</th>
+                        <th className="py-2.5 px-4 text-center text-xs font-semibold uppercase tracking-wide w-[120px]">Ação</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-divider">
-                      {mensalistas.filter(m => {
-                        const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-                        const p = payments[paymentId];
-                        if (statusFilter === 'all') return true;
-                        if (statusFilter === 'paid') return p && p.status === 'paid';
-                        if (statusFilter === 'pending') return !p || p.status !== 'paid';
-                        return true;
-                      })
-                      .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
-                      .map((m, idx) => {
+                      {filteredMensalistas.map((m) => {
                         const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
                         const p = payments[paymentId];
                         const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
-                        
+                        const isDiarista = m.playerInfo?.paymentType === 'diarista';
+                        const isPaid = isDiarista ? !!diaristaPayment : !!(p && p.status === 'paid');
+
                         return (
-                          <tr
-                            key={m.id}
-                            className={idx % 2 === 0 ? "bg-surface-hover" : ""}
-                          >
-                            <td className="py-3 px-6 font-medium text-heading min-w-[180px] truncate" title={m.playerInfo?.name || m.id}>
-                              {m.playerInfo?.name || m.id}
-                              {m.playerInfo?.paymentType === 'diarista' && (
-                                <span className="ml-2 text-xs text-ink-muted">(Diarista)</span>
-                              )}
+                          <tr key={m.id} className="hover:bg-surface-hover transition-colors">
+                            <td className="py-2.5 px-5 font-medium text-heading min-w-[180px]">
+                              <span className="truncate" title={m.playerInfo?.name || m.id}>
+                                {m.playerInfo?.name || m.id}
+                                {isDiarista && <span className="ml-2 text-xs text-meio-soft">(Diarista)</span>}
+                              </span>
                             </td>
                             <td className="py-3 px-4 text-center">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
+                              {isDiarista ? (
                                 diaristaPayment ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft border border-success/30">
                                     Pago (R$ {diaristaPayment.value.toFixed(2)})
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft border border-warning/30">
                                     Pendente
                                   </span>
                                 )
                               ) : (
-                                p && p.status === 'paid' ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
+                                isPaid ? (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft border border-success/30">
                                     Pago
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft border border-warning/30">
                                     Pendente
                                   </span>
                                 )
                               )}
                             </td>
                             <td className="py-3 px-4 text-center">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
+                              {isDiarista ? (
                                 <span className="text-ink-dim">-</span>
                               ) : (
                                 (() => {
@@ -775,7 +613,7 @@ export function Financeiro() {
                                     return <span className="text-ink-dim">-</span>;
                                   } else {
                                     return (
-                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-danger/15 text-danger-soft">
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-danger/15 text-danger-soft border border-danger/30">
                                         {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
                                       </span>
                                     );
@@ -784,29 +622,16 @@ export function Financeiro() {
                               )}
                             </td>
                             <td className="py-3 px-4 text-center w-[120px]">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
-                                <button
-                                  onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
-                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                    ${diaristaPayment 
-                                      ? 'bg-danger/15 text-danger-soft hover:bg-red-200' 
-                                      : 'bg-team-blue text-white hover:brightness-110'
-                                    }`}
-                                >
-                                  {diaristaPayment ? 'Voltar' : 'Pagou'}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleTogglePayment(m.id)}
-                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                    ${p && p.status === 'paid' 
-                                      ? 'bg-danger/15 text-danger-soft hover:bg-red-200' 
-                                      : 'bg-team-blue text-white hover:brightness-110'
-                                    }`}
-                                >
-                                  {p && p.status === 'paid' ? 'Voltar' : 'Pagou'}
-                                </button>
-                              )}
+                              <button
+                                onClick={() => isDiarista ? handleDiaristaPayment(m.id, m.playerInfo?.name || '') : handleTogglePayment(m.id)}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
+                                  isPaid
+                                    ? 'bg-danger/15 text-danger-soft border border-danger/30 hover:bg-danger/25'
+                                    : 'bg-team-blue text-white hover:brightness-110'
+                                }`}
+                              >
+                                {isPaid ? 'Voltar' : 'Pagou'}
+                              </button>
                             </td>
                           </tr>
                         );
@@ -815,129 +640,60 @@ export function Financeiro() {
                   </table>
                 </div>
 
-                {/* Mobile: Cards */}
-                <div className="md:hidden p-3 space-y-3">
-                  {mensalistas.filter(m => {
-                    const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-                    const p = payments[paymentId];
-                    if (statusFilter === 'all') return true;
-                    if (statusFilter === 'paid') return p && p.status === 'paid';
-                    if (statusFilter === 'pending') return !p || p.status !== 'paid';
-                    return true;
-                  })
-                  .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
-                  .map((m, idx) => {
+                {/* Mobile: Cards — lista completa, sem limite de altura */}
+                <div className="md:hidden p-3 space-y-2.5">
+                  {filteredMensalistas.map((m) => {
                     const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
                     const p = payments[paymentId];
                     const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
-                    
+                    const isDiarista = m.playerInfo?.paymentType === 'diarista';
+                    const isPaid = isDiarista ? !!diaristaPayment : !!(p && p.status === 'paid');
+                    const monthsInDebt = isDiarista ? 0 : calculateMonthsInDebt(m.id);
+
                     return (
-                      <div key={m.id} className="bg-surface rounded-lg p-3 border border-divider shadow-sm">
-                        {/* Cabeçalho com Nome e Status */}
-                        <div className="flex items-start justify-between mb-3">
+                      <div key={m.id} className="rounded-lg p-3 bg-surface border border-divider">
+                        <div className="flex items-center gap-2.5 mb-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-heading truncate text-base">
-                              {m.playerInfo?.name || m.id}
-                            </h3>
-                            {m.playerInfo?.paymentType === 'diarista' && (
-                              <span className="inline-block mt-1 text-xs text-ink-muted bg-surface-hover px-2 py-1 rounded-full">Diarista</span>
-                            )}
+                            <h3 className="font-semibold text-heading truncate">{m.playerInfo?.name || m.id}</h3>
+                            <span className="text-xs text-ink-muted">{isDiarista ? 'Diarista' : 'Mensalista'}</span>
                           </div>
-                          <div className="ml-2">
-                            {m.playerInfo?.paymentType === 'diarista' ? (
-                              diaristaPayment ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
-                                  Pago
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
-                                  Pendente
-                                </span>
-                              )
-                            ) : (
-                              p && p.status === 'paid' ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/15 text-success-soft">
-                                  Pago
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/15 text-warning-soft">
-                                  Pendente
-                                </span>
-                              )
-                            )}
-                          </div>
+                          {isPaid ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-success/15 text-success-soft border border-success/30">Pago</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-warning/15 text-warning-soft border border-warning/30">Pendente</span>
+                          )}
                         </div>
 
-                        {/* Informações em Grid */}
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          {/* Valor (apenas para diaristas) */}
-                          {m.playerInfo?.paymentType === 'diarista' && diaristaPayment && (
-                            <div className="col-span-2">
-                              <span className="text-xs text-ink-muted">Valor:</span>
-                              <div className="text-sm font-medium text-success-soft">
-                                R$ {diaristaPayment.value.toFixed(2)}
-                              </div>
+                        <div className="flex items-center gap-4 mb-3 text-sm">
+                          {isDiarista && diaristaPayment ? (
+                            <div>
+                              <span className="text-xs text-ink-muted block">Valor</span>
+                              <span className="font-semibold text-success-soft">R$ {diaristaPayment.value.toFixed(2)}</span>
                             </div>
-                          )}
-
-                          {/* Atrasos */}
-                          <div>
-                            <span className="text-xs text-ink-muted">Atrasos:</span>
-                            <div className="mt-1">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
-                                <span className="text-ink-dim text-sm">-</span>
+                          ) : !isDiarista && (
+                            <div>
+                              <span className="text-xs text-ink-muted block">Atrasos</span>
+                              {monthsInDebt === 0 ? (
+                                <span className="text-ink-soft text-sm">Em dia</span>
                               ) : (
-                                (() => {
-                                  const monthsInDebt = calculateMonthsInDebt(m.id);
-                                  if (monthsInDebt === 0) {
-                                    return <span className="text-ink-dim text-sm">Em dia</span>;
-                                  } else {
-                                    return (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-danger/15 text-danger-soft">
-                                        {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
-                                      </span>
-                                    );
-                                  }
-                                })()
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-danger/15 text-danger-soft border border-danger/30">
+                                  {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
+                                </span>
                               )}
                             </div>
-                          </div>
-
-                          {/* Tipo de Pagamento */}
-                          <div>
-                            <span className="text-xs text-ink-muted">Tipo:</span>
-                            <div className="mt-1 text-sm font-medium text-ink-soft">
-                              {m.playerInfo?.paymentType === 'diarista' ? 'Diarista' : 'Mensalista'}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Botão de Ação */}
-                        <div>
-                          {m.playerInfo?.paymentType === 'diarista' ? (
-                            <button
-                              onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
-                              className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                ${diaristaPayment 
-                                  ? 'bg-danger/15 text-danger-soft hover:bg-red-200 border border-red-200' 
-                                  : 'bg-team-blue text-white hover:brightness-110'
-                                }`}
-                            >
-                              {diaristaPayment ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleTogglePayment(m.id)}
-                              className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                ${p && p.status === 'paid' 
-                                  ? 'bg-danger/15 text-danger-soft hover:bg-red-200 border border-red-200' 
-                                  : 'bg-team-blue text-white hover:brightness-110'
-                                }`}
-                              >
-                                {p && p.status === 'paid' ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
-                              </button>
                           )}
                         </div>
+
+                        <button
+                          onClick={() => isDiarista ? handleDiaristaPayment(m.id, m.playerInfo?.name || '') : handleTogglePayment(m.id)}
+                          className={`w-full px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+                            isPaid
+                              ? 'bg-danger/15 text-danger-soft border border-danger/30 hover:bg-danger/25'
+                              : 'bg-team-blue text-white hover:brightness-110'
+                          }`}
+                        >
+                          {isPaid ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
+                        </button>
                       </div>
                     );
                   })}
@@ -948,154 +704,131 @@ export function Financeiro() {
         </div>
 
         {/* Histórico */}
-        <div className="bg-[var(--surface-solid)] rounded-xl shadow">
-          <div className="p-4 border-b border-divider">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-team-blue-soft" />
-              Histórico de Pagamentos
-            </h2>
+        <div className={`${panel} overflow-hidden self-start`}>
+          <div className="px-5 py-3 border-b border-divider">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Histórico de Pagamentos</h2>
           </div>
-          <div className="p-4 max-h-[calc(100vh)] overflow-y-auto">
-            <div className="space-y-6">
-              {/* Mensalistas */}
-              <div>
-                <h3 className="text-sm font-bold text-team-blue-soft mb-2">Mensalistas</h3>
-                <div className="flex flex-col gap-2">
-                  {Object.values(payments)
-                    .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
-                    .sort((a, b) => {
-                      const dateA = a.paidAt ? new Date(a.paidAt).setHours(0, 0, 0, 0) : 0;
-                      const dateB = b.paidAt ? new Date(b.paidAt).setHours(0, 0, 0, 0) : 0;
-                      
-                      if (dateA !== dateB) {
-                        return dateB - dateA;
-                      }
+          <div className="p-4 max-h-[460px] overflow-y-auto scroll-custom space-y-5">
+            {/* Mensalistas */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wide text-team-blue-soft mb-2">Mensalistas</h3>
+              <div className="flex flex-col gap-2">
+                {Object.values(payments)
+                  .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
+                  .sort((a, b) => {
+                    const dateA = a.paidAt ? new Date(a.paidAt).setHours(0, 0, 0, 0) : 0;
+                    const dateB = b.paidAt ? new Date(b.paidAt).setHours(0, 0, 0, 0) : 0;
 
-                      return (a.playerName || '').localeCompare(b.playerName || '');
-                    })
-                    .map((payment, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-team-blue/10 rounded-lg px-4 py-3 hover:bg-team-blue/15 transition-colors w-full">
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName || 'Usuário Removido'}>
+                    if (dateA !== dateB) {
+                      return dateB - dateA;
+                    }
+
+                    return (a.playerName || '').localeCompare(b.playerName || '');
+                  })
+                  .map((payment, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-3 py-2.5 border-b border-divider last:border-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-team-blue shrink-0" title="Mensalista" />
+                        <div className="min-w-0">
+                          <span className="block font-medium text-sm text-heading truncate" title={payment.playerName || 'Usuário Removido'}>
                             {payment.playerName || 'Usuário Removido'}
                           </span>
-                          <span className="text-xs text-team-blue">{formatPaymentDate(payment.paidAt)}</span>
-                          <span className="text-xs text-ink-muted">Registrado por: {payment.recordedBy}</span>
+                          <span className="text-xs text-ink-dim">{formatPaymentDate(payment.paidAt)} · {payment.recordedBy}</span>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm font-medium text-blue-900">R$ {payment.value.toFixed(2)}</span>
-                          <span className="text-xs text-success-soft bg-success/15 px-2 py-0.5 rounded-full mt-1">Pago</span>
+                      </div>
+                      <span className="text-sm font-semibold text-heading tabular-nums shrink-0">R$ {payment.value.toFixed(2)}</span>
+                    </div>
+                  ))}
+                {Object.values(payments).filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear).length === 0 && (
+                  <p className="text-xs text-ink-dim py-2">Nenhum pagamento registrado.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Diaristas */}
+            {diaristaPayments.filter(p => p.status === 'paid').length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wide text-meio-soft mb-2">Diaristas</h3>
+                <div className="flex flex-col gap-2">
+                  {diaristaPayments
+                    .filter(p => p.status === 'paid')
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((payment, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-3 py-2.5 border-b border-divider last:border-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-meio shrink-0" title="Diarista" />
+                          <div className="min-w-0">
+                            <span className="block font-medium text-sm text-heading truncate" title={payment.playerName}>
+                              {payment.playerName}
+                            </span>
+                            <span className="text-xs text-ink-dim">{formatPaymentDate(payment.date)} · {payment.recordBy}</span>
+                          </div>
                         </div>
+                        <span className="text-sm font-semibold text-heading tabular-nums shrink-0">R$ {payment.value.toFixed(2)}</span>
                       </div>
                     ))}
                 </div>
               </div>
-              {/* Diaristas */}
-              {diaristaPayments.filter(p => p.status === 'paid').length > 0 && (
-                <>
-                  <h3 className="text-sm font-bold text-purple-700 mb-2">Diaristas</h3>
-                  <div className="flex flex-col gap-2">
-                    {diaristaPayments
-                      .filter(p => p.status === 'paid')
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((payment, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-purple-50 rounded-lg px-4 py-3 hover:bg-purple-100 transition-colors w-full">
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName}>
-                              {payment.playerName}
-                            </span>
-                            <span className="text-xs text-purple-500">{formatPaymentDate(payment.date)}</span>
-                            <span className="text-xs text-ink-muted">Registrado por: {payment.recordBy}</span>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-sm font-medium text-purple-900">R$ {payment.value.toFixed(2)}</span>
-                            <span className="text-xs text-success-soft bg-success/15 px-2 py-0.5 rounded-full mt-1">Pago</span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Informativos */}
-        <div className="lg:col-span-3">
-          <div className="bg-[var(--surface-solid)] rounded-xl shadow p-4">
-            <h2 className="text-lg font-semibold mb-4">Informativos do Mês</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Valor Arrecadado */}
-              <div className="p-4 bg-team-blue/10 rounded-lg">
-                <h3 className="text-sm font-medium text-blue-900 mb-1">Valor Arrecadado</h3>
-                <p className="text-2xl font-bold text-team-blue-soft">
-                  R$ {Object.values(payments)
-                    .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
-                    .reduce((acc, p) => acc + p.value, 0)
-                    .toFixed(2)}
-                </p>
-              </div>
-
-              {/* Custo da Pelada */}
-              <div className="p-4 bg-success/10 rounded-lg">
-                <h3 className="text-sm font-medium text-green-900 mb-1">Custo da Pelada</h3>
-                <p className="text-2xl font-bold text-success-soft">
-                  R$ {custoPelada.toFixed(2)}
-                </p>
-                <p className="text-xs text-success-soft mt-1">
-                  {descricaoCusto}
-                </p>
-              </div>
-
-              {/* Arrecadação Diaristas */}
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <h3 className="text-sm font-medium text-purple-900 mb-1">Arrecadação Diaristas</h3>
-                <p className="text-2xl font-bold text-purple-700">
-                  R$ {diaristaPayments
-                    .filter(p => p.status === 'paid')
-                    .reduce((acc, p) => acc + p.value, 0)
-                    .toFixed(2)}
-                </p>
-                <p className="text-xs text-purple-600 mt-1">
-                  {diaristaPayments.filter(p => p.status === 'paid').length} pagamentos
-                </p>
-              </div>
-
-              {/* Saldo */}
-              <div className="p-4 bg-team-orange/10 rounded-lg">
-                <h3 className="text-sm font-medium text-orange-900 mb-1">Saldo do Mês</h3>
-                <p className="text-2xl font-bold text-team-orange-soft">
-                  R$ {(() => {
-                    const arrecadado = Object.values(payments)
-                      .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
-                      .reduce((acc, p) => acc + p.value, 0);
-                    
-                    return (arrecadado - custoPelada).toFixed(2);
-                  })()}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Resumo do mês */}
+      <div className={`${panel} p-4`}>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-3">Resumo do mês</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-divider rounded-lg overflow-hidden border border-divider">
+          <div className="bg-[var(--surface-solid)] p-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-team-blue" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Arrecadado</span>
+            </div>
+            <p className="mt-2 text-xl font-bold text-heading tabular-nums">R$ {totalArrecadado.toFixed(2)}</p>
+          </div>
+
+          <div className="bg-[var(--surface-solid)] p-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Custo da Pelada</span>
+            </div>
+            <p className="mt-2 text-xl font-bold text-heading tabular-nums">R$ {custoPelada.toFixed(2)}</p>
+            <p className="text-[11px] text-ink-dim mt-1 leading-tight">{descricaoCusto}</p>
+          </div>
+
+          <div className="bg-[var(--surface-solid)] p-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-meio" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Diaristas</span>
+            </div>
+            <p className="mt-2 text-xl font-bold text-heading tabular-nums">R$ {totalDiaristas.toFixed(2)}</p>
+            <p className="text-[11px] text-ink-dim mt-1">{diaristaPayments.filter(p => p.status === 'paid').length} pagamentos</p>
+          </div>
+
+          <div className="bg-[var(--surface-solid)] p-4">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${saldo >= 0 ? 'bg-success' : 'bg-danger'}`} />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Saldo do Mês</span>
+            </div>
+            <p className={`mt-2 text-xl font-bold tabular-nums ${saldo >= 0 ? 'text-success-soft' : 'text-danger-soft'}`}>R$ {saldo.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal: pagamento mensalista */}
       {showPaymentModal && (
         <Portal>
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[80]">
-          <div className="bg-[var(--surface-solid)] rounded-xl p-6 w-full max-w-sm mx-auto">
-            <h3 className="text-lg font-semibold mb-6">Confirmar Pagamento</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[80]">
+          <div className="bg-[var(--surface-solid)] text-ink rounded-2xl shadow-xl p-6 w-full max-w-sm mx-auto">
+            <h3 className="text-lg font-semibold text-heading mb-6">Confirmar Pagamento</h3>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-ink-soft mb-2">
-                Valor do Pagamento
-              </label>
+              <label className="block text-sm font-medium text-ink-soft mb-2">Valor do Pagamento</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">R$</span>
                 <input
                   type="number"
                   value={paymentValue}
                   onChange={(e) => setPaymentValue(Number(e.target.value))}
-                  className="w-full pl-12 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                  className="field-input pl-12 text-lg"
                   min="0"
                   step="10"
                   onBlur={(e) => {
@@ -1113,7 +846,7 @@ export function Financeiro() {
                   setShowPaymentModal(false);
                   setSelectedMensalista(null);
                 }}
-                className="flex-1 px-4 py-2.5 text-ink-soft hover:bg-surface-hover rounded-lg text-sm font-medium"
+                className="flex-1 px-4 py-2.5 text-ink-soft bg-surface-hover hover:bg-surface-hover rounded-lg text-sm font-medium"
               >
                 Cancelar
               </button>
@@ -1129,11 +862,11 @@ export function Financeiro() {
         </Portal>
       )}
 
-      {/* Modal de Pagamento do Diarista */}
+      {/* Modal: pagamento diarista */}
       {showDiaristaModal && (
         <Portal>
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
-          <div className="bg-[var(--surface-solid)] rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-[var(--surface-solid)] text-ink rounded-2xl shadow-xl w-full max-w-md p-6 relative">
             <button
               className="absolute top-3 right-4 text-2xl text-ink-dim hover:text-ink-soft"
               onClick={() => setShowDiaristaModal(false)}
@@ -1141,26 +874,26 @@ export function Financeiro() {
             >
               ×
             </button>
-            <h2 className="text-lg font-semibold mb-4">Confirmar Pagamento</h2>
+            <h2 className="text-lg font-semibold text-heading mb-4">Confirmar Pagamento</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Nome do Diarista</label>
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">Nome do Diarista</label>
                 <input
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="field-input"
                   value={selectedDiarista?.name || ''}
                   readOnly
                   placeholder="Nome do diarista"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
+                <label className="block text-sm font-medium text-ink-soft mb-1.5">Valor do Pagamento</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">R$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted">R$</span>
                   <input
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className="w-full border rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="field-input pl-12"
                     value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '');
@@ -1186,7 +919,7 @@ export function Financeiro() {
                     confirmDiaristaPayment();
                   }, 0);
                 }}
-                className="px-4 py-2 text-sm font-medium text-success-soft bg-success/15 rounded-lg hover:bg-green-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-success-soft bg-success/15 border border-success/30 rounded-lg hover:bg-success/25 transition-colors"
                 type="button"
                 disabled={!selectedDiarista}
               >
@@ -1208,4 +941,4 @@ export function Financeiro() {
     </div>
     </div>
   );
-} 
+}

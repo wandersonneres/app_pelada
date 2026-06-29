@@ -1842,11 +1842,11 @@ export function GameDetails() {
   // Layout principal
   return (
     <div className={`pelada-page${selectedTab === 'partidas' ? ' partida-page' : ''}`}>
-    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10 py-5">
+    <div className="pelada-inner relative z-10 w-full px-4 sm:px-6 lg:px-10 py-5">
       {toastMsg && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-success/100' : 'bg-danger/100'}`}>{toastMsg.message}</div>
       )}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
+      <div className="pelada-header flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
         <button
           onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-surface-hover transition-colors shrink-0" aria-label="Voltar">
           <ArrowLeft className="w-5 h-5" />
@@ -1858,39 +1858,39 @@ export function GameDetails() {
         {/* Info em chips (compacto) */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="glass-pill"><MapPin className="w-3.5 h-3.5 text-success" />{game?.location}</span>
-          <span className="glass-pill"><Users className="w-3.5 h-3.5 text-team-blue-soft" />{game?.players.length} / {game?.maxPlayers}</span>
+          <span className="glass-pill"><Users className="w-3.5 h-3.5 text-team-blue-soft" />{game?.players.length}</span>
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${game?.status === 'waiting' ? 'bg-warning/15 text-warning-soft border border-warning/30' : game?.status === 'in_progress' ? 'bg-team-blue/15 text-team-blue-soft border border-team-blue/30' : 'bg-success/15 text-success-soft border border-success/30'}`}>{game && getStatusText(game.status)}</span>
         </div>
         <div className="flex-1 hidden md:block" />
-        <div className="flex gap-2 w-full md:w-auto justify-end">
+        <div className="flex gap-2 w-full md:w-auto md:justify-end">
           {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
             <>
               <button
                 onClick={handleFinishGame}
-                className={`inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 md:flex-none inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   game?.status === 'finished'
                     ? 'bg-warning/15 text-warning-soft hover:bg-warning/25'
                     : 'bg-success/15 text-success-soft hover:bg-success/25'
                 }`}
                 aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
               >
-                <Check className="w-4 h-4 mr-1.5" />
+                <Check className="w-4 h-4 mr-1.5 shrink-0" />
                 {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
               </button>
               <button
                 onClick={() => navigate(`/game/${game?.id}/edit`)}
-                className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium bg-team-blue/15 text-team-blue-soft hover:bg-team-blue/25 transition-colors"
+                className="flex-1 md:flex-none inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium bg-team-blue/15 text-team-blue-soft hover:bg-team-blue/25 transition-colors"
                 aria-label="Editar pelada"
               >
-                <Edit className="w-4 h-4 mr-1.5" />
+                <Edit className="w-4 h-4 mr-1.5 shrink-0" />
                 Editar
               </button>
               <button
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium bg-danger/15 text-danger-soft hover:bg-danger/25 transition-colors"
+                className="flex-1 md:flex-none inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium bg-danger/15 text-danger-soft hover:bg-danger/25 transition-colors"
                 aria-label="Excluir pelada"
               >
-                <Trash2 className="w-4 h-4 mr-1.5" />
+                <Trash2 className="w-4 h-4 mr-1.5 shrink-0" />
                 Excluir
               </button>
             </>
@@ -1950,9 +1950,9 @@ export function GameDetails() {
       )}
 
                         {/* Lista de Jogadores */}
-      <div className="glass-card p-4 sm:p-5 mb-4">
+      <div className="pelada-content-card glass-card p-4 sm:p-5 mb-4">
         {/* Tabs */}
-        <div className="flex gap-2 mb-4 border-b border-divider">
+        <div className="pelada-tabs flex gap-2 mb-4 border-b border-divider">
           <button
             className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'jogadores' ? 'border-team-blue text-team-blue-soft' : 'border-transparent text-ink-muted hover:text-team-blue'}`}
             onClick={() => setSelectedTab('jogadores')}

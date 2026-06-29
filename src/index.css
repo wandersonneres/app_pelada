@@ -5,7 +5,11 @@
 
 @layer base {
   body {
-    @apply antialiased bg-white text-gray-900;
+    @apply antialiased;
+    /* Tema aplicado em <html> antes do paint (script no index.html), então
+       estas vars já resolvem no primeiro render — evita flash claro no F5. */
+    background: var(--page-grad);
+    color: var(--ink);
   }
   .theme {
     --font-heading: 'Saira Condensed', sans-serif;
@@ -278,6 +282,21 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+  /* Scrollbar discreta e theme-aware (Financeiro, listas longas) */
+  .scroll-custom {
+    scrollbar-width: thin;
+    scrollbar-color: var(--divider-strong) transparent;
+  }
+  .scroll-custom::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scroll-custom::-webkit-scrollbar-track { background: transparent; }
+  .scroll-custom::-webkit-scrollbar-thumb {
+    background: var(--divider-strong);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .scroll-custom::-webkit-scrollbar-thumb:hover { background: var(--ink-dim); background-clip: padding-box; }
+
   /* Tablet na horizontal (~1280x800): a aba Partidas cabe na tela sem rolar a
      página — a altura do grid é definida via JS (innerHeight - top) e cada
      coluna rola internamente. Só atua nessa faixa de resolução. */
@@ -292,6 +311,46 @@
       min-height: 0;
       max-height: 100%;
       overflow-y: auto;
+    }
+
+    /* ===== Refinamentos p/ aproximar do protótipo "Partidas Tablet" =====
+       Tudo escopado em .partida-page (presente só na aba Partidas) e nessa
+       faixa de resolução — não afeta mobile nem desktop. Cada px de "chrome"
+       que cortamos aqui é devolvido ao grid pela lógica de fit em JS. */
+
+    /* Margens externas da página mais enxutas (protótipo usa ~20px) */
+    .partida-page .pelada-inner {
+      padding: 12px 18px 14px;
+    }
+
+    /* Cabeçalho numa única linha, título compacto (protótipo: 26px) */
+    .partida-page .pelada-header {
+      flex-wrap: nowrap;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .partida-page .pelada-header h1 {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    /* Card que envolve abas + conteúdo: padding/margem menores */
+    .partida-page .pelada-content-card {
+      padding: 12px 16px 14px;
+      margin-bottom: 0;
+    }
+    .partida-page .pelada-tabs {
+      margin-bottom: 12px;
+    }
+
+    /* Grid de 3 colunas com gaps de 12px (protótipo) */
+    .partida-page .partida-fit {
+      gap: 12px;
+    }
+
+    /* Cards internos do grid não acumulam margem (o gap já separa) */
+    .partida-page .partida-fit .glass-card {
+      margin-bottom: 0;
     }
   }
 

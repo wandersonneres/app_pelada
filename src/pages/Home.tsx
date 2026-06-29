@@ -102,19 +102,23 @@ export function Home() {
             {activeGames.length > 0 && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
               <button
                 onClick={() => navigate('/new-game')}
-                className="flex items-center gap-2 px-3.5 py-2.5 bg-team-blue text-white font-semibold rounded-xl hover:brightness-110 transition-all shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)] whitespace-nowrap"
+                aria-label="Nova Pelada"
+                title="Nova Pelada"
+                className="flex items-center justify-center gap-2 p-2.5 sm:px-3.5 sm:py-2.5 bg-team-blue text-white font-semibold rounded-xl hover:brightness-110 transition-all shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)] whitespace-nowrap"
               >
                 <Calendar className="w-5 h-5 shrink-0" />
-                Nova Pelada
+                <span className="hidden sm:inline">Nova Pelada</span>
               </button>
             )}
             {user?.role === 'admin' && (
               <button
                 onClick={() => navigate('/players')}
-                className="flex items-center gap-2 px-3.5 py-2.5 bg-surface text-ink-soft font-semibold rounded-xl border border-divider hover:bg-surface-hover transition-colors whitespace-nowrap"
+                aria-label="Jogadores"
+                title="Jogadores"
+                className="flex items-center justify-center gap-2 p-2.5 sm:px-3.5 sm:py-2.5 bg-surface text-ink-soft font-semibold rounded-xl border border-divider hover:bg-surface-hover transition-colors whitespace-nowrap"
               >
                 <Users className="w-5 h-5 shrink-0" />
-                Jogadores
+                <span className="hidden sm:inline">Jogadores</span>
               </button>
             )}
           </div>
@@ -138,7 +142,7 @@ export function Home() {
                         {getStatusText(game.status)}
                     </span>
                     <span className="text-sm text-ink-muted">
-                        {game.players?.length || 0} / {game.maxPlayers} jogadores
+                        {game.players?.length || 0}  jogadores
                     </span>
                   </div>
 
@@ -231,7 +235,7 @@ export function Home() {
                           </span>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-ink-soft text-center hidden md:table-cell font-heading">
-                          {game.players?.length || 0} / {game.maxPlayers}
+                          {game.players?.length || 0} 
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-ink-soft text-center hidden md:table-cell font-heading">
                           {game.matches?.length || 0}

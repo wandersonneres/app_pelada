@@ -10,7 +10,6 @@ import {
   Loader2, CalendarRange, Info, Minus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,24 +84,25 @@ const WEIGHT_FIELDS: { key: keyof Omit<RankingConfig, 'rankingStartDate'>; label
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Estilos do pódio — baseados em tokens do tema (funcionam no claro e no escuro)
 function medalStyle(rank: number) {
   if (rank === 1) return {
-    avatarBg: 'bg-warning/15', avatarText: 'text-yellow-800', ring: 'ring-yellow-300', badge: '🥇',
-    valueColor: 'text-yellow-700', borderColor: 'border-yellow-200',
-    cardBg: 'bg-gradient-to-b from-yellow-50 to-white',
-    pedestal: 'bg-gradient-to-t from-yellow-500 to-yellow-300',
+    avatarBg: 'bg-warning/15', avatarText: 'text-warning-soft', ring: 'ring-warning/40', badge: '🥇',
+    valueColor: 'text-warning-soft', borderColor: 'border-warning/30',
+    cardBg: 'bg-warning/[0.07]',
+    pedestal: 'bg-gradient-to-t from-warning to-warning/30',
   };
   if (rank === 2) return {
-    avatarBg: 'bg-slate-100', avatarText: 'text-slate-700', ring: 'ring-slate-200', badge: '🥈',
-    valueColor: 'text-slate-600', borderColor: 'border-slate-200',
-    cardBg: 'bg-gradient-to-b from-slate-50 to-white',
-    pedestal: 'bg-gradient-to-t from-slate-400 to-slate-200',
+    avatarBg: 'bg-surface-strong', avatarText: 'text-ink-soft', ring: 'ring-divider-strong', badge: '🥈',
+    valueColor: 'text-ink-soft', borderColor: 'border-divider-strong',
+    cardBg: 'bg-surface',
+    pedestal: 'bg-gradient-to-t from-ink-dim to-ink-dim/30',
   };
   return {
-    avatarBg: 'bg-amber-100', avatarText: 'text-amber-800', ring: 'ring-amber-300', badge: '🥉',
-    valueColor: 'text-amber-700', borderColor: 'border-amber-200',
-    cardBg: 'bg-gradient-to-b from-amber-50 to-white',
-    pedestal: 'bg-gradient-to-t from-amber-700 to-amber-400',
+    avatarBg: 'bg-team-orange/15', avatarText: 'text-team-orange-soft', ring: 'ring-team-orange/40', badge: '🥉',
+    valueColor: 'text-team-orange-soft', borderColor: 'border-team-orange/30',
+    cardBg: 'bg-team-orange/[0.07]',
+    pedestal: 'bg-gradient-to-t from-team-orange to-team-orange/30',
   };
 }
 
@@ -362,13 +362,13 @@ export function Ranking() {
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 bg-team-blue rounded-xl shadow-md shrink-0">
+            <div className="w-10 h-10 bg-team-blue rounded-xl shadow-[0_8px_20px_-8px_rgba(59,130,246,0.7)] shrink-0 flex items-center justify-center">
               <BarChart2 className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-heading leading-none">Ranking</h1>
+              <h1 className="font-heading text-2xl font-extrabold tracking-wide text-heading leading-none">Ranking</h1>
               {!loading && (
-                <p className="text-xs text-ink-muted mt-0.5 truncate">
+                <p className="text-xs text-ink-muted mt-1 truncate">
                   {ranked.length} jogadores · {totalGames} jogo{totalGames !== 1 ? 's' : ''}
                 </p>
               )}
@@ -404,107 +404,105 @@ export function Ranking() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <Card className="border-blue-200 bg-team-blue/10/60">
-                <CardContent className="p-4 space-y-4">
+              <div className="glass-card border-team-blue/30 p-4 space-y-4">
 
-                  {/* Weights grid */}
-                  <div>
-                    <p className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
-                      <Trophy className="w-3.5 h-3.5" /> Pesos da pontuação geral
-                    </p>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {WEIGHT_FIELDS.map(({ key, label }) => (
-                        <div key={key} className="space-y-1">
-                          <Label className="text-xs text-team-blue-soft font-medium block text-center">{label}</Label>
-                          <Input
-                            type="text"
-                            inputMode="numeric"
-                            value={weightsRaw[key] ?? String(editConfig[key])}
-                            onFocus={e => e.target.select()}
-                            onChange={e => {
-                              const raw = e.target.value;
-                              setWeightsRaw(prev => ({ ...prev, [key]: raw }));
-                              const n = parseInt(raw, 10);
-                              if (!isNaN(n)) setEditConfig(prev => ({ ...prev, [key]: n }));
-                            }}
-                            onBlur={e => {
-                              const n = parseInt(e.target.value, 10);
-                              const val = isNaN(n) ? 0 : n;
-                              setWeightsRaw(prev => ({ ...prev, [key]: String(val) }));
-                              setEditConfig(prev => ({ ...prev, [key]: val }));
-                            }}
-                            className="h-8 text-sm bg-surface text-center px-1"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-team-blue mt-2 leading-relaxed">
-                      pts = pres×{editConfig.presence} + gol×{editConfig.goal} + assist×{editConfig.assist} + vit×{editConfig.victory} + emp×{editConfig.draw} + der×{editConfig.defeat}
-                    </p>
+                {/* Weights grid */}
+                <div>
+                  <p className="text-xs font-semibold text-team-blue-soft mb-3 flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5" /> Pesos da pontuação geral
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {WEIGHT_FIELDS.map(({ key, label }) => (
+                      <div key={key} className="space-y-1">
+                        <Label className="text-xs text-team-blue-soft font-medium block text-center">{label}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={weightsRaw[key] ?? String(editConfig[key])}
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const raw = e.target.value;
+                            setWeightsRaw(prev => ({ ...prev, [key]: raw }));
+                            const n = parseInt(raw, 10);
+                            if (!isNaN(n)) setEditConfig(prev => ({ ...prev, [key]: n }));
+                          }}
+                          onBlur={e => {
+                            const n = parseInt(e.target.value, 10);
+                            const val = isNaN(n) ? 0 : n;
+                            setWeightsRaw(prev => ({ ...prev, [key]: String(val) }));
+                            setEditConfig(prev => ({ ...prev, [key]: val }));
+                          }}
+                          className="h-8 text-sm bg-surface text-center px-1"
+                        />
+                      </div>
+                    ))}
                   </div>
+                  <p className="text-xs text-ink-muted mt-2 leading-relaxed">
+                    pts = pres×{editConfig.presence} + gol×{editConfig.goal} + assist×{editConfig.assist} + vit×{editConfig.victory} + emp×{editConfig.draw} + der×{editConfig.defeat}
+                  </p>
+                </div>
 
-                  {/* Start date */}
-                  <div className="border-t border-blue-200 pt-4">
-                    <p className="text-xs font-semibold text-blue-800 mb-1 flex items-center gap-1.5">
-                      <CalendarDays className="w-3.5 h-3.5" /> Data mínima do ranking
-                    </p>
-                    <p className="text-xs text-team-blue mb-2.5">
-                      Jogos anteriores a esta data serão ignorados em todos os cálculos.
-                    </p>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <input
-                        type="date"
-                        value={editConfig.rankingStartDate}
-                        onChange={e => setEditConfig(prev => ({ ...prev, rankingStartDate: e.target.value }))}
-                        className="h-8 text-xs border border-blue-200 rounded-lg px-2.5 bg-surface focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
-                      />
-                      {editConfig.rankingStartDate && (
-                        <button
-                          onClick={() => setEditConfig(prev => ({ ...prev, rankingStartDate: '' }))}
-                          className="text-xs text-team-blue hover:text-team-blue-soft underline"
-                        >
-                          Limpar (ler tudo)
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="space-y-2 pt-1 border-t border-blue-200">
-                    <div className="flex items-center gap-2">
+                {/* Start date */}
+                <div className="border-t border-divider pt-4">
+                  <p className="text-xs font-semibold text-team-blue-soft mb-1 flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5" /> Data mínima do ranking
+                  </p>
+                  <p className="text-xs text-ink-muted mb-2.5">
+                    Jogos anteriores a esta data serão ignorados em todos os cálculos.
+                  </p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <input
+                      type="date"
+                      value={editConfig.rankingStartDate}
+                      onChange={e => setEditConfig(prev => ({ ...prev, rankingStartDate: e.target.value }))}
+                      className="h-9 text-xs border border-divider rounded-lg px-2.5 bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-team-blue/40 focus:border-team-blue"
+                    />
+                    {editConfig.rankingStartDate && (
                       <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-team-blue text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:brightness-110 transition-colors"
+                        onClick={() => setEditConfig(prev => ({ ...prev, rankingStartDate: '' }))}
+                        className="text-xs text-team-blue-soft hover:brightness-110 underline"
                       >
-                        {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                        Salvar configurações
+                        Limpar (ler tudo)
                       </button>
-                      <button
-                        onClick={() => { setShowEditor(false); setSaveError(null); setSaveSuccess(false); }}
-                        className="px-3 py-2 text-xs text-ink-soft rounded-lg hover:bg-team-blue/15 transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      {saveSuccess && (
-                        <span className="text-xs text-success-soft font-medium">✓ Salvo com sucesso</span>
-                      )}
-                    </div>
-                    {saveError && (
-                      <p className="text-xs text-danger-soft bg-danger/10 border border-red-200 rounded-lg px-3 py-2">
-                        {saveError}
-                      </p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2 pt-1 border-t border-divider">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-team-blue text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:brightness-110 transition-colors"
+                    >
+                      {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                      Salvar configurações
+                    </button>
+                    <button
+                      onClick={() => { setShowEditor(false); setSaveError(null); setSaveSuccess(false); }}
+                      className="px-3 py-2 text-xs text-ink-soft rounded-lg hover:bg-surface-hover transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    {saveSuccess && (
+                      <span className="text-xs text-success-soft font-medium">✓ Salvo com sucesso</span>
+                    )}
+                  </div>
+                  {saveError && (
+                    <p className="text-xs text-danger-soft bg-danger/10 border border-danger/30 rounded-lg px-3 py-2">
+                      {saveError}
+                    </p>
+                  )}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Start date notice */}
         {config.rankingStartDate && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-xl text-xs text-warning-soft">
             <Info className="w-3.5 h-3.5 shrink-0" />
             <span>
               Dados a partir de{' '}
@@ -516,95 +514,93 @@ export function Ranking() {
         )}
 
         {/* Date Filters */}
-        <Card className="border-divider shadow-sm">
-          <CardContent className="p-3 sm:p-4 space-y-3">
-            <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide flex items-center gap-1.5">
-              <CalendarDays className="w-3.5 h-3.5" /> Filtrar por período
-            </p>
-            <div className="flex gap-1.5 flex-wrap">
-              {([
-                { mode: 'all'       as DateFilterMode, label: 'Todos'     },
-                //{ mode: 'thisMonth' as DateFilterMode, label: 'Este Mês'  },
-                //{ mode: 'thisYear'  as DateFilterMode, label: 'Este Ano'  },
-                { mode: 'byYear'    as DateFilterMode, label: 'Por Ano'   },
-                { mode: 'byMonth'   as DateFilterMode, label: 'Por Mês'   },
-                { mode: 'period'    as DateFilterMode, label: 'Período', icon: <CalendarRange className="w-3 h-3" /> },
-              ] as { mode: DateFilterMode; label: string; icon?: React.ReactNode }[]).map(({ mode, label, icon }) => (
-                <button
-                  key={mode}
-                  onClick={() => setDateMode(mode)}
-                  className={cn(
-                    'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
-                    dateMode === mode
-                      ? 'bg-team-blue text-white border-team-blue shadow-sm'
-                      : 'bg-surface text-ink-soft border-divider hover:border-blue-300 hover:text-team-blue-soft'
-                  )}
-                >
-                  {icon}{label}
-                </button>
-              ))}
-            </div>
+        <div className="glass-card p-3 sm:p-4 space-y-3">
+          <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide flex items-center gap-1.5">
+            <CalendarDays className="w-3.5 h-3.5" /> Filtrar por período
+          </p>
+          <div className="flex gap-1.5 flex-wrap">
+            {([
+              { mode: 'all'       as DateFilterMode, label: 'Todos'     },
+              //{ mode: 'thisMonth' as DateFilterMode, label: 'Este Mês'  },
+              //{ mode: 'thisYear'  as DateFilterMode, label: 'Este Ano'  },
+              { mode: 'byYear'    as DateFilterMode, label: 'Por Ano'   },
+              { mode: 'byMonth'   as DateFilterMode, label: 'Por Mês'   },
+              { mode: 'period'    as DateFilterMode, label: 'Período', icon: <CalendarRange className="w-3 h-3" /> },
+            ] as { mode: DateFilterMode; label: string; icon?: React.ReactNode }[]).map(({ mode, label, icon }) => (
+              <button
+                key={mode}
+                onClick={() => setDateMode(mode)}
+                className={cn(
+                  'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                  dateMode === mode
+                    ? 'bg-team-blue text-white border-team-blue shadow-sm'
+                    : 'bg-surface text-ink-soft border-divider hover:border-team-blue/40 hover:text-team-blue-soft'
+                )}
+              >
+                {icon}{label}
+              </button>
+            ))}
+          </div>
 
-            <AnimatePresence mode="wait">
-              {dateMode === 'byYear' && (
-                <motion.div key="y" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                  className="flex items-center gap-2"
-                >
-                  <span className="text-xs text-ink-muted">Ano:</span>
-                  <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="h-8 w-24 text-xs">
-                      <span className="flex-1 text-left">{selectedYear}</span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </motion.div>
-              )}
-              {dateMode === 'byMonth' && (
-                <motion.div key="m" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                  className="flex items-center gap-2 flex-wrap"
-                >
-                  <span className="text-xs text-ink-muted">Mês:</span>
-                  <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
-                    <SelectTrigger className="h-8 w-32 text-xs">
-                      <span className="flex-1 text-left">{MONTHS[selectedMonth]}</span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MONTHS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="h-8 w-20 text-xs">
-                      <span className="flex-1 text-left">{selectedYear}</span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </motion.div>
-              )}
-              {dateMode === 'period' && (
-                <motion.div key="p" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                  className="flex items-center gap-2 flex-wrap"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-ink-muted shrink-0">De:</span>
-                    <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)}
-                      className="h-8 text-xs border border-divider rounded-lg px-2 bg-surface focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-ink-muted shrink-0">Até:</span>
-                    <input type="date" value={periodEnd} min={periodStart} onChange={e => setPeriodEnd(e.target.value)}
-                      className="h-8 text-xs border border-divider rounded-lg px-2 bg-surface focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+          <AnimatePresence mode="wait">
+            {dateMode === 'byYear' && (
+              <motion.div key="y" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                className="flex items-center gap-2"
+              >
+                <span className="text-xs text-ink-muted">Ano:</span>
+                <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+                  <SelectTrigger className="h-8 w-24 text-xs">
+                    <span className="flex-1 text-left">{selectedYear}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </motion.div>
+            )}
+            {dateMode === 'byMonth' && (
+              <motion.div key="m" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                className="flex items-center gap-2 flex-wrap"
+              >
+                <span className="text-xs text-ink-muted">Mês:</span>
+                <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
+                  <SelectTrigger className="h-8 w-32 text-xs">
+                    <span className="flex-1 text-left">{MONTHS[selectedMonth]}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+                  <SelectTrigger className="h-8 w-20 text-xs">
+                    <span className="flex-1 text-left">{selectedYear}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </motion.div>
+            )}
+            {dateMode === 'period' && (
+              <motion.div key="p" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                className="flex items-center gap-2 flex-wrap"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-ink-muted shrink-0">De:</span>
+                  <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)}
+                    className="h-9 text-xs border border-divider rounded-lg px-2 bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-team-blue/40 focus:border-team-blue"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-ink-muted shrink-0">Até:</span>
+                  <input type="date" value={periodEnd} min={periodStart} onChange={e => setPeriodEnd(e.target.value)}
+                    className="h-9 text-xs border border-divider rounded-lg px-2 bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-team-blue/40 focus:border-team-blue"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* ── Apenas cadastrados ───────────────────────────────────────────── */}
         <button
@@ -612,13 +608,13 @@ export function Ranking() {
           className={cn(
             'flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
             onlyRegistered
-              ? 'bg-team-blue/10 border-blue-300 text-team-blue-soft'
-              : 'bg-surface border-divider text-ink-muted hover:border-divider'
+              ? 'bg-team-blue/10 border-team-blue/30 text-team-blue-soft'
+              : 'bg-surface border-divider text-ink-muted hover:border-divider-strong'
           )}
         >
           <div className={cn(
             'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
-            onlyRegistered ? 'bg-team-blue border-team-blue' : 'border-divider'
+            onlyRegistered ? 'bg-team-blue border-team-blue' : 'border-divider-strong'
           )}>
             {onlyRegistered && (
               <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
@@ -646,7 +642,7 @@ export function Ranking() {
                     'px-3 sm:px-4',
                     rankType === tab.value
                       ? 'bg-team-blue text-white border-team-blue shadow-sm'
-                      : 'bg-surface text-ink-muted border-divider hover:border-blue-300 hover:text-team-blue-soft hover:bg-team-blue/10/50'
+                      : 'bg-surface text-ink-muted border-divider hover:border-team-blue/40 hover:text-team-blue-soft hover:bg-team-blue/10'
                   )}
                 >
                   {tab.icon}
@@ -668,19 +664,17 @@ export function Ranking() {
         )}
 
         {!loading && ranked.length === 0 && (
-          <Card className="border-divider">
-            <CardContent className="py-12 text-center">
-              <Trophy className="w-10 h-10 text-ink-dim mx-auto mb-3" />
-              <p className="text-ink-dim text-sm">Nenhum dado encontrado para este período.</p>
-            </CardContent>
-          </Card>
+          <div className="glass-card py-12 text-center">
+            <Trophy className="w-10 h-10 text-ink-dim mx-auto mb-3" />
+            <p className="text-ink-dim text-sm">Nenhum dado encontrado para este período.</p>
+          </div>
         )}
 
         {/* Pódio Top 3 */}
         {!loading && top3.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <Crown className="w-3.5 h-3.5 text-yellow-500" />
+              <Crown className="w-3.5 h-3.5 text-warning-soft" />
               Top 3 — {rankType === 'points' ? 'Pontuação Geral' : rankLabel(rankType)}
             </p>
             <div className="flex items-end justify-center gap-2 sm:gap-4">
@@ -693,10 +687,10 @@ export function Ranking() {
 
         {/* Classificação completa */}
         {!loading && ranked.length > 3 && (
-          <Card className="border-divider shadow-sm overflow-hidden">
+          <div className="glass-card overflow-hidden">
             <div className="px-4 py-3 border-b border-divider flex items-center gap-2">
-              <Medal className="w-4 h-4 text-team-blue" />
-              <h2 className="text-sm font-semibold text-heading">Classificação Completa</h2>
+              <Medal className="w-4 h-4 text-team-blue-soft" />
+              <h2 className="font-heading text-base font-bold text-heading">Classificação Completa</h2>
               <span className="ml-auto text-xs text-ink-dim">{ranked.length} jogadores</span>
             </div>
             <div className="max-h-[420px] overflow-y-auto divide-y divide-divider">
@@ -704,7 +698,7 @@ export function Ranking() {
                 <RankRow key={stats.id} rank={idx + 1} stats={stats} rankType={rankType} />
               ))}
             </div>
-          </Card>
+          </div>
         )}
       </div>
     </div>
@@ -739,7 +733,7 @@ function PodiumCard({ rank, stats, rankType, config, pedestalH }: {
       <span className="text-xl sm:text-2xl mb-1 leading-none">{s.badge}</span>
 
       <div className={cn(
-        'w-full rounded-xl border shadow-sm flex flex-col items-center gap-1.5 p-2 sm:p-3',
+        'w-full rounded-xl border flex flex-col items-center gap-1.5 p-2 sm:p-3',
         s.cardBg, s.borderColor
       )}>
         <div className={cn(
@@ -760,16 +754,16 @@ function PodiumCard({ rank, stats, rankType, config, pedestalH }: {
         <p className="text-xs text-ink-dim -mt-0.5">{rankLabel(rankType)}</p>
 
         {breakdown && breakdown.length > 0 && (
-          <div className="w-full mt-1 pt-1.5 border-t border-divider/60 space-y-0.5">
+          <div className="w-full mt-1 pt-1.5 border-t border-divider space-y-0.5">
             {(breakdown as { emoji: string; label: string; count: number; w: number; result: number }[]).map(b => (
               <div key={b.label} className="flex items-center justify-between gap-1">
                 <span className="text-xs text-ink-muted shrink-0">{b.emoji} {b.count}×{b.w}</span>
-                <span className={cn('text-xs font-semibold', b.result >= 0 ? 'text-ink-soft' : 'text-red-500')}>
+                <span className={cn('text-xs font-semibold', b.result >= 0 ? 'text-ink-soft' : 'text-danger-soft')}>
                   {b.result > 0 ? '+' : ''}{b.result}
                 </span>
               </div>
             ))}
-            <div className="flex items-center justify-between pt-0.5 border-t border-divider/50">
+            <div className="flex items-center justify-between pt-0.5 border-t border-divider">
               <span className="text-xs text-ink-dim">Total</span>
               <span className={cn('text-xs font-bold', s.valueColor)}>{value} pts</span>
             </div>
@@ -788,7 +782,7 @@ function RankRow({ rank, stats, rankType }: { rank: number; stats: PlayerRankSta
   const value = primaryValue(stats, rankType);
   const secondaries = secondaryStats(stats, rankType);
   return (
-    <div className={cn('flex items-center gap-2.5 px-3 sm:px-4 py-2.5 hover:bg-surface-hover transition-colors', rank <= 3 && 'bg-team-blue/10/20')}>
+    <div className={cn('flex items-center gap-2.5 px-3 sm:px-4 py-2.5 hover:bg-surface-hover transition-colors', rank <= 3 && 'bg-team-blue/10')}>
       <span className={cn('w-6 text-center shrink-0 font-bold', rank <= 3 ? 'text-base' : 'text-xs text-ink-dim')}>
         {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
       </span>
