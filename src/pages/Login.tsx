@@ -53,7 +53,7 @@ export function Login() {
   };
 
   return (
-    <div className="pelada-page flex flex-col items-center justify-center px-4 py-10">
+    <div className="pelada-page w-full min-h-screen flex flex-col items-center justify-center px-4 py-10">
 
       {/* Logo */}
       <div className="relative z-10 flex flex-col items-center mb-8">

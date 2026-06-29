@@ -32,9 +32,9 @@ function layout(players: Player[], formation: string, half: 'top' | 'bottom') {
   lines.forEach((count, li) => {
     const t = n === 1 ? 0.5 : li / (n - 1); // 0 = defesa, 1 = ataque
     // defesa perto do próprio gol; ataque em direção ao meio.
-    // mantém as linhas afastadas das bordas e deixa folga no centro para os
-    // dois ataques não se sobreporem (gap de ~20% entre as metades).
-    const y = half === 'bottom' ? 84 - t * 24 : 16 + t * 24;
+    // linhas bem espalhadas pela metade (gap maior entre elas) e folga no
+    // centro (~16%) para os dois ataques não se sobreporem.
+    const y = half === 'bottom' ? 88 - t * 30 : 12 + t * 30;
     for (let i = 0; i < count && idx < sorted.length; i++) {
       const x = ((i + 1) * 100) / (count + 1);
       out.push({ player: sorted[idx++], x, y });
@@ -42,7 +42,7 @@ function layout(players: Player[], formation: string, half: 'top' | 'bottom') {
   });
   // sobras (formação com menos vagas que jogadores) perto do meio
   while (idx < sorted.length) {
-    out.push({ player: sorted[idx++], x: 50, y: half === 'bottom' ? 58 : 42 });
+    out.push({ player: sorted[idx++], x: 50, y: half === 'bottom' ? 56 : 44 });
   }
   return out;
 }
@@ -82,7 +82,7 @@ export function CombinedPitch({
 
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.7)] relative h-full flex flex-col">
-      <div className="relative w-full flex-1" style={{ minHeight: 300, background: 'var(--pitch-grad)' }}>
+      <div className="relative w-full flex-1 min-h-[460px] xl:min-h-[320px]" style={{ background: 'var(--pitch-grad)' }}>
         {/* faixas */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'repeating-linear-gradient(180deg, var(--pitch-stripe) 0 52px, rgba(255,255,255,0) 52px 104px)' }} />
         {/* marcações */}
