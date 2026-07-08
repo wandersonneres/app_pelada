@@ -297,10 +297,11 @@
   }
   .scroll-custom::-webkit-scrollbar-thumb:hover { background: var(--ink-dim); background-clip: padding-box; }
 
-  /* Tablet na horizontal (~1280x800): a aba Partidas cabe na tela sem rolar a
-     página — a altura do grid é definida via JS (innerHeight - top) e cada
-     coluna rola internamente. Só atua nessa faixa de resolução. */
-  @media (min-width: 1180px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape) {
+  /* Tablet na horizontal: a aba Partidas cabe na tela sem rolar a página —
+     a altura do grid é definida via JS (innerHeight - top) e cada coluna rola
+     internamente. Piso de 960px cobre tablets cujo viewport CSS é ~960x600
+     (painel 1920x1200 com dpr 2) além de iPads (1133/1180/1194) e 1280x800. */
+  @media (min-width: 960px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape) {
     /* remove o piso de min-height:100vh (que somado à navbar gera ~64px de rolagem) —
        tanto na .pelada-page quanto no wrapper .min-h-screen do AppRoutes (escopo via :has) */
     .partida-page,

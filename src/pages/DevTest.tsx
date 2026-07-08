@@ -4,10 +4,17 @@ import { useRef, useLayoutEffect, useState } from 'react';
 export function DevTest() {
   const gridRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<'partidas' | 'jogadores'>('partidas');
+  const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  useLayoutEffect(() => {
+    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useLayoutEffect(() => {
     const mql = window.matchMedia(
-      '(min-width: 1180px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape)'
+      '(min-width: 960px) and (max-width: 1366px) and (max-height: 834px) and (orientation: landscape)'
     );
     const recompute = () => {
       const el = gridRef.current;
@@ -45,6 +52,10 @@ export function DevTest() {
 
   return (
     <div className={`pelada-page${tab === 'partidas' ? ' partida-page' : ''}`}>
+      {/* badge de viewport para diagnosticar no aparelho real */}
+      <div className="fixed bottom-2 left-2 z-[90] px-2 py-1 rounded-md bg-black/70 text-white text-[11px] font-mono pointer-events-none">
+        {vp.w}×{vp.h}
+      </div>
       <div className="pelada-inner relative z-10 w-full px-4 sm:px-6 lg:px-10 py-5">
         {/* header (faithful-ish) */}
         <div className="pelada-header flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
@@ -60,7 +71,7 @@ export function DevTest() {
           {tab === 'partidas' ? (
             <div className="space-y-4">
               <div className="glass-card p-2.5">Barra de jogos · Jogo 1 · 0 × 0</div>
-              <div ref={gridRef} data-fit className="partida-fit grid grid-cols-1 min-[1180px]:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
+              <div ref={gridRef} data-fit className="partida-fit grid grid-cols-1 min-[960px]:landscape:grid-cols-[minmax(280px,340px)_minmax(0,1fr)_minmax(280px,340px)] xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
                 <div data-col className="flex flex-col gap-3">
                   <div className="glass-card p-4">Placar / Timer</div>
                   <div className="glass-card p-4">Força do time</div>

@@ -82,7 +82,7 @@ export function CombinedPitch({
 
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.7)] relative h-full flex flex-col">
-      <div className="relative w-full flex-1 min-h-[460px] md:min-h-[560px] min-[1180px]:min-h-[320px]" style={{ background: 'var(--pitch-grad)' }}>
+      <div className="relative w-full flex-1 min-h-[460px] md:min-h-[560px] min-[960px]:landscape:min-h-[320px] xl:min-h-[320px]" style={{ background: 'var(--pitch-grad)' }}>
         {/* faixas */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'repeating-linear-gradient(180deg, var(--pitch-stripe) 0 52px, rgba(255,255,255,0) 52px 104px)' }} />
         {/* marcações */}
