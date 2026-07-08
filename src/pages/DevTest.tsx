@@ -60,7 +60,7 @@ export function DevTest() {
           {tab === 'partidas' ? (
             <div className="space-y-4">
               <div className="glass-card p-2.5">Barra de jogos · Jogo 1 · 0 × 0</div>
-              <div ref={gridRef} data-fit className="partida-fit grid grid-cols-1 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
+              <div ref={gridRef} data-fit className="partida-fit grid grid-cols-1 min-[1180px]:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
                 <div data-col className="flex flex-col gap-3">
                   <div className="glass-card p-4">Placar / Timer</div>
                   <div className="glass-card p-4">Força do time</div>

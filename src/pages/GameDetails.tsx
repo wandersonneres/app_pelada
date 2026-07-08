@@ -2243,7 +2243,7 @@ export function GameDetails() {
                   </div>
 
                   {/* Grid principal */}
-                  <div ref={partidaGridRef} className="partida-fit grid grid-cols-1 xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
+                  <div ref={partidaGridRef} className="partida-fit grid grid-cols-1 min-[1180px]:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(300px,340px)] gap-4 items-stretch">
                   {/* COLUNA ESQUERDA */}
                   <div className="flex flex-col gap-3">
                     {/* Placar / Timer */}
@@ -2320,7 +2320,7 @@ export function GameDetails() {
 
                     {/* Botões de finalização — desktop (na coluna); no mobile aparecem no fim */}
                     {match.status === 'in_progress' && canManage && (
-                      <div className="hidden xl:flex flex-col gap-2 mt-auto pt-2">
+                      <div className="hidden min-[1180px]:flex flex-col gap-2 mt-auto pt-2">
                         <button className="py-2.5 rounded-xl bg-team-blue text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team0.id)}>{team0?.name} Venceu</button>
                         <button className="py-2.5 rounded-xl bg-team-orange text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team1.id)}>{team1?.name} Venceu</button>
                       </div>
@@ -2337,8 +2337,8 @@ export function GameDetails() {
                     onFormationChange={(teamId, f) => handleFormationChange(match.id, teamId, f)}
                   />
 
-                  {/* COLUNA DIREITA: escalações */}
-                  <div className="space-y-3">
+                  {/* COLUNA DIREITA: escalações — no tablet vertical (grid empilhado) ficam lado a lado */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 min-[1180px]:grid-cols-1 gap-3 items-start">
                     {rosterCard(team0, team0Players, true, t0Score, t0Age, t0Skill)}
                     {rosterCard(team1, team1Players, false, t1Score, t1Age, t1Skill)}
                   </div>
@@ -2346,7 +2346,7 @@ export function GameDetails() {
 
                   {/* Botões de finalização — só mobile/tablet (no desktop ficam na coluna esquerda) */}
                   {match.status === 'in_progress' && canManage && (
-                    <div className="flex flex-col sm:flex-row gap-2 xl:hidden">
+                    <div className="flex flex-col sm:flex-row gap-2 min-[1180px]:hidden">
                       <button className="flex-1 py-2.5 rounded-xl bg-team-blue text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team0.id)}>{team0?.name} Venceu</button>
                       <button className="flex-1 py-2.5 rounded-xl bg-team-orange text-white font-semibold hover:brightness-110 transition" onClick={() => finishMatch(match.id, team1.id)}>{team1?.name} Venceu</button>
                     </div>
