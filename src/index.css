@@ -312,6 +312,14 @@
       min-height: 0;
       max-height: 100%;
       overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--divider-strong) transparent;
+    }
+    .partida-fit > *::-webkit-scrollbar { width: 6px; }
+    .partida-fit > *::-webkit-scrollbar-track { background: transparent; }
+    .partida-fit > *::-webkit-scrollbar-thumb {
+      background: var(--divider-strong);
+      border-radius: 6px;
     }
 
     /* ===== Refinamentos p/ aproximar do protótipo "Partidas Tablet" =====

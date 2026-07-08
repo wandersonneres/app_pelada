@@ -31,10 +31,10 @@ function layout(players: Player[], formation: string, half: 'top' | 'bottom') {
   const n = lines.length || 1;
   lines.forEach((count, li) => {
     const t = n === 1 ? 0.5 : li / (n - 1); // 0 = defesa, 1 = ataque
-    // defesa perto do próprio gol; ataque em direção ao meio.
-    // linhas bem espalhadas pela metade (gap maior entre elas) e folga no
-    // centro (~16%) para os dois ataques não se sobreporem.
-    const y = half === 'bottom' ? 88 - t * 30 : 12 + t * 30;
+    // defesa perto do próprio gol; ataque em direção ao meio. Percentuais
+    // relativos à área útil (o container dos tokens já exclui as faixas
+    // reservadas aos rótulos de formação no topo/rodapé do campo).
+    const y = half === 'bottom' ? 88 - t * 28 : 12 + t * 28;
     for (let i = 0; i < count && idx < sorted.length; i++) {
       const x = ((i + 1) * 100) / (count + 1);
       out.push({ player: sorted[idx++], x, y });
@@ -93,44 +93,48 @@ export function CombinedPitch({
         <div className="absolute left-1/2 bottom-0 -translate-x-1/2" style={{ width: 190, height: 78, border: '2px solid var(--pitch-line-soft)', borderBottom: 'none', borderRadius: '10px 10px 0 0' }} />
 
         {/* tags de formação */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-team-orange-soft" style={{ background: 'var(--pitch-pill-bg)', backdropFilter: 'blur(4px)', border: '1px solid rgba(249,115,22,0.4)' }}>
+        <div className="absolute top-2 left-3 z-[3] flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-team-orange-soft" style={{ background: 'var(--pitch-pill-bg)', backdropFilter: 'blur(4px)', border: '1px solid rgba(249,115,22,0.4)' }}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#F97316' }} />
           <span className="font-heading font-bold text-xs tracking-wide uppercase">{(teamB.name || 'Laranja')} ·</span>
           {fmtFormSelect(teamB, formationsB, fB)}
         </div>
-        <div className="absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-team-blue-soft" style={{ background: 'var(--pitch-pill-bg)', backdropFilter: 'blur(4px)', border: '1px solid rgba(59,130,246,0.4)' }}>
+        <div className="absolute bottom-2 right-3 z-[3] flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-team-blue-soft" style={{ background: 'var(--pitch-pill-bg)', backdropFilter: 'blur(4px)', border: '1px solid rgba(59,130,246,0.4)' }}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#3B82F6' }} />
           <span className="font-heading font-bold text-xs tracking-wide uppercase">{(teamA.name || 'Azul')} ·</span>
           {fmtFormSelect(teamA, formationsA, fA)}
         </div>
 
-        {/* jogadores */}
-        {tokens.map(t => {
-          const g = goalsOf(t.player.id);
-          return (
-            <div
-              key={t.player.id}
-              className="absolute flex flex-col items-center gap-1"
-              style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%,-50%)', width: 60, zIndex: 2 }}
-            >
+        {/* jogadores — área útil exclui 36px no topo/rodapé (faixa dos rótulos
+            de formação), então os tokens nunca colidem com eles, em qualquer
+            altura de campo */}
+        <div className="absolute left-0 right-0 top-9 bottom-9">
+          {tokens.map(t => {
+            const g = goalsOf(t.player.id);
+            return (
               <div
-                className="relative rounded-full"
-                style={{
-                  width: 28, height: 28, background: t.grad,
-                  border: '2px solid rgba(255,255,255,0.9)',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.4)',
-                }}
+                key={t.player.id}
+                className="absolute flex flex-col items-center gap-0.5"
+                style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%,-50%)', width: 60, zIndex: 2 }}
               >
-                {g > 0 && (
-                  <div className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full flex items-center justify-center font-heading font-extrabold" style={{ fontSize: 9, color: '#0b3d2e', background: 'radial-gradient(circle at 35% 30%,#fff,#cbd2dd)', border: '1.5px solid #fff' }}>{g}</div>
-                )}
+                <div
+                  className="relative rounded-full"
+                  style={{
+                    width: 28, height: 28, background: t.grad,
+                    border: '2px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.4)',
+                  }}
+                >
+                  {g > 0 && (
+                    <div className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full flex items-center justify-center font-heading font-extrabold" style={{ fontSize: 9, color: '#0b3d2e', background: 'radial-gradient(circle at 35% 30%,#fff,#cbd2dd)', border: '1.5px solid #fff' }}>{g}</div>
+                  )}
+                </div>
+                <div className="text-[10px] font-semibold leading-tight whitespace-nowrap max-w-[60px] overflow-hidden text-ellipsis" style={{ color: 'var(--pitch-label)', textShadow: 'var(--pitch-label-shadow)' }}>
+                  {t.player.name.split(' ')[0]}
+                </div>
               </div>
-              <div className="text-[10px] font-semibold whitespace-nowrap max-w-[60px] overflow-hidden text-ellipsis" style={{ color: 'var(--pitch-label)', textShadow: 'var(--pitch-label-shadow)' }}>
-                {t.player.name.split(' ')[0]}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
