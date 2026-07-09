@@ -1846,55 +1846,58 @@ export function GameDetails() {
       {toastMsg && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-success/100' : 'bg-danger/100'}`}>{toastMsg.message}</div>
       )}
-      <div className="pelada-header flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
+      <div className="pelada-header flex flex-wrap items-center gap-x-3 gap-y-2.5 mb-5">
         <button
           onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-surface-hover transition-colors shrink-0" aria-label="Voltar">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="min-w-0">
-          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-wide text-heading leading-none">Detalhes da Pelada</h1>
-          <p className="text-xs text-ink-muted mt-1">{game && formatDate(game.date)}</p>
+        <div className="min-w-0 flex-1 sm:flex-none">
+          <h1 className="font-heading text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-wide text-heading leading-none truncate">Detalhes da Pelada</h1>
+          <p className="text-xs text-ink-muted mt-0.5">{game && formatDate(game.date)}</p>
         </div>
-        {/* Info em chips (compacto) */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="glass-pill"><MapPin className="w-3.5 h-3.5 text-success" />{game?.location}</span>
-          <span className="glass-pill"><Users className="w-3.5 h-3.5 text-team-blue-soft" />{game?.players.length}</span>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${game?.status === 'waiting' ? 'bg-warning/15 text-warning-soft border border-warning/30' : game?.status === 'in_progress' ? 'bg-team-blue/15 text-team-blue-soft border border-team-blue/30' : 'bg-success/15 text-success-soft border border-success/30'}`}>{game && getStatusText(game.status)}</span>
-        </div>
-        <div className="flex-1 hidden md:block" />
-        <div className="flex gap-2 w-full md:w-auto md:justify-end">
+        {/* Ações: só ícone no celular; ícone + texto a partir de sm */}
+        <div className="flex gap-1.5 shrink-0 order-2 sm:order-last sm:ml-auto">
           {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
             <>
               <button
                 onClick={handleFinishGame}
-                className={`flex-1 md:flex-none inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`inline-flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-lg text-sm font-medium transition-colors ${
                   game?.status === 'finished'
                     ? 'bg-warning/15 text-warning-soft hover:bg-warning/25'
                     : 'bg-success/15 text-success-soft hover:bg-success/25'
                 }`}
                 aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
+                title={game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
               >
-                <Check className="w-4 h-4 mr-1.5 shrink-0" />
-                {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
+                <Check className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                <span className="hidden sm:inline">{game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}</span>
               </button>
               <button
                 onClick={() => navigate(`/game/${game?.id}/edit`)}
-                className="flex-1 md:flex-none inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium bg-team-blue/15 text-team-blue-soft hover:bg-team-blue/25 transition-colors"
+                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-lg text-sm font-medium bg-team-blue/15 text-team-blue-soft hover:bg-team-blue/25 transition-colors"
                 aria-label="Editar pelada"
+                title="Editar"
               >
-                <Edit className="w-4 h-4 mr-1.5 shrink-0" />
-                Editar
+                <Edit className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                <span className="hidden sm:inline">Editar</span>
               </button>
               <button
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="flex-1 md:flex-none inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium bg-danger/15 text-danger-soft hover:bg-danger/25 transition-colors"
+                className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-lg text-sm font-medium bg-danger/15 text-danger-soft hover:bg-danger/25 transition-colors"
                 aria-label="Excluir pelada"
+                title="Excluir"
               >
-                <Trash2 className="w-4 h-4 mr-1.5 shrink-0" />
-                Excluir
+                <Trash2 className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                <span className="hidden sm:inline">Excluir</span>
               </button>
             </>
           )}
+        </div>
+        {/* Chips de contexto: linha própria no celular; em linha no tablet/desktop */}
+        <div className="flex flex-wrap items-center gap-1.5 order-3 w-full sm:order-none sm:w-auto sm:ml-1">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-divider text-xs font-medium text-ink-soft"><MapPin className="w-3.5 h-3.5 text-success" />{game?.location}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-divider text-xs font-medium text-ink-soft"><Users className="w-3.5 h-3.5 text-team-blue-soft" />{game?.players.length}</span>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${game?.status === 'waiting' ? 'bg-warning/15 text-warning-soft border border-warning/30' : game?.status === 'in_progress' ? 'bg-team-blue/15 text-team-blue-soft border border-team-blue/30' : 'bg-success/15 text-success-soft border border-success/30'}`}>{game && getStatusText(game.status)}</span>
         </div>
       </div>
 

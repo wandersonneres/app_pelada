@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,6 +24,25 @@ export function Navbar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAvatarOpen, setIsAvatarOpen] = useState(false);
+
+  // Auto-hide: esconde ao rolar para baixo, reaparece ao rolar para cima.
+  const [isNavHidden, setIsNavHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 64) {
+        setIsNavHidden(false); // perto do topo, sempre visível
+      } else if (y > lastScrollY.current + 4) {
+        setIsNavHidden(true); // rolando para baixo
+      } else if (y < lastScrollY.current - 4) {
+        setIsNavHidden(false); // rolando para cima
+      }
+      lastScrollY.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -51,7 +70,7 @@ export function Navbar() {
 
   return (
     <>
-    <nav className="sticky top-0 z-50 bg-[var(--navbar-bg)] backdrop-blur border-b border-divider shadow-[0_4px_20px_-8px_rgba(0,0,0,0.35)]">
+    <nav className={`sticky top-0 z-50 bg-[var(--navbar-bg)] backdrop-blur border-b border-divider shadow-[0_4px_20px_-8px_rgba(0,0,0,0.35)] transition-transform duration-300 ${isNavHidden && !isMenuOpen && !isAvatarOpen ? '-translate-y-full' : 'translate-y-0'}`}>
       <div className="w-full px-4 sm:px-6 lg:px-10">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
