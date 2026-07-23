@@ -6,15 +6,17 @@ import { Game, convertTimestampToDate } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../contexts/AuthContext';
+import { PageLoader } from '../components/Loader';
 import { motion } from 'framer-motion';
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Plus, 
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Plus,
   Eye,
-  AlertCircle,
-  Circle
+  CalendarPlus,
+  Trophy,
+  ChevronRight,
 } from 'lucide-react';
 
 export function Home() {
@@ -55,13 +57,26 @@ export function Home() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'waiting':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-state-warningBg text-state-warning';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-wine-tint text-wine';
       case 'finished':
-        return 'bg-green-100 text-green-800';
+        return 'bg-state-success/10 text-state-success';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-line-soft text-ink-medium';
+    }
+  };
+
+  const getStatusDot = (status: string) => {
+    switch (status) {
+      case 'waiting':
+        return 'bg-state-warning';
+      case 'in_progress':
+        return 'bg-wine';
+      case 'finished':
+        return 'bg-state-success';
+      default:
+        return 'bg-ink-soft';
     }
   };
 
@@ -81,164 +96,181 @@ export function Home() {
   const activeGames = games.filter(game => game.status !== 'finished');
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <PageLoader full={false} />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Peladas</h1>
-          <p className="text-sm text-gray-500">Cadastre e gerencie suas peladas</p>
+          <h1 className="font-heading font-extrabold text-[28px] md:text-[34px] leading-none text-ink tracking-tight">
+            Peladas
+          </h1>
+          <p className="text-[13.5px] text-ink-soft mt-2">Cadastre e gerencie suas peladas</p>
         </div>
-        <div className="flex gap-4 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2.5 w-full sm:w-auto">
           {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
             <button
               onClick={() => navigate('/new-game')}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-wine text-white text-[13.5px] font-semibold rounded-xl hover:bg-wine-dark transition-colors flex-1 sm:flex-none"
             >
-              <Calendar className="w-5 h-5" />
+              <CalendarPlus className="w-[18px] h-[18px]" strokeWidth={2.2} />
               Nova Pelada
             </button>
           )}
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/players')}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium text-[13.5px] font-semibold rounded-xl hover:bg-paper transition-colors flex-1 sm:flex-none"
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-[18px] h-[18px]" strokeWidth={2.2} />
               Jogadores
             </button>
           )}
         </div>
       </div>
 
+      {/* Peladas Ativas */}
       {activeGames.length > 0 ? (
-        <>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Peladas Ativas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <section className="mb-10">
+          <div className="flex items-center gap-2.5 mb-4">
+            <h2 className="font-heading font-bold text-[17px] text-ink">Peladas ativas</h2>
+            <span className="text-[12px] font-bold text-wine bg-wine-tint px-2 py-0.5 rounded-full">
+              {activeGames.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {activeGames.map((game, index) => (
               <motion.div
-                key={game.id} 
+                key={game.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 cursor-pointer"
+                transition={{ delay: index * 0.06 }}
+                className="group bg-surface border border-line rounded-2xl p-5 cursor-pointer hover:border-[#d8d2c2] hover:shadow-[0_6px_24px_-12px_rgba(27,26,22,0.25)] transition-all"
                 onClick={() => navigate(`/game/${game.id}`)}
               >
                 <div className="flex justify-between items-center mb-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(game.status)}`}>
-                      {getStatusText(game.status)}
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${getStatusColor(game.status)}`}>
+                    <span className={`w-[6px] h-[6px] rounded-full ${getStatusDot(game.status)}`} />
+                    {getStatusText(game.status)}
                   </span>
-                  <span className="text-sm text-gray-500">
-                      {game.players?.length || 0} / {game.maxPlayers} jogadores
+                  <span className="inline-flex items-center gap-1 text-[12px] font-medium text-ink-soft">
+                    <Users className="w-3.5 h-3.5" strokeWidth={2.2} />
+                    {game.players?.length || 0} / {game.maxPlayers}
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-500" />
-                    <span className="font-medium">{formatDate(convertTimestampToDate(game.date))}</span>
+                <div className="flex items-start gap-2.5 mb-3">
+                  <div className="w-9 h-9 flex-none rounded-xl bg-wine-tint text-wine flex items-center justify-center">
+                    <Calendar className="w-[18px] h-[18px]" strokeWidth={2.2} />
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-green-500" />
-                    <span className="text-gray-600">{game.location}</span>
+                  <div className="min-w-0">
+                    <div className="font-heading font-bold text-[16px] text-ink capitalize leading-tight">
+                      {formatDate(convertTimestampToDate(game.date))}
+                    </div>
+                    <div className="flex items-center gap-1 text-[12.5px] text-ink-medium mt-0.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 flex-none text-ink-icon" strokeWidth={2.2} />
+                      <span className="truncate">{game.location}</span>
+                    </div>
                   </div>
-
-                    {game.observations && (
-                    <p className="text-sm text-gray-500 line-clamp-2">
-                        {game.observations}
-                    </p>
-                    )}
                 </div>
 
-                <div className="mt-4 pt-4 border-t">
+                {game.observations && (
+                  <p className="text-[12.5px] text-ink-soft line-clamp-2 mb-1">
+                    {game.observations}
+                  </p>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-line-soft">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/game/${game.id}`);
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium text-[13px] font-semibold rounded-xl hover:bg-paper group-hover:border-wine/30 transition-colors"
                   >
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-4 h-4" strokeWidth={2.2} />
                     Ver Detalhes
                   </button>
                 </div>
               </motion.div>
             ))}
           </div>
-        </>
-      ) : ( 
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma pelada ativa</h3>
-          <p className="text-gray-500 mb-6">Crie uma nova pelada para começar</p>
+        </section>
+      ) : (
+        <div className="bg-surface border border-line rounded-2xl px-5 py-4 mb-8 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-wine-tint text-wine flex items-center justify-center flex-none">
+            <Trophy className="w-5 h-5" strokeWidth={2} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-heading font-bold text-[15px] text-ink">Nenhuma pelada ativa</div>
+            <div className="text-[13px] text-ink-soft">Crie uma nova pelada para começar a organizar o jogo.</div>
+          </div>
           {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-          <button
-            onClick={() => navigate('/new-game')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-              Criar Primeira Pelada
+            <button
+              onClick={() => navigate('/new-game')}
+              className="flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-wine text-white text-[13.5px] font-semibold rounded-xl hover:bg-wine-dark transition-colors"
+            >
+              <Plus className="w-[18px] h-[18px]" strokeWidth={2.2} />
+              Criar pelada
             </button>
           )}
         </div>
       )}
 
+      {/* Todas as Peladas */}
       {games.length > 0 && (
-        <>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Todas as Peladas</h2>
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="max-h-[400px] overflow-y-auto overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
+        <section>
+          <h2 className="font-heading font-bold text-[17px] text-ink mb-4">Todas as peladas</h2>
+          <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+            <div className="max-h-[420px] overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse">
+                <thead className="sticky top-0 z-10 bg-paper">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Local</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jogadores</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partidas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Data</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Local</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Status</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Jogadores</th>
+                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Partidas</th>
+                    <th className="px-5 py-3 text-right text-[11px] font-bold text-ink-soft uppercase tracking-wide">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-line-soft">
                   {games.map((game) => (
                     <tr
                       key={game.id}
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-paper cursor-pointer transition-colors"
                       onClick={() => navigate(`/game/${game.id}`)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-[13px] font-medium text-ink capitalize">
                         {formatDate(convertTimestampToDate(game.date))}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-[13px] text-ink-medium">
                         {game.location}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(game.status)}`}>
-                    {getStatusText(game.status)}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${getStatusColor(game.status)}`}>
+                          <span className={`w-[5px] h-[5px] rounded-full ${getStatusDot(game.status)}`} />
+                          {getStatusText(game.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-5 py-3.5 whitespace-nowrap font-stat text-[13px] text-ink-medium">
                         {game.players?.length || 0} / {game.maxPlayers}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-5 py-3.5 whitespace-nowrap font-stat text-[13px] text-ink-medium">
                         {game.matches?.length || 0}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-right">
                         <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/game/${game.id}`);
-                    }}
-                          className="text-blue-500 hover:text-blue-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/game/${game.id}`);
+                          }}
+                          className="inline-flex items-center gap-1 text-wine hover:text-wine-dark text-[12.5px] font-semibold transition-colors"
                         >
-                          <Eye className="w-5 h-5" />
+                          Ver
+                          <ChevronRight className="w-4 h-4" strokeWidth={2.4} />
                         </button>
                       </td>
                     </tr>
@@ -247,8 +279,8 @@ export function Home() {
               </table>
             </div>
           </div>
-        </>
+        </section>
       )}
     </div>
   );
-} 
+}

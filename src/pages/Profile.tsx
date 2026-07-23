@@ -77,182 +77,199 @@ export function Profile() {
     }
   };
 
-  return (
-    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <FaChevronLeft className="w-5 h-5 text-gray-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-center flex-1">Meu Perfil</h1>
-        <div className="w-8" />
-      </div>
+  const positionMeta: Record<Position, { label: string; color: string }> = {
+    defesa: { label: 'Defesa', color: '#d99a1a' },
+    meio: { label: 'Meio Campo', color: '#0d7a72' },
+    ataque: { label: 'Ataque', color: '#c2560f' },
+  };
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Avatar */}
-        {/* <div className="flex flex-col items-center space-y-4">
-          <div className="relative group">
-            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-              {photoURL ? (
-                <img
-                  src={photoURL}
-                  alt={username}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <FaUser className="w-12 h-12 text-gray-400" />
-              )}
-            </div>
+  const avatarInitial = (playerInfo.name || username || 'P').trim().charAt(0).toUpperCase();
+
+  return (
+    <div className="w-full max-w-lg px-4 py-8 sm:py-12">
+      <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden">
+        {/* Cabeçalho com avatar */}
+        <div className="relative px-6 pt-6 pb-8 sm:px-8">
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => {implementar upload de foto}}
+              onClick={() => navigate(-1)}
+              className="p-2 -ml-2 rounded-full hover:bg-line-soft transition-colors"
+              aria-label="Voltar"
             >
-              <FaCamera className="w-6 h-6 text-white" />
+              <FaChevronLeft className="w-5 h-5 text-ink-icon" />
             </button>
+            <h1 className="font-heading font-bold text-lg text-ink-medium tracking-wide">Meu Perfil</h1>
+            <div className="w-8" />
           </div>
-          <p className="text-sm text-gray-500">Clique para alterar a foto</p>
-        </div> */}
 
-        {/* Informações Básicas */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaUser className="w-4 h-4 text-blue-600" />
-            Informações Básicas
-          </h2>
+          <div className="mt-5 flex flex-col items-center text-center">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-wine to-[#9e2a3d] text-white flex items-center justify-center overflow-hidden shadow-md ring-4 ring-surface">
+              {photoURL ? (
+                <img src={photoURL} alt={username} className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-heading font-extrabold text-4xl">{avatarInitial}</span>
+              )}
+            </div>
+            <h2 className="mt-4 font-heading font-extrabold text-2xl text-ink leading-tight">
+              {playerInfo.name || username || 'Jogador'}
+            </h2>
+            {email && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-soft">
+                <FaEnvelope className="w-3.5 h-3.5" />
+                {email}
+              </p>
+            )}
+            <span
+              className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.05em] px-3 py-1 rounded-md"
+              style={{ color: '#5c5647', background: '#ece5d6' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: positionMeta[playerInfo.position].color }} />
+              {positionMeta[playerInfo.position].label}
+            </span>
+          </div>
+        </div>
 
-          <div className="space-y-2">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Nome de Usuário
-            </label>
-            <div className="relative">
+        <div className="border-t border-line-soft" />
+
+        <form onSubmit={handleSubmit} className="px-6 py-6 sm:px-8 space-y-7">
+          {/* Informações Básicas */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-ink-soft flex items-center gap-2">
+              <FaUser className="w-3.5 h-3.5 text-wine" />
+              Informações Básicas
+            </h3>
+
+            <div className="space-y-1.5">
+              <label htmlFor="username" className="block text-sm font-medium text-ink-medium">
+                Nome de Usuário
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Digite o nome de usuário"
+                  className="w-full pl-10 pr-4 py-2.5 border border-line rounded-lg bg-surface text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-all"
+                />
+                <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+              </div>
+              {errors.username && <p className="text-state-warning text-xs mt-1">{errors.username}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-ink-medium">
+                Email
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Digite o email"
+                  className="w-full pl-10 pr-4 py-2.5 border border-line rounded-lg bg-surface text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-all"
+                />
+                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+              </div>
+              {errors.email && <p className="text-state-warning text-xs mt-1">{errors.email}</p>}
+            </div>
+          </div>
+
+          {/* Informações do Jogador */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-ink-soft flex items-center gap-2">
+              <FaFutbol className="w-3.5 h-3.5 text-wine" />
+              Informações do Jogador
+            </h3>
+
+            <div className="space-y-1.5">
+              <label htmlFor="playerInfo.name" className="block text-sm font-medium text-ink-medium">
+                Nome Completo
+              </label>
               <input
                 type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Digite o nome de usuário"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                id="playerInfo.name"
+                value={playerInfo.name}
+                onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Digite o nome completo"
+                className="w-full px-4 py-2.5 border border-line rounded-lg bg-surface text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-all"
               />
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              {errors['playerInfo.name'] && <p className="text-state-warning text-xs mt-1">{errors['playerInfo.name']}</p>}
             </div>
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
-          </div>
 
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite o email"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="playerInfo.position" className="block text-sm font-medium text-ink-medium">
+                  Posição
+                </label>
+                <select
+                  id="playerInfo.position"
+                  value={playerInfo.position}
+                  onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
+                  className="w-full px-4 py-2.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-all"
+                >
+                  <option value="defesa">Defesa</option>
+                  <option value="meio">Meio Campo</option>
+                  <option value="ataque">Ataque</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-ink-medium">
+                  Faixa Etária
+                </label>
+                <select
+                  id="playerInfo.ageGroup"
+                  value={playerInfo.ageGroup}
+                  onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
+                  className="w-full px-4 py-2.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-all"
+                >
+                  <option value="15-20">15-20 anos</option>
+                  <option value="21-30">21-30 anos</option>
+                  <option value="31-40">31-40 anos</option>
+                  <option value="41-50">41-50 anos</option>
+                  <option value="+50">+50 anos</option>
+                </select>
+              </div>
             </div>
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-        </div>
 
-        {/* Informações do Jogador */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaFutbol className="w-4 h-4 text-blue-600" />
-            Informações do Jogador
-          </h2>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.name" className="block text-sm font-medium text-gray-700">
-              Nome Completo
-            </label>
-            <input
-              type="text"
-              id="playerInfo.name"
-              value={playerInfo.name}
-              onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Digite o nome completo"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            />
-            {errors['playerInfo.name'] && <p className="text-red-500 text-sm mt-1">{errors['playerInfo.name']}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.position" className="block text-sm font-medium text-gray-700">
-                Posição
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-ink-medium flex items-center gap-2">
+                <FaStar className="w-4 h-4 text-position-def" />
+                Nível de Habilidade
               </label>
-              <select
-                id="playerInfo.position"
-                value={playerInfo.position}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="defesa">Defesa</option>
-                <option value="meio">Meio Campo</option>
-                <option value="ataque">Ataque</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-gray-700">
-                Faixa Etária
-              </label>
-              <select
-                id="playerInfo.ageGroup"
-                value={playerInfo.ageGroup}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
-              </select>
+              <div className="py-3 bg-paper border border-line rounded-lg">
+                <StarRating
+                  value={playerInfo.skillLevel}
+                  onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
+                  size="lg"
+                  showLabel
+                />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-              <FaStar className="w-4 h-4 text-yellow-500" />
-              Nível de Habilidade
-            </label>
-            <div className="p-2 bg-gray-50 rounded-lg">
-              <StarRating
-                value={playerInfo.skillLevel}
-                onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
-                size="lg"
-                showLabel
-              />
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <FaUserEdit className="w-4 h-4" />
-              Salvar Alterações
-            </>
-          )}
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="w-full bg-wine hover:bg-wine-dark text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <FaUserEdit className="w-4 h-4" />
+                Salvar Alterações
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
-} 
+}

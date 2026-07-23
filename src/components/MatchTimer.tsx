@@ -126,12 +126,12 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
   const allPlayers = [...teamA.players, ...teamB.players, ...(roster ?? [])];
 
   return (
-    <div className="bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl shadow-lg mb-4 overflow-hidden border border-blue-200">
+    <div className="bg-gradient-to-br from-ink to-black rounded-xl shadow-lg mb-4 overflow-hidden border border-black/20">
       <div className="flex w-full justify-between items-center px-4 py-6 gap-2">
         {/* Time A */}
         <div className="flex flex-col items-center w-1/3">
-          <span className="font-bold text-white text-lg mb-1">{teamA.name}</span>
-          <span className="text-5xl font-extrabold text-white drop-shadow mb-2">{scoreA}</span>
+          <span className="font-heading font-bold text-team-blue-tint text-lg mb-1">{teamA.name}</span>
+          <span className="font-stat text-5xl font-extrabold text-white drop-shadow mb-2">{scoreA}</span>
           <button
             className={`flex items-center gap-1 px-3 py-1 rounded bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition ${!running ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => handleGoalScored(teamA)}
@@ -153,7 +153,7 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
             <option value={20}>20 min</option>
             <option value={30}>30 min</option>
           </select>
-          <span className="text-4xl font-mono font-bold text-white mt-4 mb-2">{formatTime(remainingSeconds)}</span>
+          <span className="font-stat text-4xl font-bold text-white mt-4 mb-2">{formatTime(remainingSeconds)}</span>
           <div className="flex gap-2 mt-1">
             <button
               className={`p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition ${running ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}`}
@@ -176,8 +176,8 @@ export const MatchTimer = ({ teamA, teamB, isFirstMatch, onGoalScored, onRemoveG
         </div>
         {/* Time B */}
         <div className="flex flex-col items-center w-1/3">
-          <span className="font-bold text-white text-lg mb-1">{teamB.name}</span>
-          <span className="text-5xl font-extrabold text-white drop-shadow mb-2">{scoreB}</span>
+          <span className="font-heading font-bold text-team-orange-tint text-lg mb-1">{teamB.name}</span>
+          <span className="font-stat text-5xl font-extrabold text-white drop-shadow mb-2">{scoreB}</span>
           <button
             className={`flex items-center gap-1 px-3 py-1 rounded bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition ${!running ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => handleGoalScored(teamB)}

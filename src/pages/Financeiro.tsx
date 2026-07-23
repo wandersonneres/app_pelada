@@ -4,8 +4,9 @@ import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, ChevronLeft, Copy, Check, ChevronDown } from 'lucide-react';
+import { Calendar, Copy, Check, ChevronDown, Wallet, Users, Receipt, Scale, TrendingUp, X, History, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Spinner } from '../components/Loader';
 
 interface Payment {
   userId: string;
@@ -51,6 +52,7 @@ export function Financeiro() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [paymentValue, setPaymentValue] = useState(130);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedMensalista, setSelectedMensalista] = useState<string | null>(null);
@@ -134,7 +136,7 @@ export function Financeiro() {
     const paymentRef = doc(db, 'payments', paymentId);
     const paymentDoc = await getDoc(paymentRef);
     const alreadyPaid = paymentDoc.exists() && paymentDoc.data().status === 'paid';
-    
+
     if (alreadyPaid) {
       // Se já está pago, apenas desmarca
       await setDoc(paymentRef, {
@@ -169,11 +171,11 @@ export function Financeiro() {
 
   const confirmPayment = async () => {
     if (!selectedMensalista) return;
-    
+
     const paymentId = `${selectedMensalista}_${selectedMonth}_${selectedYear}`;
     const paymentRef = doc(db, 'payments', paymentId);
     const playerName = mensalistas.find(m => m.id === selectedMensalista)?.playerInfo?.name || 'Usuário Removido';
-    
+
     await setDoc(paymentRef, {
       userId: selectedMensalista,
       playerName,
@@ -210,7 +212,7 @@ export function Financeiro() {
 
   const confirmDiaristaPayment = async () => {
     if (!selectedDiarista || !user) return;
-    
+
     try {
       const paymentRef = doc(collection(db, 'diaristaPayments'));
       const paymentData: DiaristaPayment = {
@@ -395,417 +397,293 @@ export function Financeiro() {
   }
 
   if (!user || user.role !== 'admin') {
-    return <div className="p-8 text-center text-red-500 font-bold">Acesso restrito ao administrador.</div>;
+    return <div className="min-h-screen bg-paper p-8 text-center text-state-live font-bold">Acesso restrito ao administrador.</div>;
   }
 
+  const arrecadadoMes = Object.values(payments)
+    .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
+    .reduce((acc, p) => acc + p.value, 0);
+  const arrecadadoDiaristas = diaristaPayments
+    .filter(p => p.status === 'paid')
+    .reduce((acc, p) => acc + p.value, 0);
+  const totalDiaristasPagos = diaristaPayments.filter(p => p.status === 'paid').length;
+  const saldoMes = arrecadadoMes - custoPelada;
+
+  const visibleMensalistas = mensalistas
+    .filter(m => {
+      const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
+      const p = payments[paymentId];
+      if (statusFilter === 'all') return true;
+      if (statusFilter === 'paid') return p && p.status === 'paid';
+      if (statusFilter === 'pending') return !p || p.status !== 'paid';
+      return true;
+    })
+    .filter(m => (m.playerInfo?.name || '').toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''));
+
+  const statusTabs: { key: 'all' | 'paid' | 'pending'; label: string }[] = [
+    { key: 'all', label: 'Todos' },
+    { key: 'paid', label: 'Pagos' },
+    { key: 'pending', label: 'Pendentes' },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto p-2 sm:p-3 lg:p-4">
-      <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 lg:mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">Financeiro</h1>
-      </div>
+    <div className="min-h-screen bg-paper">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-5">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+        {/* Header */}
+        <div className="order-1 flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-wine to-[#9e2a3d] text-white flex items-center justify-center shadow-sm flex-none">
+            <Wallet className="w-5 h-5" strokeWidth={2.2} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-heading font-extrabold text-2xl text-ink leading-none">Financeiro</h1>
+            <p className="text-[13px] text-ink-soft mt-1 first-letter:uppercase">
+              {format(new Date(selectedYear, selectedMonth - 1), "MMMM 'de' yyyy", { locale: ptBR })}
+            </p>
+          </div>
+        </div>
+
+        {/* Cards de resumo */}
+        <div className="order-4 lg:order-2 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wide">
+              <TrendingUp className="w-3.5 h-3.5" /> Arrecadado
+            </div>
+            <p className="font-heading font-extrabold text-[22px] sm:text-[28px] lg:text-[30px] leading-none mt-2 text-state-success">
+              R$ {arrecadadoMes.toFixed(2)}
+            </p>
+            <p className="text-[11px] text-ink-soft mt-1.5">Mensalidades pagas</p>
+          </div>
+
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wide">
+              <Receipt className="w-3.5 h-3.5" /> Custo da pelada
+            </div>
+            <p className="font-heading font-extrabold text-[22px] sm:text-[28px] lg:text-[30px] leading-none mt-2 text-ink">
+              R$ {custoPelada.toFixed(2)}
+            </p>
+            <p className="text-[11px] text-ink-soft mt-1.5">{descricaoCusto}</p>
+          </div>
+
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wide">
+              <Users className="w-3.5 h-3.5" /> Diaristas
+            </div>
+            <p className="font-heading font-extrabold text-[22px] sm:text-[28px] lg:text-[30px] leading-none mt-2 text-wine">
+              R$ {arrecadadoDiaristas.toFixed(2)}
+            </p>
+            <p className="text-[11px] text-ink-soft mt-1.5 font-stat">{totalDiaristasPagos} pagamentos</p>
+          </div>
+
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wide">
+              <Scale className="w-3.5 h-3.5" /> Saldo do mês
+            </div>
+            <p className={`font-heading font-extrabold text-[22px] sm:text-[28px] lg:text-[30px] leading-none mt-2 ${saldoMes < 0 ? 'text-state-live' : 'text-state-success'}`}>
+              R$ {saldoMes.toFixed(2)}
+            </p>
+            <p className="text-[11px] text-ink-soft mt-1.5">Arrecadado − custo</p>
+          </div>
+        </div>
+
         {/* Filtros */}
-        <div className="lg:col-span-3 bg-white rounded-xl shadow p-3 sm:p-4">
-          {/* Mobile (default) */}
-          <div className="sm:hidden">
-            <div className="space-y-4">
-              {/* Mês e Ano em linha */}
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    Mês
-                  </label>
-                  <div className="relative">
-                    <select 
-                      value={selectedMonth} 
-                      onChange={e => setSelectedMonth(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  </div>
+        <div className="order-2 lg:order-3 bg-surface border border-line rounded-2xl p-4 sm:p-5">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 sm:items-end">
+              {/* Mês */}
+              <div className="sm:w-44">
+                <label className="text-xs font-medium text-ink-medium mb-1.5 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-wine" /> Mês
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(Number(e.target.value))}
+                    className="w-full bg-paper border border-line rounded-xl px-3 py-2.5 text-sm text-ink capitalize focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors appearance-none cursor-pointer"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i+1} value={i+1} className="py-1 capitalize">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-ink-icon absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
+              </div>
 
-                <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <select 
-                      value={selectedYear} 
-                      onChange={e => setSelectedYear(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[2025,2026,2027,2028,2029,2030].map(y => (
-                        <option key={y} value={y} className="py-1">{y}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  </div>
+              {/* Ano */}
+              <div className="sm:w-28">
+                <label className="text-xs font-medium text-ink-medium mb-1.5 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-wine" /> Ano
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedYear}
+                    onChange={e => setSelectedYear(Number(e.target.value))}
+                    className="w-full bg-paper border border-line rounded-xl px-3 py-2.5 text-sm text-ink font-stat focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors appearance-none cursor-pointer"
+                  >
+                    {[2025,2026,2027,2028,2029,2030].map(y => (
+                      <option key={y} value={y} className="py-1">{y}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-ink-icon absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               {/* Status */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  Filtrar por Status
+                <label className="text-xs font-medium text-ink-medium mb-1.5 flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-wine" /> Status
                 </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setStatusFilter('all')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                      ${statusFilter === 'all' 
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                        : 'bg-gray-50 text-gray-600 border border-gray-200'
-                      }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('paid')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                      ${statusFilter === 'paid' 
-                        ? 'bg-green-100 text-green-700 border border-green-200' 
-                        : 'bg-gray-50 text-gray-600 border border-gray-200'
-                      }`}
-                  >
-                    Pagos
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('pending')}
-                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                      ${statusFilter === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
-                        : 'bg-gray-50 text-gray-600 border border-gray-200'
-                      }`}
-                  >
-                    Pendentes
-                  </button>
+                <div className="inline-flex bg-line-soft rounded-xl p-1 gap-1">
+                  {statusTabs.map(tab => {
+                    const active = statusFilter === tab.key;
+                    const activeColor =
+                      tab.key === 'paid' ? 'text-state-success'
+                      : tab.key === 'pending' ? 'text-state-warning'
+                      : 'text-wine';
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setStatusFilter(tab.key)}
+                        className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-colors ${
+                          active ? `bg-surface shadow-sm ${activeColor}` : 'text-ink-soft hover:text-ink-medium'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-
-              {/* Botão Copiar */}
-              <div>
-                <button
-                  onClick={copyToClipboard}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  {copySuccess ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Copiado!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span>Copiar Lista WhatsApp</span>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
-          </div>
 
-          {/* Tablet (sm) */}
-          <div className="hidden sm:block md:hidden">
-            <div className="space-y-4">
-              {/* Primeira linha: Mês e Ano */}
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
-                    Mês
-                  </label>
-                  <div className="relative">
-                    <select 
-                      value={selectedMonth} 
-                      onChange={e => setSelectedMonth(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <select 
-                      value={selectedYear} 
-                      onChange={e => setSelectedYear(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[2025,2026,2027,2028,2029,2030].map(y => (
-                        <option key={y} value={y} className="py-1">{y}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Segunda linha: Status e Botão Copiar */}
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Check className="w-4 h-4 text-blue-600" />
-                    Status
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setStatusFilter('all')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'all' 
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                          : 'bg-gray-50 text-gray-600 border border-gray-200'
-                        }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('paid')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'paid' 
-                          ? 'bg-green-100 text-green-700 border border-green-200' 
-                          : 'bg-gray-50 text-gray-600 border border-gray-200'
-                        }`}
-                    >
-                      Pagos
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('pending')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' 
-                          : 'bg-gray-50 text-gray-600 border border-yellow-200'
-                        }`}
-                    >
-                      Pendentes
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  onClick={copyToClipboard}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
-                >
-                  {copySuccess ? (
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4" />
-                      <span>Copiado!</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Copy className="w-4 h-4" />
-                      <span>Copiar</span>
-                    </div>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop (md e lg) */}
-          <div className="hidden md:block">
-            <div className="flex items-end justify-between gap-4">
-              <div className="flex gap-4">
-                <div className="w-40">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
-                    Mês
-                  </label>
-                  <div className="relative">
-                    <select 
-                      value={selectedMonth} 
-                      onChange={e => setSelectedMonth(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[...Array(12)].map((_, i) => (
-                        <option key={i+1} value={i+1} className="py-1">{format(new Date(2024, i), 'MMMM', { locale: ptBR })}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-blue-600" />
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <select 
-                      value={selectedYear} 
-                      onChange={e => setSelectedYear(Number(e.target.value))} 
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
-                    >
-                      {[2025,2026,2027,2028,2029,2030].map(y => (
-                        <option key={y} value={y} className="py-1">{y}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-40">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Check className="w-4 h-4 text-blue-600" />
-                    Status
-                  </label>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => setStatusFilter(statusFilter === 'paid' ? 'all' : 'paid')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'paid' 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
-                        }`}
-                    >
-                      Pagos
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${statusFilter === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
-                        }`}
-                    >
-                      Pendentes
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors rounded-lg text-gray-700 font-medium whitespace-nowrap"
-              >
-                {copySuccess ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span>Copiado!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copiar Lista</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Copiar lista WhatsApp */}
+            <button
+              onClick={copyToClipboard}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-wine hover:bg-wine-dark text-white font-semibold text-sm rounded-xl transition-colors whitespace-nowrap"
+            >
+              {copySuccess ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Copiar lista</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Lista de Mensalistas */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow">
+        {/* Lista + Histórico */}
+        <div className="order-3 lg:order-4 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-22rem)] lg:min-h-[400px]">
+          {/* Lista de Mensalistas */}
+          <div className="lg:col-span-2 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col">
+            <div className="px-4 sm:px-5 py-4 border-b border-line">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-wine" />
+                <h2 className="font-heading font-bold text-[15px] text-ink">Jogadores</h2>
+                <span className="ml-auto text-xs text-ink-soft font-stat">{visibleMensalistas.length} de {mensalistas.length}</span>
+              </div>
+              <div className="mt-3 flex items-center gap-2 border border-line rounded-xl px-3 bg-paper focus-within:ring-2 focus-within:ring-wine/30 focus-within:border-wine transition-colors">
+                <Search className="w-4 h-4 text-ink-soft flex-none" />
+                <input
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Buscar jogador para lançar…"
+                  className="flex-1 bg-transparent outline-none text-sm text-ink py-2.5 min-w-0"
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="text-ink-icon hover:text-ink flex-none" aria-label="Limpar busca">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto">
             {isLoading ? (
-              <div className="text-center py-8">Carregando...</div>
+              <div className="flex items-center justify-center py-16">
+                <Spinner />
+              </div>
+            ) : visibleMensalistas.length === 0 ? (
+              <div className="text-center py-14 text-ink-soft text-sm">Nenhum jogador neste filtro.</div>
             ) : (
               <>
                 {/* Desktop: Tabela */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="py-3 px-6 text-left font-semibold text-gray-900 min-w-[180px]">Nome</th>
-                        <th className="py-3 px-4 text-center font-semibold text-gray-900">Status</th>
-                        <th className="py-3 px-4 text-center font-semibold text-gray-900">Atrasos</th>
-                        <th className="py-3 px-4 text-center font-semibold text-gray-900 w-[120px]">Ação</th>
+                      <tr className="border-b border-line">
+                        <th className="py-3 px-5 text-left text-[11px] font-semibold uppercase tracking-wide text-ink-soft min-w-[200px]">Jogador</th>
+                        <th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Status</th>
+                        <th className="py-3 px-4 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Atrasos</th>
+                        <th className="py-3 px-5 text-right text-[11px] font-semibold uppercase tracking-wide text-ink-soft w-[130px]">Ação</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {mensalistas.filter(m => {
-                        const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-                        const p = payments[paymentId];
-                        if (statusFilter === 'all') return true;
-                        if (statusFilter === 'paid') return p && p.status === 'paid';
-                        if (statusFilter === 'pending') return !p || p.status !== 'paid';
-                        return true;
-                      })
-                      .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
-                      .map((m, idx) => {
+                    <tbody>
+                      {visibleMensalistas.map((m) => {
                         const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
                         const p = payments[paymentId];
                         const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
-                        
+                        const isDiarista = m.playerInfo?.paymentType === 'diarista';
+
                         return (
                           <tr
                             key={m.id}
-                            className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                            className="border-b border-line-soft last:border-0 hover:bg-paper/60 transition-colors"
                           >
-                            <td className="py-3 px-6 font-medium text-gray-900 min-w-[180px] truncate" title={m.playerInfo?.name || m.id}>
-                              {m.playerInfo?.name || m.id}
-                              {m.playerInfo?.paymentType === 'diarista' && (
-                                <span className="ml-2 text-xs text-gray-500">(Diarista)</span>
-                              )}
+                            <td className="py-3 px-5">
+                              <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 flex-none rounded-full bg-ink/90 text-white font-stat font-bold text-[11px] flex items-center justify-center">
+                                  {(m.playerInfo?.name || m.id).slice(0, 2).toUpperCase()}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-ink truncate max-w-[200px]" title={m.playerInfo?.name || m.id}>
+                                    {m.playerInfo?.name || m.id}
+                                  </div>
+                                  {isDiarista && (
+                                    <div className="text-[11px] text-ink-soft">Diarista</div>
+                                  )}
+                                </div>
+                              </div>
                             </td>
                             <td className="py-3 px-4 text-center">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
+                              {isDiarista ? (
                                 diaristaPayment ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Pago (R$ {diaristaPayment.value.toFixed(2)})
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-state-success/10 text-state-success">
+                                    <Check className="w-3 h-3" /> Pago · <span className="font-stat">R$ {diaristaPayment.value.toFixed(2)}</span>
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-state-warningBg text-state-warning">
                                     Pendente
                                   </span>
                                 )
                               ) : (
                                 p && p.status === 'paid' ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Pago
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-state-success/10 text-state-success">
+                                    <Check className="w-3 h-3" /> Pago
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-state-warningBg text-state-warning">
                                     Pendente
                                   </span>
                                 )
                               )}
                             </td>
                             <td className="py-3 px-4 text-center">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
-                                <span className="text-gray-400">-</span>
+                              {isDiarista ? (
+                                <span className="text-ink-soft">-</span>
                               ) : (
                                 (() => {
                                   const monthsInDebt = calculateMonthsInDebt(m.id);
                                   if (monthsInDebt === 0) {
-                                    return <span className="text-gray-400">-</span>;
+                                    return <span className="text-ink-soft">-</span>;
                                   } else {
                                     return (
-                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-state-live/10 text-state-live font-stat">
                                         {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
                                       </span>
                                     );
@@ -813,14 +691,14 @@ export function Financeiro() {
                                 })()
                               )}
                             </td>
-                            <td className="py-3 px-4 text-center w-[120px]">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
+                            <td className="py-3 px-5 text-right w-[130px]">
+                              {isDiarista ? (
                                 <button
                                   onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
-                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                    ${diaristaPayment 
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors
+                                    ${diaristaPayment
+                                      ? 'border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper'
+                                      : 'bg-wine text-white hover:bg-wine-dark'
                                     }`}
                                 >
                                   {diaristaPayment ? 'Voltar' : 'Pagou'}
@@ -828,10 +706,10 @@ export function Financeiro() {
                               ) : (
                                 <button
                                   onClick={() => handleTogglePayment(m.id)}
-                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                    ${p && p.status === 'paid' 
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors
+                                    ${p && p.status === 'paid'
+                                      ? 'border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper'
+                                      : 'bg-wine text-white hover:bg-wine-dark'
                                     }`}
                                 >
                                   {p && p.status === 'paid' ? 'Voltar' : 'Pagou'}
@@ -847,156 +725,118 @@ export function Financeiro() {
 
                 {/* Mobile: Cards */}
                 <div className="md:hidden p-3 space-y-3">
-                  {mensalistas.filter(m => {
-                    const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
-                    const p = payments[paymentId];
-                    if (statusFilter === 'all') return true;
-                    if (statusFilter === 'paid') return p && p.status === 'paid';
-                    if (statusFilter === 'pending') return !p || p.status !== 'paid';
-                    return true;
-                  })
-                  .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''))
-                  .map((m, idx) => {
+                  {visibleMensalistas.map((m) => {
                     const paymentId = `${m.id}_${selectedMonth}_${selectedYear}`;
                     const p = payments[paymentId];
                     const diaristaPayment = diaristaPayments.find(dp => dp.playerId === m.id);
-                    
+                    const isDiarista = m.playerInfo?.paymentType === 'diarista';
+                    const isPaid = isDiarista ? !!diaristaPayment : !!(p && p.status === 'paid');
+
                     return (
-                      <div key={m.id} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                      <div key={m.id} className="bg-paper border border-line rounded-2xl p-3.5">
                         {/* Cabeçalho com Nome e Status */}
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate text-base">
-                              {m.playerInfo?.name || m.id}
-                            </h3>
-                            {m.playerInfo?.paymentType === 'diarista' && (
-                              <span className="inline-block mt-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Diarista</span>
-                            )}
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-9 h-9 flex-none rounded-full bg-ink/90 text-white font-stat font-bold text-xs flex items-center justify-center">
+                              {(m.playerInfo?.name || m.id).slice(0, 2).toUpperCase()}
+                            </span>
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-ink truncate text-[15px]">
+                                {m.playerInfo?.name || m.id}
+                              </h3>
+                              <span className="text-[11px] text-ink-soft">
+                                {isDiarista ? 'Diarista' : 'Mensalista'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="ml-2">
-                            {m.playerInfo?.paymentType === 'diarista' ? (
-                              diaristaPayment ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Pago
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  Pendente
-                                </span>
-                              )
-                            ) : (
-                              p && p.status === 'paid' ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Pago
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  Pendente
-                                </span>
-                              )
-                            )}
-                          </div>
+                          {isPaid ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-state-success/10 text-state-success flex-none">
+                              <Check className="w-3 h-3" /> Pago
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-state-warningBg text-state-warning flex-none">
+                              Pendente
+                            </span>
+                          )}
                         </div>
 
-                        {/* Informações em Grid */}
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          {/* Valor (apenas para diaristas) */}
-                          {m.playerInfo?.paymentType === 'diarista' && diaristaPayment && (
-                            <div className="col-span-2">
-                              <span className="text-xs text-gray-500">Valor:</span>
-                              <div className="text-sm font-medium text-green-700">
-                                R$ {diaristaPayment.value.toFixed(2)}
-                              </div>
+                        {/* Informações */}
+                        <div className="flex items-center gap-4 mb-3.5 text-sm">
+                          {isDiarista && diaristaPayment && (
+                            <div>
+                              <span className="text-[11px] text-ink-soft block">Valor</span>
+                              <span className="font-stat font-semibold text-state-success">R$ {diaristaPayment.value.toFixed(2)}</span>
                             </div>
                           )}
-
-                          {/* Atrasos */}
-                          <div>
-                            <span className="text-xs text-gray-500">Atrasos:</span>
-                            <div className="mt-1">
-                              {m.playerInfo?.paymentType === 'diarista' ? (
-                                <span className="text-gray-400 text-sm">-</span>
-                              ) : (
-                                (() => {
-                                  const monthsInDebt = calculateMonthsInDebt(m.id);
-                                  if (monthsInDebt === 0) {
-                                    return <span className="text-gray-400 text-sm">Em dia</span>;
-                                  } else {
-                                    return (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
-                                      </span>
-                                    );
-                                  }
-                                })()
-                              )}
+                          {!isDiarista && (
+                            <div>
+                              <span className="text-[11px] text-ink-soft block">Atrasos</span>
+                              {(() => {
+                                const monthsInDebt = calculateMonthsInDebt(m.id);
+                                if (monthsInDebt === 0) {
+                                  return <span className="text-ink-medium text-sm">Em dia</span>;
+                                } else {
+                                  return (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-state-live/10 text-state-live font-stat">
+                                      {monthsInDebt} {monthsInDebt === 1 ? 'mês' : 'meses'}
+                                    </span>
+                                  );
+                                }
+                              })()}
                             </div>
-                          </div>
-
-                          {/* Tipo de Pagamento */}
-                          <div>
-                            <span className="text-xs text-gray-500">Tipo:</span>
-                            <div className="mt-1 text-sm font-medium text-gray-700">
-                              {m.playerInfo?.paymentType === 'diarista' ? 'Diarista' : 'Mensalista'}
-                            </div>
-                          </div>
+                          )}
                         </div>
 
                         {/* Botão de Ação */}
-                        <div>
-                          {m.playerInfo?.paymentType === 'diarista' ? (
-                            <button
-                              onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
-                              className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                ${diaristaPayment 
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                            >
-                              {diaristaPayment ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleTogglePayment(m.id)}
-                              className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                ${p && p.status === 'paid' 
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' 
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                              >
-                                {p && p.status === 'paid' ? 'Desfazer Pagamento' : 'Registrar Pagamento'}
-                              </button>
-                          )}
-                        </div>
+                        {isDiarista ? (
+                          <button
+                            onClick={() => handleDiaristaPayment(m.id, m.playerInfo?.name || '')}
+                            className={`w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors
+                              ${diaristaPayment
+                                ? 'border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper'
+                                : 'bg-wine text-white hover:bg-wine-dark'
+                              }`}
+                          >
+                            {diaristaPayment ? 'Desfazer pagamento' : 'Registrar pagamento'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleTogglePayment(m.id)}
+                            className={`w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors
+                              ${p && p.status === 'paid'
+                                ? 'border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper'
+                                : 'bg-wine text-white hover:bg-wine-dark'
+                              }`}
+                          >
+                            {p && p.status === 'paid' ? 'Desfazer pagamento' : 'Registrar pagamento'}
+                          </button>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               </>
             )}
+            </div>
           </div>
-        </div>
 
-        {/* Histórico */}
-        <div className="bg-white rounded-xl shadow">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
-              Histórico de Pagamentos
-            </h2>
-          </div>
-          <div className="p-4 max-h-[calc(100vh)] overflow-y-auto">
-            <div className="space-y-6">
+          {/* Histórico */}
+          <div className="bg-surface border border-line rounded-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 px-4 sm:px-5 py-4 border-b border-line">
+              <History className="w-4 h-4 text-wine" />
+              <h2 className="font-heading font-bold text-[15px] text-ink">Histórico de pagamentos</h2>
+            </div>
+            <div className="p-4 flex-1 min-h-0 overflow-y-auto space-y-6">
               {/* Mensalistas */}
               <div>
-                <h3 className="text-sm font-bold text-blue-700 mb-2">Mensalistas</h3>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft mb-2">Mensalistas</h3>
                 <div className="flex flex-col gap-2">
                   {Object.values(payments)
                     .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
                     .sort((a, b) => {
                       const dateA = a.paidAt ? new Date(a.paidAt).setHours(0, 0, 0, 0) : 0;
                       const dateB = b.paidAt ? new Date(b.paidAt).setHours(0, 0, 0, 0) : 0;
-                      
+
                       if (dateA !== dateB) {
                         return dateB - dateA;
                       }
@@ -1004,127 +844,72 @@ export function Financeiro() {
                       return (a.playerName || '').localeCompare(b.playerName || '');
                     })
                     .map((payment, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-blue-50 rounded-lg px-4 py-3 hover:bg-blue-100 transition-colors w-full">
+                      <div key={idx} className="flex items-center justify-between bg-paper border border-line-soft rounded-xl px-3.5 py-2.5 w-full">
                         <div className="flex flex-col min-w-0">
-                          <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName || 'Usuário Removido'}>
+                          <span className="font-semibold text-sm text-ink truncate max-w-[160px]" title={payment.playerName || 'Usuário Removido'}>
                             {payment.playerName || 'Usuário Removido'}
                           </span>
-                          <span className="text-xs text-blue-500">{formatPaymentDate(payment.paidAt)}</span>
-                          <span className="text-xs text-gray-500">Registrado por: {payment.recordedBy}</span>
+                          <span className="text-[11px] text-ink-soft">{formatPaymentDate(payment.paidAt)}</span>
+                          <span className="text-[11px] text-ink-soft truncate max-w-[160px]">Por: {payment.recordedBy}</span>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm font-medium text-blue-900">R$ {payment.value.toFixed(2)}</span>
-                          <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full mt-1">Pago</span>
+                        <div className="flex flex-col items-end gap-1 flex-none">
+                          <span className="text-sm font-semibold text-ink font-stat">R$ {payment.value.toFixed(2)}</span>
+                          <span className="text-[10px] text-state-success bg-state-success/10 px-2 py-0.5 rounded-full font-semibold">Pago</span>
                         </div>
                       </div>
                     ))}
+                  {Object.values(payments).filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear).length === 0 && (
+                    <p className="text-xs text-ink-soft py-2">Nenhum pagamento registrado.</p>
+                  )}
                 </div>
               </div>
               {/* Diaristas */}
               {diaristaPayments.filter(p => p.status === 'paid').length > 0 && (
-                <>
-                  <h3 className="text-sm font-bold text-purple-700 mb-2">Diaristas</h3>
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft mb-2">Diaristas</h3>
                   <div className="flex flex-col gap-2">
                     {diaristaPayments
                       .filter(p => p.status === 'paid')
                       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                       .map((payment, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-purple-50 rounded-lg px-4 py-3 hover:bg-purple-100 transition-colors w-full">
+                        <div key={idx} className="flex items-center justify-between bg-[#f8efe4] border border-[#ecdcc6] rounded-xl px-3.5 py-2.5 w-full">
                           <div className="flex flex-col min-w-0">
-                            <span className="font-medium text-sm truncate max-w-[180px]" title={payment.playerName}>
+                            <span className="font-semibold text-sm text-ink truncate max-w-[160px]" title={payment.playerName}>
                               {payment.playerName}
                             </span>
-                            <span className="text-xs text-purple-500">{formatPaymentDate(payment.date)}</span>
-                            <span className="text-xs text-gray-500">Registrado por: {payment.recordBy}</span>
+                            <span className="text-[11px] text-ink-soft">{formatPaymentDate(payment.date)}</span>
+                            <span className="text-[11px] text-ink-soft truncate max-w-[160px]">Por: {payment.recordBy}</span>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-sm font-medium text-purple-900">R$ {payment.value.toFixed(2)}</span>
-                            <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full mt-1">Pago</span>
+                          <div className="flex flex-col items-end gap-1 flex-none">
+                            <span className="text-sm font-semibold text-ink font-stat">R$ {payment.value.toFixed(2)}</span>
+                            <span className="text-[10px] text-state-success bg-state-success/10 px-2 py-0.5 rounded-full font-semibold">Pago</span>
                           </div>
                         </div>
                       ))}
                   </div>
-                </>
+                </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Informativos */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-lg font-semibold mb-4">Informativos do Mês</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Valor Arrecadado */}
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h3 className="text-sm font-medium text-blue-900 mb-1">Valor Arrecadado</h3>
-                <p className="text-2xl font-bold text-blue-700">
-                  R$ {Object.values(payments)
-                    .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
-                    .reduce((acc, p) => acc + p.value, 0)
-                    .toFixed(2)}
-                </p>
-              </div>
-
-              {/* Custo da Pelada */}
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h3 className="text-sm font-medium text-green-900 mb-1">Custo da Pelada</h3>
-                <p className="text-2xl font-bold text-green-700">
-                  R$ {custoPelada.toFixed(2)}
-                </p>
-                <p className="text-xs text-green-600 mt-1">
-                  {descricaoCusto}
-                </p>
-              </div>
-
-              {/* Arrecadação Diaristas */}
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <h3 className="text-sm font-medium text-purple-900 mb-1">Arrecadação Diaristas</h3>
-                <p className="text-2xl font-bold text-purple-700">
-                  R$ {diaristaPayments
-                    .filter(p => p.status === 'paid')
-                    .reduce((acc, p) => acc + p.value, 0)
-                    .toFixed(2)}
-                </p>
-                <p className="text-xs text-purple-600 mt-1">
-                  {diaristaPayments.filter(p => p.status === 'paid').length} pagamentos
-                </p>
-              </div>
-
-              {/* Saldo */}
-              <div className="p-4 bg-orange-50 rounded-lg">
-                <h3 className="text-sm font-medium text-orange-900 mb-1">Saldo do Mês</h3>
-                <p className="text-2xl font-bold text-orange-700">
-                  R$ {(() => {
-                    const arrecadado = Object.values(payments)
-                      .filter(p => p.status === 'paid' && p.month === selectedMonth && p.year === selectedYear)
-                      .reduce((acc, p) => acc + p.value, 0);
-                    
-                    return (arrecadado - custoPelada).toFixed(2);
-                  })()}
-                </p>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal Mensalista */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm mx-auto">
-            <h3 className="text-lg font-semibold mb-6">Confirmar Pagamento</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-surface rounded-2xl shadow-xl border border-line p-6 w-full max-w-sm mx-auto animate-fade-in">
+            <h3 className="text-lg font-heading font-bold text-ink mb-6">Confirmar pagamento</h3>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Valor do Pagamento
+              <label className="block text-sm font-medium text-ink-medium mb-2">
+                Valor do pagamento
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
                 <input
                   type="number"
                   value={paymentValue}
                   onChange={(e) => setPaymentValue(Number(e.target.value))}
-                  className="w-full pl-12 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                  className="w-full pl-12 pr-3 py-2.5 bg-paper border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine text-lg font-stat text-ink"
                   min="0"
                   step="10"
                   onBlur={(e) => {
@@ -1142,13 +927,13 @@ export function Financeiro() {
                   setShowPaymentModal(false);
                   setSelectedMensalista(null);
                 }}
-                className="flex-1 px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                className="flex-1 px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper rounded-xl text-sm font-semibold transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmPayment}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                className="flex-1 px-4 py-2.5 bg-wine text-white rounded-xl hover:bg-wine-dark text-sm font-semibold transition-colors"
               >
                 Confirmar
               </button>
@@ -1159,35 +944,35 @@ export function Financeiro() {
 
       {/* Modal de Pagamento do Diarista */}
       {showDiaristaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in border border-line">
             <button
-              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
+              className="absolute top-4 right-4 text-ink-icon hover:text-ink transition-colors"
               onClick={() => setShowDiaristaModal(false)}
               aria-label="Fechar"
             >
-              ×
+              <X className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-semibold mb-4">Confirmar Pagamento</h2>
+            <h2 className="text-lg font-heading font-bold text-ink mb-4">Confirmar pagamento</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Nome do Diarista</label>
+                <label className="block text-sm font-medium text-ink-medium mb-1.5">Nome do diarista</label>
                 <input
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full border border-line rounded-xl px-3 py-2.5 text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
                   value={selectedDiarista?.name || ''}
                   readOnly
                   placeholder="Nome do diarista"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
+                <label className="block text-sm font-medium text-ink-medium mb-1.5">Valor do pagamento</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
                   <input
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className="w-full border rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full border border-line rounded-xl pl-9 pr-3 py-2.5 text-ink font-stat bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
                     value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '');
@@ -1201,7 +986,7 @@ export function Financeiro() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setShowDiaristaModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2.5 text-sm font-semibold text-ink-medium border border-[#ded8c9] bg-surface rounded-xl hover:bg-paper transition-colors"
                 type="button"
               >
                 Cancelar
@@ -1213,15 +998,15 @@ export function Financeiro() {
                     confirmDiaristaPayment();
                   }, 0);
                 }}
-                className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                className="px-4 py-2.5 text-sm font-semibold text-state-success bg-state-success/10 rounded-xl hover:bg-state-success/20 transition-colors"
                 type="button"
                 disabled={!selectedDiarista}
               >
-                Gratis
+                Grátis
               </button>
               <button
                 onClick={confirmDiaristaPayment}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 text-sm font-semibold text-white bg-wine rounded-xl hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
                 disabled={!selectedDiarista}
               >
@@ -1233,4 +1018,4 @@ export function Financeiro() {
       )}
     </div>
   );
-} 
+}

@@ -7,7 +7,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
 import { PrivateRoute } from './components/PrivateRoute';
-import { Navbar } from './components/Navbar';
+import { AppShell } from './components/shell/AppShell';
 import { EditUser } from './pages/EditUser';
 import { Players } from './pages/Players';
 import { Financeiro } from './pages/Financeiro';
@@ -25,12 +25,7 @@ export function AppRoutes() {
     return pattern.test(location.pathname);
   });
 
-  return (
-    <>
-      {!isAuthRoute && <Navbar />}
-      <div 
-        className={`${isAuthRoute ? 'flex items-center justify-center min-h-screen' : ''} ${shouldCenterContent ? 'flex items-center justify-center min-h-screen' : 'min-h-screen'}`}
-      >
+  const routes = (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -108,7 +103,17 @@ export function AppRoutes() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </div>
-    </>
   );
-} 
+
+  if (isAuthRoute) {
+    return <div className="flex items-center justify-center min-h-screen">{routes}</div>;
+  }
+
+  return (
+    <AppShell>
+      <div className={shouldCenterContent ? 'flex items-center justify-center min-h-screen' : ''}>
+        {routes}
+      </div>
+    </AppShell>
+  );
+}

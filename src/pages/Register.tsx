@@ -145,202 +145,212 @@ export function Register() {
   };
 
   return (
-    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <FaChevronLeft className="w-5 h-5 text-gray-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-center flex-1">Cadastrar Usuário</h1>
-        <div className="w-8" />
+    <div className="min-h-screen w-full bg-paper flex flex-col items-center justify-center px-4 py-10">
+      {/* Marca */}
+      <div className="flex items-center gap-3 mb-7">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-wine to-[#9e2a3d] flex items-center justify-center text-white font-heading font-extrabold text-lg shadow-sm">
+          P
+        </div>
+        <span className="font-heading font-extrabold text-xl text-ink">App Pelada</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informações Básicas */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaUser className="w-4 h-4 text-blue-600" />
-            Informações Básicas
-          </h2>
+      <div className="w-full max-w-lg bg-surface border border-line rounded-2xl shadow-sm p-6 sm:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full hover:bg-paper transition-colors"
+          >
+            <FaChevronLeft className="w-5 h-5 text-ink-icon" />
+          </button>
+          <h1 className="font-heading font-bold text-2xl text-center flex-1 text-ink">Cadastrar Usuário</h1>
+          <div className="w-8" />
+        </div>
 
-          <div className="space-y-2">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Nome de Usuário
-            </label>
-            <div className="relative">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Informações Básicas */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
+              <FaUser className="w-4 h-4 text-wine" />
+              Informações Básicas
+            </h2>
+
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-sm font-medium text-ink-medium">
+                Nome de Usuário
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Digite o nome de usuário"
+                  className="w-full pl-10 pr-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
+                />
+                <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+              </div>
+              {errors.username && <p className="text-state-warning text-sm mt-1">{errors.username}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-ink-medium">
+                Email
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Digite o email"
+                  className="w-full pl-10 pr-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
+                />
+                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+              </div>
+              {errors.email && <p className="text-state-warning text-sm mt-1">{errors.email}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-ink-medium">
+                Senha
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Digite a senha"
+                  className="w-full pl-10 pr-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
+                />
+                <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+              </div>
+              {errors.password && <p className="text-state-warning text-sm mt-1">{errors.password}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="role" className="block text-sm font-medium text-ink-medium">
+                Papel
+              </label>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as Role)}
+                className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
+              >
+                <option value="player">Jogador</option>
+                <option value="admin">Administrador</option>
+              </select>
+              {errors.role && <p className="text-state-warning text-sm mt-1">{errors.role}</p>}
+            </div>
+          </div>
+
+          {/* Informações do Jogador */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
+              <FaFutbol className="w-4 h-4 text-wine" />
+              Informações do Jogador
+            </h2>
+
+            <div className="space-y-2">
+              <label htmlFor="playerInfo.name" className="block text-sm font-medium text-ink-medium">
+                Nome Completo
+              </label>
               <input
                 type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Digite o nome de usuário"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                id="playerInfo.name"
+                value={playerInfo.name}
+                onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Digite o nome completo"
+                className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
               />
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              {errors['playerInfo.name'] && <p className="text-state-warning text-sm mt-1">{errors['playerInfo.name']}</p>}
             </div>
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
-          </div>
 
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite o email"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="playerInfo.position" className="block text-sm font-medium text-ink-medium">
+                  Posição
+                </label>
+                <select
+                  id="playerInfo.position"
+                  value={playerInfo.position}
+                  onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
+                  className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
+                >
+                  <option value="defesa">Defesa</option>
+                  <option value="meio">Meio Campo</option>
+                  <option value="ataque">Ataque</option>
+                </select>
+              </div>
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Senha
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite a senha"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-              Papel
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="player">Jogador</option>
-              <option value="admin">Administrador</option>
-            </select>
-            {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role}</p>}
-          </div>
-        </div>
-
-        {/* Informações do Jogador */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaFutbol className="w-4 h-4 text-blue-600" />
-            Informações do Jogador
-          </h2>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.name" className="block text-sm font-medium text-gray-700">
-              Nome Completo
-            </label>
-            <input
-              type="text"
-              id="playerInfo.name"
-              value={playerInfo.name}
-              onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Digite o nome completo"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            />
-            {errors['playerInfo.name'] && <p className="text-red-500 text-sm mt-1">{errors['playerInfo.name']}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.position" className="block text-sm font-medium text-gray-700">
-                Posição
-              </label>
-              <select
-                id="playerInfo.position"
-                value={playerInfo.position}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="defesa">Defesa</option>
-                <option value="meio">Meio Campo</option>
-                <option value="ataque">Ataque</option>
-              </select>
+              <div className="space-y-2">
+                <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-ink-medium">
+                  Faixa Etária
+                </label>
+                <select
+                  id="playerInfo.ageGroup"
+                  value={playerInfo.ageGroup}
+                  onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
+                  className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
+                >
+                  <option value="15-20">15-20 anos</option>
+                  <option value="21-30">21-30 anos</option>
+                  <option value="31-40">31-40 anos</option>
+                  <option value="41-50">41-50 anos</option>
+                  <option value="+50">+50 anos</option>
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-gray-700">
-                Faixa Etária
+              <label className="block text-sm font-medium text-ink-medium flex items-center gap-2">
+                <FaStar className="w-4 h-4 text-yellow-500" />
+                Nível de Habilidade
+              </label>
+              <div className="p-2 bg-paper rounded-lg">
+                <StarRating
+                  value={playerInfo.skillLevel}
+                  onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
+                  size="lg"
+                  showLabel
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-ink-medium">
+                Tipo de Pagamento
               </label>
               <select
-                id="playerInfo.ageGroup"
-                value={playerInfo.ageGroup}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                id="playerInfo.paymentType"
+                value={playerInfo.paymentType}
+                onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
+                className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition-colors"
               >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
+                <option value="mensalista">Mensalista</option>
+                <option value="diarista">Diarista</option>
               </select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-              <FaStar className="w-4 h-4 text-yellow-500" />
-              Nível de Habilidade
-            </label>
-            <div className="p-2 bg-gray-50 rounded-lg">
-              <StarRating
-                value={playerInfo.skillLevel}
-                onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
-                size="lg"
-                showLabel
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-gray-700">
-              Tipo de Pagamento
-            </label>
-            <select
-              id="playerInfo.paymentType"
-              value={playerInfo.paymentType}
-              onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="mensalista">Mensalista</option>
-              <option value="diarista">Diarista</option>
-            </select>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Cadastrando...
-            </>
-          ) : (
-            'Cadastrar Usuário'
-          )}
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="w-full bg-wine hover:bg-wine-dark text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Cadastrando...
+              </>
+            ) : (
+              'Cadastrar Usuário'
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
-} 
+}

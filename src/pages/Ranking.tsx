@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart2, Trophy, Target, Footprints, Award, TrendingDown,
   CalendarDays, Users, Crown, Settings2, Medal,
-  Loader2, CalendarRange, Info, Minus,
+  CalendarRange, Info, Minus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageLoader, Spinner } from '../components/Loader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -87,22 +88,22 @@ const WEIGHT_FIELDS: { key: keyof Omit<RankingConfig, 'rankingStartDate'>; label
 
 function medalStyle(rank: number) {
   if (rank === 1) return {
-    avatarBg: 'bg-yellow-100', avatarText: 'text-yellow-800', ring: 'ring-yellow-300', badge: '🥇',
-    valueColor: 'text-yellow-700', borderColor: 'border-yellow-200',
-    cardBg: 'bg-gradient-to-b from-yellow-50 to-white',
-    pedestal: 'bg-gradient-to-t from-yellow-500 to-yellow-300',
+    avatarBg: 'bg-[#f6ecca]', avatarText: 'text-[#9a6a10]', ring: 'ring-[#ecd79a]', badge: '🥇',
+    valueColor: 'text-[#9a6a10]', borderColor: 'border-[#ecd79a]',
+    cardBg: 'bg-gradient-to-b from-[#fdf6e3] to-[#f6ecca]',
+    pedestal: 'bg-gradient-to-t from-[#d99a1a] to-[#f0dfa4]',
   };
   if (rank === 2) return {
-    avatarBg: 'bg-slate-100', avatarText: 'text-slate-700', ring: 'ring-slate-200', badge: '🥈',
-    valueColor: 'text-slate-600', borderColor: 'border-slate-200',
-    cardBg: 'bg-gradient-to-b from-slate-50 to-white',
-    pedestal: 'bg-gradient-to-t from-slate-400 to-slate-200',
+    avatarBg: 'bg-line-soft', avatarText: 'text-ink-medium', ring: 'ring-line', badge: '🥈',
+    valueColor: 'text-ink-medium', borderColor: 'border-line',
+    cardBg: 'bg-gradient-to-b from-surface to-paper',
+    pedestal: 'bg-gradient-to-t from-ink-icon to-line',
   };
   return {
-    avatarBg: 'bg-amber-100', avatarText: 'text-amber-800', ring: 'ring-amber-300', badge: '🥉',
-    valueColor: 'text-amber-700', borderColor: 'border-amber-200',
-    cardBg: 'bg-gradient-to-b from-amber-50 to-white',
-    pedestal: 'bg-gradient-to-t from-amber-700 to-amber-400',
+    avatarBg: 'bg-wine-tint', avatarText: 'text-wine', ring: 'ring-wine/20', badge: '🥉',
+    valueColor: 'text-wine', borderColor: 'border-wine/20',
+    cardBg: 'bg-gradient-to-b from-surface to-wine-tint/50',
+    pedestal: 'bg-gradient-to-t from-wine to-wine/40',
   };
 }
 
@@ -356,20 +357,20 @@ export function Ranking() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 space-y-4">
+    <div className="min-h-screen bg-paper pb-10">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-4">
 
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 bg-blue-600 rounded-xl shadow-md shrink-0">
+            <div className="p-2 bg-wine rounded-xl shadow-md shrink-0">
               <BarChart2 className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-gray-900 leading-none">Ranking</h1>
+              <h1 className="font-heading text-xl font-bold text-ink leading-none">Ranking</h1>
               {!loading && (
-                <p className="text-xs text-gray-500 mt-0.5 truncate">
-                  {ranked.length} jogadores · {totalGames} jogo{totalGames !== 1 ? 's' : ''}
+                <p className="text-xs text-ink-soft mt-0.5 truncate">
+                  <span className="font-stat">{ranked.length}</span> jogadores · <span className="font-stat">{totalGames}</span> jogo{totalGames !== 1 ? 's' : ''}
                 </p>
               )}
             </div>
@@ -384,8 +385,8 @@ export function Ranking() {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors shrink-0',
                 showEditor
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  ? 'bg-wine text-white border-wine'
+                  : 'bg-surface text-ink-medium border-line hover:bg-paper'
               )}
             >
               <Settings2 className="w-3.5 h-3.5" />
@@ -404,18 +405,18 @@ export function Ranking() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <Card className="border-blue-200 bg-blue-50/60">
+              <Card className="border-wine/20 bg-wine-tint">
                 <CardContent className="p-4 space-y-4">
 
                   {/* Weights grid */}
                   <div>
-                    <p className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
+                    <p className="font-heading text-xs font-semibold text-wine mb-3 flex items-center gap-1.5">
                       <Trophy className="w-3.5 h-3.5" /> Pesos da pontuação geral
                     </p>
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                       {WEIGHT_FIELDS.map(({ key, label }) => (
                         <div key={key} className="space-y-1">
-                          <Label className="text-xs text-blue-700 font-medium block text-center">{label}</Label>
+                          <Label className="text-xs text-wine font-medium block text-center">{label}</Label>
                           <Input
                             type="text"
                             inputMode="numeric"
@@ -433,22 +434,22 @@ export function Ranking() {
                               setWeightsRaw(prev => ({ ...prev, [key]: String(val) }));
                               setEditConfig(prev => ({ ...prev, [key]: val }));
                             }}
-                            className="h-8 text-sm bg-white text-center px-1"
+                            className="h-8 text-sm font-stat bg-surface text-center px-1"
                           />
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-blue-500 mt-2 leading-relaxed">
+                    <p className="text-xs text-wine/70 mt-2 leading-relaxed">
                       pts = pres×{editConfig.presence} + gol×{editConfig.goal} + assist×{editConfig.assist} + vit×{editConfig.victory} + emp×{editConfig.draw} + der×{editConfig.defeat}
                     </p>
                   </div>
 
                   {/* Start date */}
-                  <div className="border-t border-blue-200 pt-4">
-                    <p className="text-xs font-semibold text-blue-800 mb-1 flex items-center gap-1.5">
+                  <div className="border-t border-wine/20 pt-4">
+                    <p className="font-heading text-xs font-semibold text-wine mb-1 flex items-center gap-1.5">
                       <CalendarDays className="w-3.5 h-3.5" /> Data mínima do ranking
                     </p>
-                    <p className="text-xs text-blue-500 mb-2.5">
+                    <p className="text-xs text-wine/70 mb-2.5">
                       Jogos anteriores a esta data serão ignorados em todos os cálculos.
                     </p>
                     <div className="flex items-center gap-3 flex-wrap">
@@ -456,12 +457,12 @@ export function Ranking() {
                         type="date"
                         value={editConfig.rankingStartDate}
                         onChange={e => setEditConfig(prev => ({ ...prev, rankingStartDate: e.target.value }))}
-                        className="h-8 text-xs border border-blue-200 rounded-lg px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                        className="h-8 text-xs border border-wine/20 rounded-lg px-2.5 bg-surface focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
                       />
                       {editConfig.rankingStartDate && (
                         <button
                           onClick={() => setEditConfig(prev => ({ ...prev, rankingStartDate: '' }))}
-                          className="text-xs text-blue-500 hover:text-blue-700 underline"
+                          className="text-xs text-wine/70 hover:text-wine underline"
                         >
                           Limpar (ler tudo)
                         </button>
@@ -470,24 +471,24 @@ export function Ranking() {
                   </div>
 
                   {/* Actions */}
-                  <div className="space-y-2 pt-1 border-t border-blue-200">
+                  <div className="space-y-2 pt-1 border-t border-wine/20">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-wine text-white text-xs font-semibold rounded-lg disabled:opacity-50 hover:bg-wine-dark transition-colors"
                       >
-                        {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {saving && <Spinner className="w-3 h-3" />}
                         Salvar configurações
                       </button>
                       <button
                         onClick={() => { setShowEditor(false); setSaveError(null); setSaveSuccess(false); }}
-                        className="px-3 py-2 text-xs text-gray-600 rounded-lg hover:bg-blue-100 transition-colors"
+                        className="px-3 py-2 text-xs text-ink-medium rounded-lg hover:bg-wine/10 transition-colors"
                       >
                         Cancelar
                       </button>
                       {saveSuccess && (
-                        <span className="text-xs text-green-600 font-medium">✓ Salvo com sucesso</span>
+                        <span className="text-xs text-state-success font-medium">✓ Salvo com sucesso</span>
                       )}
                     </div>
                     {saveError && (
@@ -504,7 +505,7 @@ export function Ranking() {
 
         {/* Start date notice */}
         {config.rankingStartDate && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <div className="flex items-center gap-2 px-3 py-2 bg-state-warningBg border border-state-warning/30 rounded-xl text-xs text-state-warning">
             <Info className="w-3.5 h-3.5 shrink-0" />
             <span>
               Dados a partir de{' '}
@@ -516,9 +517,9 @@ export function Ranking() {
         )}
 
         {/* Date Filters */}
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-line shadow-sm">
           <CardContent className="p-3 sm:p-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+            <p className="font-heading text-xs font-semibold text-ink-soft uppercase tracking-wide flex items-center gap-1.5">
               <CalendarDays className="w-3.5 h-3.5" /> Filtrar por período
             </p>
             <div className="flex gap-1.5 flex-wrap">
@@ -536,8 +537,8 @@ export function Ranking() {
                   className={cn(
                     'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     dateMode === mode
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                      ? 'bg-wine text-white border-wine shadow-sm'
+                      : 'bg-surface text-ink-medium border-line hover:border-wine/40 hover:text-wine'
                   )}
                 >
                   {icon}{label}
@@ -550,9 +551,9 @@ export function Ranking() {
                 <motion.div key="y" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   className="flex items-center gap-2"
                 >
-                  <span className="text-xs text-gray-500">Ano:</span>
+                  <span className="text-xs text-ink-soft">Ano:</span>
                   <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="h-8 w-24 text-xs">
+                    <SelectTrigger className="h-8 w-24 text-xs font-stat">
                       <span className="flex-1 text-left">{selectedYear}</span>
                     </SelectTrigger>
                     <SelectContent>
@@ -565,7 +566,7 @@ export function Ranking() {
                 <motion.div key="m" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   className="flex items-center gap-2 flex-wrap"
                 >
-                  <span className="text-xs text-gray-500">Mês:</span>
+                  <span className="text-xs text-ink-soft">Mês:</span>
                   <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
                     <SelectTrigger className="h-8 w-32 text-xs">
                       <span className="flex-1 text-left">{MONTHS[selectedMonth]}</span>
@@ -575,7 +576,7 @@ export function Ranking() {
                     </SelectContent>
                   </Select>
                   <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="h-8 w-20 text-xs">
+                    <SelectTrigger className="h-8 w-20 text-xs font-stat">
                       <span className="flex-1 text-left">{selectedYear}</span>
                     </SelectTrigger>
                     <SelectContent>
@@ -589,15 +590,15 @@ export function Ranking() {
                   className="flex items-center gap-2 flex-wrap"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500 shrink-0">De:</span>
+                    <span className="text-xs text-ink-soft shrink-0">De:</span>
                     <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)}
-                      className="h-8 text-xs border border-gray-200 rounded-lg px-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                      className="h-8 text-xs border border-line rounded-lg px-2 bg-surface focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
                     />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500 shrink-0">Até:</span>
+                    <span className="text-xs text-ink-soft shrink-0">Até:</span>
                     <input type="date" value={periodEnd} min={periodStart} onChange={e => setPeriodEnd(e.target.value)}
-                      className="h-8 text-xs border border-gray-200 rounded-lg px-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                      className="h-8 text-xs border border-line rounded-lg px-2 bg-surface focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
                     />
                   </div>
                 </motion.div>
@@ -612,13 +613,13 @@ export function Ranking() {
           className={cn(
             'flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border text-xs font-medium transition-all',
             onlyRegistered
-              ? 'bg-blue-50 border-blue-300 text-blue-700'
-              : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+              ? 'bg-wine-tint border-wine/30 text-wine'
+              : 'bg-surface border-line text-ink-soft hover:border-line'
           )}
         >
           <div className={cn(
             'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
-            onlyRegistered ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+            onlyRegistered ? 'bg-wine border-wine' : 'border-line'
           )}>
             {onlyRegistered && (
               <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
@@ -629,24 +630,24 @@ export function Ranking() {
           <Users className="w-3.5 h-3.5 shrink-0" />
           Considerar apenas jogadores cadastrados
           {registeredIds.size > 0 && (
-            <span className="ml-auto text-gray-400 font-normal">{registeredIds.size} cadastrados</span>
+            <span className="ml-auto text-ink-icon font-normal font-stat">{registeredIds.size} cadastrados</span>
           )}
         </button>
 
         {/* ── Ranking type selector ────────────────────────────────────────── */}
         <div className="relative overflow-hidden">
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="flex gap-1.5 min-w-max pb-0.5">
+          <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
+            <div className="inline-flex gap-0.5 bg-line-soft rounded-xl p-1 min-w-max">
               {RANK_TABS.map(tab => (
                 <button
                   key={tab.value}
                   onClick={() => setRankType(tab.value)}
                   className={cn(
-                    'flex items-center gap-1.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap border transition-all',
+                    'flex items-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all',
                     'px-3 sm:px-4',
                     rankType === tab.value
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                      : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50/50'
+                      ? 'bg-surface text-wine shadow-sm'
+                      : 'text-ink-soft hover:text-wine'
                   )}
                 >
                   {tab.icon}
@@ -657,21 +658,21 @@ export function Ranking() {
             </div>
           </div>
           {/* Right fade hint on mobile */}
-          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none sm:hidden" />
+          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-paper to-transparent pointer-events-none sm:hidden" />
         </div>
 
         {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
+          <div className="py-6">
+            <PageLoader full={false} label="Carregando ranking…" />
           </div>
         )}
 
         {!loading && ranked.length === 0 && (
-          <Card className="border-gray-100">
+          <Card className="border-line">
             <CardContent className="py-12 text-center">
-              <Trophy className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">Nenhum dado encontrado para este período.</p>
+              <Trophy className="w-10 h-10 text-line mx-auto mb-3" />
+              <p className="text-ink-soft text-sm">Nenhum dado encontrado para este período.</p>
             </CardContent>
           </Card>
         )}
@@ -679,11 +680,11 @@ export function Ranking() {
         {/* Pódio Top 3 */}
         {!loading && top3.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <p className="font-heading text-xs font-semibold text-ink-soft uppercase tracking-wide mb-3 flex items-center gap-1.5">
               <Crown className="w-3.5 h-3.5 text-yellow-500" />
               Top 3 — {rankType === 'points' ? 'Pontuação Geral' : rankLabel(rankType)}
             </p>
-            <div className="flex items-end justify-center gap-2 sm:gap-4">
+            <div className="flex items-end justify-center gap-2 sm:gap-4 max-w-lg mx-auto">
               {top3[1] && <PodiumCard rank={2} stats={top3[1]} rankType={rankType} config={config} pedestalH="h-20 sm:h-24" />}
               <PodiumCard        rank={1} stats={top3[0]} rankType={rankType} config={config} pedestalH="h-28 sm:h-32" />
               {top3[2] && <PodiumCard rank={3} stats={top3[2]} rankType={rankType} config={config} pedestalH="h-14 sm:h-16" />}
@@ -693,15 +694,21 @@ export function Ranking() {
 
         {/* Classificação completa */}
         {!loading && ranked.length > 3 && (
-          <Card className="border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-              <Medal className="w-4 h-4 text-blue-500" />
-              <h2 className="text-sm font-semibold text-gray-900">Classificação Completa</h2>
-              <span className="ml-auto text-xs text-gray-400">{ranked.length} jogadores</span>
+          <Card className="border-line shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-line flex items-center gap-2">
+              <Medal className="w-4 h-4 text-wine" />
+              <h2 className="font-heading text-sm font-semibold text-ink">Classificação Completa</h2>
+              <span className="ml-auto text-xs text-ink-icon font-stat">{ranked.length} jogadores</span>
             </div>
-            <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-50">
+            <div className="max-h-[460px] overflow-y-auto divide-y divide-line-soft">
               {ranked.map((stats, idx) => (
-                <RankRow key={stats.id} rank={idx + 1} stats={stats} rankType={rankType} />
+                <RankRow
+                  key={stats.id}
+                  rank={idx + 1}
+                  stats={stats}
+                  rankType={rankType}
+                  maxValue={Math.max(1, primaryValue(ranked[0], rankType))}
+                />
               ))}
             </div>
           </Card>
@@ -750,28 +757,28 @@ function PodiumCard({ rank, stats, rankType, config, pedestalH }: {
           {stats.name.charAt(0).toUpperCase()}
         </div>
 
-        <p className={cn('font-bold text-gray-900 text-center w-full truncate leading-tight', isFirst ? 'text-xs sm:text-sm' : 'text-xs')}>
+        <p className={cn('font-heading font-bold text-ink text-center w-full truncate leading-tight', isFirst ? 'text-xs sm:text-sm' : 'text-xs')}>
           {stats.name.split(' ')[0]}
         </p>
 
-        <p className={cn('font-extrabold leading-none', s.valueColor, isFirst ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl')}>
+        <p className={cn('font-stat font-extrabold leading-none', s.valueColor, isFirst ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl')}>
           {value}
         </p>
-        <p className="text-xs text-gray-400 -mt-0.5">{rankLabel(rankType)}</p>
+        <p className="text-xs text-ink-soft -mt-0.5">{rankLabel(rankType)}</p>
 
         {breakdown && breakdown.length > 0 && (
-          <div className="w-full mt-1 pt-1.5 border-t border-gray-200/60 space-y-0.5">
+          <div className="w-full mt-1 pt-1.5 border-t border-line space-y-0.5">
             {(breakdown as { emoji: string; label: string; count: number; w: number; result: number }[]).map(b => (
               <div key={b.label} className="flex items-center justify-between gap-1">
-                <span className="text-xs text-gray-500 shrink-0">{b.emoji} {b.count}×{b.w}</span>
-                <span className={cn('text-xs font-semibold', b.result >= 0 ? 'text-gray-700' : 'text-red-500')}>
+                <span className="text-xs text-ink-soft shrink-0 font-stat">{b.emoji} {b.count}×{b.w}</span>
+                <span className={cn('text-xs font-semibold font-stat', b.result >= 0 ? 'text-ink-medium' : 'text-red-500')}>
                   {b.result > 0 ? '+' : ''}{b.result}
                 </span>
               </div>
             ))}
-            <div className="flex items-center justify-between pt-0.5 border-t border-gray-200/50">
-              <span className="text-xs text-gray-400">Total</span>
-              <span className={cn('text-xs font-bold', s.valueColor)}>{value} pts</span>
+            <div className="flex items-center justify-between pt-0.5 border-t border-line">
+              <span className="text-xs text-ink-soft">Total</span>
+              <span className={cn('text-xs font-bold font-stat', s.valueColor)}>{value} pts</span>
             </div>
           </div>
         )}
@@ -784,30 +791,50 @@ function PodiumCard({ rank, stats, rankType, config, pedestalH }: {
 
 // ─── RankRow ──────────────────────────────────────────────────────────────────
 
-function RankRow({ rank, stats, rankType }: { rank: number; stats: PlayerRankStats; rankType: RankingType }) {
+function RankRow({ rank, stats, rankType, maxValue }: { rank: number; stats: PlayerRankStats; rankType: RankingType; maxValue: number }) {
   const value = primaryValue(stats, rankType);
   const secondaries = secondaryStats(stats, rankType);
+  const pct = Math.max(0, Math.min(100, Math.round((value / maxValue) * 100)));
+  const isTop3 = rank <= 3;
   return (
-    <div className={cn('flex items-center gap-2.5 px-3 sm:px-4 py-2.5 hover:bg-gray-50 transition-colors', rank <= 3 && 'bg-blue-50/20')}>
-      <span className={cn('w-6 text-center shrink-0 font-bold', rank <= 3 ? 'text-base' : 'text-xs text-gray-300')}>
-        {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
-      </span>
-      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700 shrink-0">
+    <div className={cn('flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 hover:bg-paper/60 transition-colors', isTop3 && 'bg-wine-tint/30')}>
+      {/* Position badge */}
+      <div className="w-7 flex items-center justify-center shrink-0">
+        {isTop3 ? (
+          <span className="text-base leading-none">{['🥇', '🥈', '🥉'][rank - 1]}</span>
+        ) : (
+          <span className="w-6 h-6 rounded-lg bg-[#ece5d6] text-ink-medium font-stat text-[11px] font-bold flex items-center justify-center">
+            {rank}
+          </span>
+        )}
+      </div>
+
+      {/* Avatar chip */}
+      <div className="w-8 h-8 rounded-full bg-wine-tint flex items-center justify-center text-xs font-semibold text-wine shrink-0">
         {stats.name.charAt(0).toUpperCase()}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 truncate">{stats.name}</p>
+
+      {/* Name + secondaries */}
+      <div className="w-[120px] sm:w-[190px] min-w-0 shrink-0">
+        <p className="text-sm font-semibold text-ink truncate">{stats.name}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {secondaries.map(s => (
-            <span key={s.label} className="text-xs text-gray-400">
-              {s.label} <span className="font-medium text-gray-600">{s.value}</span>
+            <span key={s.label} className="text-[11px] text-ink-icon whitespace-nowrap">
+              {s.label} <span className="font-medium font-stat text-ink-medium">{s.value}</span>
             </span>
           ))}
         </div>
       </div>
-      <div className="text-right shrink-0">
-        <p className="text-base font-bold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-400">{rankLabel(rankType)}</p>
+
+      {/* Horizontal bar */}
+      <div className="flex-1 h-2.5 bg-[#f1ece1] rounded-full overflow-hidden min-w-[36px]">
+        <div className="h-full bg-wine rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+
+      {/* Value */}
+      <div className="text-right shrink-0 w-11">
+        <p className="text-base font-bold font-stat text-ink leading-none">{value}</p>
+        <p className="text-[10px] text-ink-icon mt-0.5">{rankLabel(rankType)}</p>
       </div>
     </div>
   );

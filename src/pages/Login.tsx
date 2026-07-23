@@ -53,24 +53,22 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-10">
 
       {/* Logo */}
-      <div className="flex flex-col items-center mb-7">
-        <img
-          src="/logo.png"
-          alt="Inimigos Bola FC"
-          className="w-28 h-28 object-contain drop-shadow-lg mb-3"
-        />
-        <h1 className="text-2xl font-extrabold text-gray-900 tracking-wide">Inimigos Bola FC</h1>
+      <div className="flex flex-col items-center gap-2.5 mb-7">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-wine to-[#9e2a3d] text-white font-bold text-2xl flex items-center justify-center flex-none shadow-sm">
+          P
+        </div>
+        <h1 className="font-heading font-extrabold text-2xl text-ink tracking-wide">App Pelada</h1>
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-md border border-gray-200 p-6 sm:p-8">
+      <div className="w-full max-w-sm bg-surface rounded-2xl shadow-md border border-line p-6 sm:p-8">
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div className="space-y-1.5">
-            <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="username" className="text-sm font-medium text-ink-medium">
               Usuário
             </Label>
             <Input
@@ -85,17 +83,17 @@ export function Login() {
                 setError('');
               }}
               className={cn(
-                'h-11',
-                fieldErrors.username && 'border-red-400 focus-visible:ring-red-300'
+                'h-11 focus-visible:border-wine focus-visible:ring-wine/30',
+                fieldErrors.username && 'border-state-warning focus-visible:ring-state-warning/30'
               )}
             />
             {fieldErrors.username && (
-              <p className="text-xs text-red-500">{fieldErrors.username}</p>
+              <p className="text-xs text-state-warning">{fieldErrors.username}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="password" className="text-sm font-medium text-ink-medium">
               Senha
             </Label>
             <div className="relative">
@@ -111,26 +109,26 @@ export function Login() {
                   setError('');
                 }}
                 className={cn(
-                  'h-11 pr-10',
-                  fieldErrors.password && 'border-red-400 focus-visible:ring-red-300'
+                  'h-11 pr-10 focus-visible:border-wine focus-visible:ring-wine/30',
+                  fieldErrors.password && 'border-state-warning focus-visible:ring-state-warning/30'
                 )}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
                 tabIndex={-1}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-icon hover:text-ink-medium transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {fieldErrors.password && (
-              <p className="text-xs text-red-500">{fieldErrors.password}</p>
+              <p className="text-xs text-state-warning">{fieldErrors.password}</p>
             )}
           </div>
 
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <p className="text-xs text-state-warning bg-state-warningBg border border-state-warning/20 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -138,7 +136,7 @@ export function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full h-11 rounded-lg bg-wine hover:bg-wine-dark active:bg-wine-dark text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -153,7 +151,7 @@ export function Login() {
         </form>
       </div>
 
-      <p className="text-gray-400 text-xs mt-8">© {new Date().getFullYear()} Inimigos Bola FC</p>
+      <p className="text-ink-soft text-xs mt-8">© {new Date().getFullYear()} App Pelada</p>
     </div>
   );
 }
