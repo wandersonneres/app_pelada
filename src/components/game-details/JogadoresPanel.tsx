@@ -92,7 +92,7 @@ export function JogadoresPanel({
           </span>
           <div>
             <div className="text-[11px] text-ink-soft font-semibold">Confirmados</div>
-            <div className="text-[12px] text-ink-medium">de {game.maxPlayers} vagas</div>
+            {/* <div className="text-[12px] text-ink-medium">de {game.maxPlayers} vagas</div> */}
           </div>
         </div>
 

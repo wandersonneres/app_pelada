@@ -6,7 +6,6 @@ import { MatchNavigator } from './MatchNavigator';
 import { PitchLines } from './Pin';
 import { GoalsLog } from './GoalsLog';
 import { useFormationLines } from './useFormationLines';
-import { useMatchClock } from './useMatchClock';
 import { MatchesLayoutProps } from './types';
 import { getGoalTeamId } from '../../types';
 
@@ -16,7 +15,6 @@ export function MatchesMobile({
   activeMatch,
   activeMatchId,
   onSelectMatch,
-  isFirstMatch,
   canManage,
   playersPerTeam,
   setPlayersPerTeam,
@@ -28,7 +26,6 @@ export function MatchesMobile({
   onDeleteMatch,
   onOpenWaitingList,
   onSwapClick,
-  onTimerUpdate,
 }: MatchesLayoutProps) {
   const teamA = activeMatch.teams[0];
   const teamB = activeMatch.teams[1];
@@ -38,7 +35,6 @@ export function MatchesMobile({
   const [selectedTeam, setSelectedTeam] = useState<'azul' | 'laranja'>('azul');
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const { remainingSeconds, running, toggleRunning } = useMatchClock(activeMatch, isFirstMatch, onTimerUpdate);
   const activeTeam = selectedTeam === 'azul' ? teamA : teamB;
   const lines = useFormationLines(activeTeam, activeTeam.formation?.tactical || '3-3-1');
 
@@ -51,7 +47,7 @@ export function MatchesMobile({
 
       {(
         <>
-          <LiveScoreboard variant="mobile" scoreA={scoreA} scoreB={scoreB} remainingSeconds={remainingSeconds} running={running} onToggleRunning={toggleRunning} matchBadge={`P${matchIndex + 1}`} isLive={isLive} />
+          <LiveScoreboard variant="mobile" scoreA={scoreA} scoreB={scoreB} matchBadge={`P${matchIndex + 1}`} />
 
           <div style={{ display: 'flex', gap: 2, background: '#efe9dc', borderRadius: 11, padding: 3 }}>
             <button

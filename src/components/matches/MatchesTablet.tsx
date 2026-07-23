@@ -8,7 +8,6 @@ import { PitchLines } from './Pin';
 import { RosterPanel } from './RosterPanel';
 import { GoalsLog } from './GoalsLog';
 import { useFormationLines } from './useFormationLines';
-import { useMatchClock } from './useMatchClock';
 import { MatchesLayoutProps } from './types';
 import { getGoalTeamId } from '../../types';
 
@@ -18,7 +17,6 @@ export function MatchesTablet({
   activeMatch,
   activeMatchId,
   onSelectMatch,
-  isFirstMatch,
   canManage,
   playersPerTeam,
   setPlayersPerTeam,
@@ -33,7 +31,6 @@ export function MatchesTablet({
   onSwapClick,
   onOpenWaitingList,
   onDeleteMatch,
-  onTimerUpdate,
 }: MatchesLayoutProps) {
   const teamA = activeMatch.teams[0];
   const teamB = activeMatch.teams[1];
@@ -44,7 +41,6 @@ export function MatchesTablet({
     && game.players.length >= playersPerTeam * 2
     && (matches.length === 0 || (lastMatch?.status === 'finished' && !!lastMatch?.winner));
 
-  const { remainingSeconds, running, toggleRunning } = useMatchClock(activeMatch, isFirstMatch, onTimerUpdate);
   const linesA = useFormationLines(teamA, teamA.formation?.tactical || '3-3-1');
   const linesB = useFormationLines(teamB, teamB.formation?.tactical || '3-3-1');
 
@@ -85,7 +81,7 @@ export function MatchesTablet({
           <RosterPanel team={teamA} match={activeMatch} teamKey="azul" canSwap={canManage && isLive} onSwapClick={p => onSwapClick(teamA, p)} variant="tablet" side="left" />
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: 14 }}>
-            <LiveScoreboard variant="tablet" scoreA={scoreA} scoreB={scoreB} remainingSeconds={remainingSeconds} running={running} onToggleRunning={toggleRunning} matchBadge={`P${matchIndex + 1}`} isLive={isLive} />
+            <LiveScoreboard variant="tablet" scoreA={scoreA} scoreB={scoreB} matchBadge={`P${matchIndex + 1}`} />
 
             <div style={{ flex: 1, position: 'relative', marginTop: 12, borderRadius: 16, overflow: 'hidden', background: 'radial-gradient(130% 100% at 50% -10%, #478a5e, #296040)', minHeight: 0, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.12)' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 58px, rgba(0,0,0,.03) 58px 116px)' }} />

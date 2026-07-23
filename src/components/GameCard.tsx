@@ -71,7 +71,7 @@ export function GameCard({ game, onDelete }: GameCardProps) {
             </span>
           </div>
           <span className="text-sm text-gray-600">
-            {game.players.length} / {game.maxPlayers} jogadores
+            {game.players.length} jogadores
           </span>
         </div>
       </div>

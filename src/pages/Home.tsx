@@ -157,7 +157,7 @@ export function Home() {
                   </span>
                   <span className="inline-flex items-center gap-1 text-[12px] font-medium text-ink-soft">
                     <Users className="w-3.5 h-3.5" strokeWidth={2.2} />
-                    {game.players?.length || 0} / {game.maxPlayers}
+                    {game.players?.length || 0} 
                   </span>
                 </div>
 
@@ -256,7 +256,7 @@ export function Home() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap font-stat text-[13px] text-ink-medium">
-                        {game.players?.length || 0} / {game.maxPlayers}
+                        {game.players?.length || 0}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap font-stat text-[13px] text-ink-medium">
                         {game.matches?.length || 0}

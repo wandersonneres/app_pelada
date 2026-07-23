@@ -7,12 +7,6 @@ interface MatchNavigatorProps {
   compact?: boolean; // true no celular (chips menores)
 }
 
-function formatRemaining(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
-
 function matchScore(match: Match) {
   const teamA = match.teams[0];
   const teamB = match.teams[1];
@@ -82,11 +76,6 @@ export function MatchNavigator({ matches, activeMatchId, onSelect, compact }: Ma
               {!compact && winnerName && (
                 <span style={{ fontSize: 10, color: '#8b8578', marginLeft: 'auto', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
                   {winnerName}
-                </span>
-              )}
-              {!compact && isLive && match.timer?.remainingSeconds !== undefined && (
-                <span style={{ fontSize: 11, color: '#1f6b46', marginLeft: 'auto', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
-                  {formatRemaining(match.timer.remainingSeconds)}
                 </span>
               )}
             </div>

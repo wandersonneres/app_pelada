@@ -1,4 +1,4 @@
-import { Pause, Play, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { FormatSheet } from './FormatSheet';
 import { GoalButton } from './GoalButtons';
 import { MatchActionsBar } from './MatchActionsBar';
@@ -7,7 +7,6 @@ import { PitchLines } from './Pin';
 import { RosterPanel } from './RosterPanel';
 import { WaitingPanel } from './WaitingPanel';
 import { GoalsLog } from './GoalsLog';
-import { formatClock, useMatchClock } from './useMatchClock';
 import { useFormationLines } from './useFormationLines';
 import { MatchesLayoutProps } from './types';
 
@@ -17,7 +16,6 @@ export function MatchesDesktop({
   activeMatch,
   activeMatchId,
   onSelectMatch,
-  isFirstMatch,
   canManage,
   playersPerTeam,
   setPlayersPerTeam,
@@ -32,7 +30,6 @@ export function MatchesDesktop({
   onSwapClick,
   onOpenWaitingList,
   onDeleteMatch,
-  onTimerUpdate,
 }: MatchesLayoutProps) {
   const teamA = activeMatch.teams[0];
   const teamB = activeMatch.teams[1];
@@ -42,10 +39,8 @@ export function MatchesDesktop({
     && game.players.length >= playersPerTeam * 2
     && (matches.length === 0 || (lastMatch?.status === 'finished' && !!lastMatch?.winner));
 
-  const { remainingSeconds, running, toggleRunning } = useMatchClock(activeMatch, isFirstMatch, onTimerUpdate);
   const linesTop = useFormationLines(teamB, teamB.formation?.tactical || '3-3-1'); // Laranja no topo
   const linesBottom = useFormationLines(teamA, teamA.formation?.tactical || '3-3-1'); // Azul embaixo
-  const PlayPauseIcon = running ? Pause : Play;
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -126,19 +121,6 @@ export function MatchesDesktop({
                   <span style={{ background: 'rgba(0,0,0,.42)', color: '#fff', fontSize: 11, padding: '5px 10px', borderRadius: 8, fontWeight: 600 }}>
                     Azul · {teamA.formation?.tactical || '3-3-1'} ▾
                   </span>
-                </div>
-                <div style={{ position: 'absolute', right: 12, top: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ background: 'rgba(0,0,0,.42)', color: '#fff', fontSize: 11, padding: '5px 8px', borderRadius: 8, fontWeight: 600, fontFamily: "'Space Grotesk',sans-serif" }}>
-                    {formatClock(remainingSeconds)}
-                  </span>
-                  {isLive && (
-                    <button
-                      onClick={toggleRunning}
-                      style={{ width: 24, height: 24, borderRadius: 7, border: 'none', background: 'rgba(0,0,0,.42)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <PlayPauseIcon className="w-3 h-3" fill="currentColor" />
-                    </button>
-                  )}
                 </div>
                 {!isLive && (
                   <div style={{ position: 'absolute', right: 12, bottom: 10 }}>

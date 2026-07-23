@@ -592,7 +592,7 @@ export function Financeiro() {
                 <input
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder="Buscar jogador para lançar…"
+                  placeholder="Buscar jogador"
                   className="flex-1 bg-transparent outline-none text-sm text-ink py-2.5 min-w-0"
                 />
                 {searchTerm && (

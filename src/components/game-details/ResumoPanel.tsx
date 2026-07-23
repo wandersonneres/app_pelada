@@ -36,7 +36,7 @@ export function ResumoPanel({ game, onGoToSection }: ResumoPanelProps) {
   return (
     <div className="p-6 md:px-[28px] md:py-6 flex flex-col gap-[18px] min-h-full">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Confirmados" value={game.players.length} hint={`de ${game.maxPlayers} vagas`} />
+        <StatCard label="Confirmados" value={game.players.length} />
         <StatCard
           label="Partidas"
           value={totals.totalMatches}
@@ -88,7 +88,7 @@ export function ResumoPanel({ game, onGoToSection }: ResumoPanelProps) {
           </div>
           <div className="flex items-center gap-[11px] text-[13.5px] text-ink">
             <Users className="w-[18px] h-[18px] flex-none text-ink-soft" strokeWidth={2} />
-            {game.players.length} de {game.maxPlayers} confirmados
+            {game.players.length} confirmados
           </div>
           {game.observations && (
             <div className="border-t border-line-soft pt-3.5 mt-1">

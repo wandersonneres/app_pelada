@@ -73,7 +73,7 @@ export function NewGame() {
             <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-soft mb-4">
               Detalhes da pelada
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center gap-3 rounded-xl bg-paper/60 border border-line-soft px-3.5 py-3">
                 <span className="w-9 h-9 flex-none rounded-lg bg-wine-tint text-wine flex items-center justify-center">
                   <MapPin className="w-[18px] h-[18px]" strokeWidth={2.2} />
@@ -94,7 +94,7 @@ export function NewGame() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-xl bg-paper/60 border border-line-soft px-3.5 py-3">
+              {/* <div className="flex items-center gap-3 rounded-xl bg-paper/60 border border-line-soft px-3.5 py-3">
                 <span className="w-9 h-9 flex-none rounded-lg bg-wine-tint text-wine flex items-center justify-center">
                   <Users className="w-[18px] h-[18px]" strokeWidth={2.2} />
                 </span>
@@ -102,7 +102,7 @@ export function NewGame() {
                   <div className="text-[11px] text-ink-soft font-semibold uppercase tracking-wide">Vagas</div>
                   <div className="text-sm font-semibold text-ink truncate">18 jogadores</div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
