@@ -66,99 +66,67 @@ export function PlayerConfirmation() {
     }
   };
 
+  const formCard = (
+    <div className="w-full max-w-md bg-surface border border-line rounded-2xl shadow-sm p-8">
+      <div className="flex flex-col items-center mb-6">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-wine to-[#9e2a3d] text-white font-bold text-lg flex items-center justify-center mb-3">
+          P
+        </div>
+        <h1 className="font-heading font-bold text-2xl text-ink text-center mb-1">Confirmação de Jogador</h1>
+        <p className="text-ink-soft text-sm text-center">
+          Confirme sua presença e preencha seus dados para participar da pelada.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-ink-medium mb-1.5">Seu nome</label>
+          <input
+            className="w-full border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-icon focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors"
+            value={playerName}
+            onChange={e => setPlayerName(e.target.value)}
+            placeholder="Digite seu nome"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-ink-medium mb-1.5">Nível de Habilidade</label>
+          <StarRating value={playerSkillLevel} onChange={handleStarClick} size="md" showLabel={true} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-ink-medium mb-1.5">Faixa Etária</label>
+          <select
+            className="w-full border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors"
+            value={playerAgeGroup}
+            onChange={(e) => setPlayerAgeGroup(e.target.value as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
+          >
+            <option value="15-20">15-20 anos</option>
+            <option value="21-30">21-30 anos</option>
+            <option value="31-40">31-40 anos</option>
+            <option value="41-50">41-50 anos</option>
+            <option value="+50">+50 anos</option>
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-wine hover:bg-wine-dark text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-60"
+          disabled={isLoading}
+        >
+          Confirmar Presença
+        </button>
+      </form>
+    </div>
+  );
+
   if (!game) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-          <h1 className="text-2xl font-bold text-center mb-2">Confirmação de Jogador</h1>
-          <p className="text-gray-500 text-center mb-6">
-            Confirme sua presença e preencha seus dados para participar da pelada.
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Seu nome</label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
-                value={playerName}
-                onChange={e => setPlayerName(e.target.value)}
-                placeholder="Digite seu nome"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Nível de Habilidade</label>
-              <StarRating value={playerSkillLevel} onChange={handleStarClick} size="md" showLabel={true} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Faixa Etária</label>
-              <select
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
-                value={playerAgeGroup}
-                onChange={(e) => setPlayerAgeGroup(e.target.value as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
-              >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors disabled:opacity-60"
-              disabled={isLoading}
-            >
-              Confirmar Presença
-            </button>
-          </form>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-paper px-4">
+        {formCard}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-center mb-2">Confirmação de Jogador</h1>
-        <p className="text-gray-500 text-center mb-6">
-          Confirme sua presença e preencha seus dados para participar da pelada.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Seu nome</label>
-            <input
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-              placeholder="Digite seu nome"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Nível de Habilidade</label>
-            <StarRating value={playerSkillLevel} onChange={handleStarClick} size="md" showLabel={true} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Faixa Etária</label>
-            <select
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border-gray-200"
-              value={playerAgeGroup}
-              onChange={(e) => setPlayerAgeGroup(e.target.value as '15-20' | '21-30' | '31-40' | '41-50' | '+50')}
-            >
-              <option value="15-20">15-20 anos</option>
-              <option value="21-30">21-30 anos</option>
-              <option value="31-40">31-40 anos</option>
-              <option value="41-50">41-50 anos</option>
-              <option value="+50">+50 anos</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors disabled:opacity-60"
-            disabled={isLoading}
-          >
-            Confirmar Presença
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-paper px-4">
+      {formCard}
     </div>
   );
-} 
+}

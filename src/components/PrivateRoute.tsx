@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { PageLoader } from './Loader';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -13,12 +14,7 @@ export function PrivateRoute({ children, requireAdmin = false, requireFinanceiro
 
   // Se estiver carregando, mostra um indicador de carregamento
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <span className="text-gray-500 text-lg">Carregando...</span>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   // Se não estiver autenticado, redireciona para o login

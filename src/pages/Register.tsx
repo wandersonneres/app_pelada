@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { StarRating } from '../components/StarRating';
-import { FaChevronLeft, FaUser, FaEnvelope, FaLock, FaFutbol, FaBirthdayCake, FaStar } from 'react-icons/fa';
+import { ArrowLeft, User as UserIcon, Mail, Lock, UserPlus } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from '../config/firebase';
@@ -26,11 +26,23 @@ interface FormErrors {
   username?: string;
   email?: string;
   password?: string;
-  role?: string;
   'playerInfo.name'?: string;
 }
 
+const POSITION_HEX: Record<Position, string> = { defesa: '#d99a1a', meio: '#0d7a72', ataque: '#c2560f' };
+const POSITIONS: { key: Position; label: string }[] = [
+  { key: 'defesa', label: 'Defesa' },
+  { key: 'meio', label: 'Meio' },
+  { key: 'ataque', label: 'Ataque' },
+];
+const AGE_GROUPS: AgeGroup[] = ['15-20', '21-30', '31-40', '41-50', '+50'];
+
+const pillBase = 'py-2 rounded-lg text-[13px] font-semibold transition-colors';
+const pillInactive = 'bg-line-soft text-ink-medium hover:bg-line';
+
 export function Register() {
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,43 +56,23 @@ export function Register() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  
-  const navigate = useNavigate();
+  const [submitError, setSubmitError] = useState('');
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
-
-    if (!username) {
-      newErrors.username = 'Nome de usuário é obrigatório';
-    }
-
-    if (!email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email inválido';
-    }
-
-    if (!password) {
-      newErrors.password = 'Senha é obrigatória';
-    } else if (password.length < 6) {
-      newErrors.password = 'A senha deve ter pelo menos 6 caracteres';
-    }
-
-    if (!role) {
-      newErrors.role = 'Papel é obrigatório';
-    }
-
-    if (!playerInfo.name) {
-      newErrors['playerInfo.name'] = 'Nome do jogador é obrigatório';
-    }
-
+    if (!username) newErrors.username = 'Nome de usuário é obrigatório';
+    if (!email) newErrors.email = 'Email é obrigatório';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email inválido';
+    if (!password) newErrors.password = 'Senha é obrigatória';
+    else if (password.length < 6) newErrors.password = 'A senha deve ter pelo menos 6 caracteres';
+    if (!playerInfo.name) newErrors['playerInfo.name'] = 'Nome do jogador é obrigatório';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setSubmitError('');
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -90,11 +82,9 @@ export function Register() {
       secondaryApp = initializeApp(firebaseConfig, 'Secondary');
       const secondaryAuth = getAuth(secondaryApp);
 
-      // Cria usuário no Auth do app secundário
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
       const uid = userCredential.user.uid;
 
-      // Cria documento do usuário no Firestore (sem senha)
       const usersRef = collection(db, 'users');
       await setDoc(doc(usersRef, uid), {
         username: username.toLowerCase(),
@@ -102,245 +92,177 @@ export function Register() {
         role,
         playerInfo,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
-      // Mostra mensagem de sucesso
-      // toast({
-      //   title: 'Usuário cadastrado',
-      //   description: 'O usuário foi cadastrado com sucesso!',
-      //   status: 'success',
-      //   duration: 3000,
-      //   isClosable: true,
-      //   position: 'top',
-      // });
-
-      // Redireciona para a página de jogadores
       navigate('/players');
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
       let errorMessage = 'Erro ao criar usuário';
-
       if (error.code === 'permission-denied') {
         errorMessage = 'Você não tem permissão para cadastrar usuários';
       } else if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'Este e-mail já está em uso.';
       }
-
-      // toast({
-      //   title: 'Erro',
-      //   description: errorMessage,
-      //   status: 'error',
-      //   duration: 5000,
-      //   isClosable: true,
-      //   position: 'top',
-      // });
+      setSubmitError(errorMessage);
     } finally {
       setIsLoading(false);
-      // Remove o app secundário para liberar recursos
       if (secondaryApp) {
         try { await secondaryApp.delete(); } catch {}
       }
     }
   };
 
+  const inputClass =
+    'w-full border border-line rounded-lg px-3 py-2.5 text-ink bg-surface placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors';
+  const labelClass = 'block text-[13px] font-medium text-ink-medium mb-1.5';
+  const sectionLabel = 'text-[12px] font-semibold uppercase tracking-wide text-ink-soft flex items-center gap-1.5';
+
   return (
-    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <FaChevronLeft className="w-5 h-5 text-gray-500" />
-        </button>
-        <h1 className="text-2xl font-bold text-center flex-1">Cadastrar Usuário</h1>
-        <div className="w-8" />
+    <div className="min-h-screen w-full bg-paper flex flex-col items-center justify-center px-4 py-10">
+      <div className="flex items-center gap-3 mb-7">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-wine to-[#9e2a3d] flex items-center justify-center text-white font-heading font-extrabold text-lg shadow-sm">
+          P
+        </div>
+        <span className="font-heading font-extrabold text-xl text-ink">App Pelada</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informações Básicas */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaUser className="w-4 h-4 text-blue-600" />
-            Informações Básicas
-          </h2>
-
-          <div className="space-y-2">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Nome de Usuário
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Digite o nome de usuário"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
+      <form onSubmit={handleSubmit} className="w-full max-w-lg bg-surface border border-line rounded-2xl shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="relative bg-gradient-to-br from-wine to-[#9e2a3d] px-6 pt-5 pb-6 text-center">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 top-4 p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="w-16 h-16 mx-auto rounded-full bg-white/15 ring-4 ring-white/20 text-white flex items-center justify-center">
+            <UserPlus className="w-7 h-7" />
           </div>
-
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite o email"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Senha
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite a senha"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-              Papel
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="player">Jogador</option>
-              <option value="admin">Administrador</option>
-            </select>
-            {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role}</p>}
-          </div>
+          <div className="mt-3 font-heading font-bold text-lg text-white">Cadastrar usuário</div>
+          <div className="text-[12.5px] text-white/80 mt-0.5">Adicione um novo jogador ao grupo</div>
         </div>
 
-        {/* Informações do Jogador */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaFutbol className="w-4 h-4 text-blue-600" />
-            Informações do Jogador
-          </h2>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.name" className="block text-sm font-medium text-gray-700">
-              Nome Completo
-            </label>
-            <input
-              type="text"
-              id="playerInfo.name"
-              value={playerInfo.name}
-              onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Digite o nome completo"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            />
-            {errors['playerInfo.name'] && <p className="text-red-500 text-sm mt-1">{errors['playerInfo.name']}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.position" className="block text-sm font-medium text-gray-700">
-                Posição
-              </label>
-              <select
-                id="playerInfo.position"
-                value={playerInfo.position}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="defesa">Defesa</option>
-                <option value="meio">Meio Campo</option>
-                <option value="ataque">Ataque</option>
-              </select>
+        <div className="p-5 sm:p-6 space-y-6">
+          {submitError && (
+            <div className="bg-state-warningBg text-state-warning text-[13px] font-medium rounded-lg px-3 py-2.5">
+              {submitError}
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-gray-700">
-                Faixa Etária
-              </label>
-              <select
-                id="playerInfo.ageGroup"
-                value={playerInfo.ageGroup}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-              <FaStar className="w-4 h-4 text-yellow-500" />
-              Nível de Habilidade
-            </label>
-            <div className="p-2 bg-gray-50 rounded-lg">
-              <StarRating
-                value={playerInfo.skillLevel}
-                onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
-                size="lg"
-                showLabel
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-gray-700">
-              Tipo de Pagamento
-            </label>
-            <select
-              id="playerInfo.paymentType"
-              value={playerInfo.paymentType}
-              onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="mensalista">Mensalista</option>
-              <option value="diarista">Diarista</option>
-            </select>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Cadastrando...
-            </>
-          ) : (
-            'Cadastrar Usuário'
           )}
-        </button>
+
+          {/* Informações Básicas */}
+          <div className="space-y-4">
+            <h2 className={sectionLabel}><UserIcon className="w-3.5 h-3.5 text-wine" /> Informações básicas</h2>
+
+            <div>
+              <label htmlFor="username" className={labelClass}>Nome de usuário</label>
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+                <input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className={`${inputClass} pl-9`} />
+              </div>
+              {errors.username && <p className="text-state-warning text-xs mt-1">{errors.username}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="email" className={labelClass}>Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={`${inputClass} pl-9`} />
+              </div>
+              {errors.email && <p className="text-state-warning text-xs mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="password" className={labelClass}>Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+                <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" className={`${inputClass} pl-9`} />
+              </div>
+              {errors.password && <p className="text-state-warning text-xs mt-1">{errors.password}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass}>Papel do usuário</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['player', 'admin'] as Role[]).map(r => (
+                  <button key={r} type="button" onClick={() => setRole(r)} className={`${pillBase} ${role === r ? 'bg-wine text-white' : pillInactive}`}>
+                    {r === 'admin' ? 'Administrador' : 'Jogador'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-ink-soft mt-1.5">Administradores têm acesso a todas as funcionalidades.</p>
+            </div>
+          </div>
+
+          {/* Informações do Jogador */}
+          <div className="space-y-4 border-t border-line-soft pt-5">
+            <h2 className={sectionLabel}>⚽ Informações do jogador</h2>
+
+            <div>
+              <label htmlFor="playerName" className={labelClass}>Nome completo</label>
+              <input id="playerName" type="text" value={playerInfo.name} onChange={e => setPlayerInfo(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" className={inputClass} />
+              {errors['playerInfo.name'] && <p className="text-state-warning text-xs mt-1">{errors['playerInfo.name']}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass}>Posição</label>
+              <div className="grid grid-cols-3 gap-2">
+                {POSITIONS.map(pos => (
+                  <button
+                    key={pos.key}
+                    type="button"
+                    onClick={() => setPlayerInfo(p => ({ ...p, position: pos.key }))}
+                    className={`${pillBase} ${playerInfo.position === pos.key ? 'text-white' : pillInactive}`}
+                    style={playerInfo.position === pos.key ? { background: POSITION_HEX[pos.key] } : undefined}
+                  >
+                    {pos.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Faixa etária</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {AGE_GROUPS.map(age => (
+                  <button key={age} type="button" onClick={() => setPlayerInfo(p => ({ ...p, ageGroup: age }))} className={`${pillBase} ${playerInfo.ageGroup === age ? 'bg-wine text-white' : pillInactive}`}>
+                    {age}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Nível de habilidade</label>
+              <div className="p-3 bg-paper border border-line rounded-xl">
+                <StarRating value={playerInfo.skillLevel} onChange={value => setPlayerInfo(p => ({ ...p, skillLevel: value as SkillLevel }))} size="lg" showLabel />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Tipo de pagamento</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['mensalista', 'diarista'] as PaymentType[]).map(t => (
+                  <button key={t} type="button" onClick={() => setPlayerInfo(p => ({ ...p, paymentType: t }))} className={`${pillBase} ${playerInfo.paymentType === t ? 'bg-wine text-white' : pillInactive}`}>
+                    {t === 'mensalista' ? 'Mensalista' : 'Diarista'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2.5 pt-1">
+            <button type="button" onClick={() => navigate(-1)} className="px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium text-sm font-semibold rounded-xl hover:bg-paper transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 bg-wine hover:bg-wine-dark text-white font-semibold text-sm py-2.5 rounded-xl transition-colors disabled:opacity-60">
+              {isLoading ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Cadastrando…</> : <><UserPlus className="w-4 h-4" /> Cadastrar usuário</>}
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );
-} 
+}

@@ -8,8 +8,50 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        heading: ['Bricolage Grotesque', 'Inter', 'sans-serif'],
+        stat: ['Space Grotesk', 'Inter', 'sans-serif'],
       },
       colors: {
+        wine: {
+          DEFAULT: '#6e1a28',
+          dark: '#56131f',
+          tint: '#f3e5e8',
+        },
+        paper: '#efece3',
+        surface: '#ffffff',
+        line: {
+          DEFAULT: '#e6e1d4',
+          soft: '#efe9dc',
+        },
+        ink: {
+          DEFAULT: '#1b1a16',
+          medium: '#4b463b',
+          soft: '#8b8578',
+          icon: '#a6a093',
+        },
+        team: {
+          blue: {
+            DEFAULT: '#24499c',
+            dark: '#1c3576',
+            tint: '#eef1fa',
+          },
+          orange: {
+            DEFAULT: '#c2560f',
+            dark: '#9e440a',
+            tint: '#f8efe4',
+          },
+        },
+        position: {
+          def: '#d99a1a',
+          mei: '#0d7a72',
+          ata: '#c2560f',
+        },
+        state: {
+          success: '#1f6b46',
+          warning: '#9a6a10',
+          warningBg: '#f6ecca',
+          live: '#dc2626',
+        },
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         border: 'var(--border)',

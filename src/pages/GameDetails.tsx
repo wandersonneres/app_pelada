@@ -1,15 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection, setDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
 import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, ArrowLeftRight, User, Plus, Target, Footprints } from 'lucide-react';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { StarRating } from '../components/StarRating';
-import { TacticalView } from '../components/TacticalView';
-import { MatchTimer } from '../components/MatchTimer';
-import { GameAnalytics } from '../components/GameAnalytics';
-import { MatchScore } from '../components/MatchScore';
+import { MatchesPanel } from '../components/matches/MatchesPanel';
+import { WaitingReorderList } from '../components/matches/WaitingReorderList';
+import { PageLoader } from '../components/Loader';
+import { SectionNav, GameSection } from '../components/game-details/SectionNav';
+import { ResumoPanel } from '../components/game-details/ResumoPanel';
+import { JogadoresPanel } from '../components/game-details/JogadoresPanel';
+import { AnalisesPanel } from '../components/game-details/AnalisesPanel';
+import { ResumoMobile } from '../components/game-details/ResumoMobile';
+import { JogadoresMobile } from '../components/game-details/JogadoresMobile';
+import { AnalisesMobile } from '../components/game-details/AnalisesMobile';
+import { GameTopbar } from '../components/game-details/GameTopbar';
+import { useViewport } from '../hooks/useViewport';
+import { usePageNav, PageNavItem } from '../contexts/PageNavContext';
+import { BarChart2, LayoutGrid, Swords } from 'lucide-react';
+
+const SECTION_NAV_ITEMS: PageNavItem[] = [
+  { key: 'resumo', label: 'Resumo', icon: LayoutGrid },
+  { key: 'jogadores', label: 'Jogadores', icon: Users },
+  { key: 'partidas', label: 'Partidas', icon: Swords },
+  { key: 'analises', label: 'Análises', icon: BarChart2 },
+];
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -47,13 +64,13 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Adicionar Jogador</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">×</button>
+          <button onClick={onClose} className="text-ink-icon hover:text-ink">×</button>
         </div>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Nome do Jogador</label>
             <input
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wine"
                 value={playerName}
               onChange={e => setPlayerName(e.target.value)}
                 placeholder="Digite o nome do jogador"
@@ -66,7 +83,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
                 <button
                   key={pos}
                   type="button"
-                  className={`px-3 py-2 rounded-lg border ${playerPosition === pos ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  className={`px-3 py-2 rounded-lg border ${playerPosition === pos ? 'bg-wine text-white' : 'bg-line-soft text-ink-medium'} transition-colors`}
                   onClick={() => setPlayerPosition(pos as any)}
                 >
                   {pos.charAt(0).toUpperCase() + pos.slice(1)}
@@ -85,7 +102,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
                 <button
                   key={age}
                   type="button"
-                  className={`px-3 py-2 rounded-lg border ${playerAgeGroup === age ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  className={`px-3 py-2 rounded-lg border ${playerAgeGroup === age ? 'bg-wine text-white' : 'bg-line-soft text-ink-medium'} transition-colors`}
                   onClick={() => setPlayerAgeGroup(age as any)}
                 >
                   {age} anos
@@ -100,7 +117,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
                 <button
                   key={type}
                   type="button"
-                  className={`px-3 py-2 rounded-lg border ${playerPaymentType === type ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'} transition-colors`}
+                  className={`px-3 py-2 rounded-lg border ${playerPaymentType === type ? 'bg-wine text-white' : 'bg-line-soft text-ink-medium'} transition-colors`}
                   onClick={() => setPlayerPaymentType(type as any)}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -112,14 +129,14 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-ink-medium bg-line-soft rounded-lg hover:bg-line transition-colors"
             type="button"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-wine rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             disabled={isJoining || !playerName.trim()}
           >
@@ -154,112 +171,69 @@ export function PlayerSwapModal({
 }: PlayerSwapModalProps) {
   if (!isOpen || !currentPlayer) return null;
 
+  const SWAP_POS_LABEL: Record<string, string> = { defesa: 'DEF', meio: 'MEI', ataque: 'ATA' };
+  const SWAP_POS_HEX: Record<string, string> = { defesa: '#d99a1a', meio: '#0d7a72', ataque: '#c2560f' };
+  const posBadge = (position: string) => (
+    <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.04em] px-[7px] py-[3px] rounded-md flex-none" style={{ color: '#5c5647', background: '#ece5d6' }}>
+      <span className="w-[5px] h-[5px] rounded-full" style={{ background: SWAP_POS_HEX[position] }} />
+      {SWAP_POS_LABEL[position]}
+    </span>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-bold text-lg text-gray-800">Trocar Jogador</h2>
-          <button
-            className="text-gray-400 hover:text-gray-700 text-xl font-bold"
-            onClick={onClose}
-            aria-label="Fechar"
-          >
-            ×
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-line">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="chip w-9 h-9 flex-none rounded-full bg-ink text-white font-stat font-bold text-sm flex items-center justify-center">{currentPlayer.arrivalOrder}</span>
+            <div className="min-w-0">
+              <h2 className="font-heading font-bold text-[15px] text-ink truncate">Trocar {currentPlayer.name}</h2>
+              <div className="text-[11px] text-ink-soft">Trocar de time ou substituir pela espera</div>
+            </div>
+          </div>
+          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl" onClick={onClose} aria-label="Fechar">×</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {/* Trocar com jogador do outro time */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div>
-            <div className="font-medium mb-3 text-gray-700">Trocar com jogador do outro time</div>
-            <div className="space-y-2">
+            <div className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide mb-2">Trocar com o outro time</div>
+            <div className="space-y-1.5">
               {otherTeamPlayers.length === 0 ? (
-                <div className="text-gray-400 text-sm py-2">Nenhum jogador disponível no outro time.</div>
+                <div className="text-ink-soft text-sm py-2">Nenhum jogador disponível no outro time.</div>
               ) : (
                 otherTeamPlayers.map((player) => (
                   <button
                     key={player.id}
                     onClick={() => onSwapPlayers(player)}
-                    className="flex items-center w-full p-3 rounded-lg hover:bg-blue-50 transition-colors text-left border border-gray-100"
+                    className="flex items-center gap-3 w-full p-2.5 rounded-xl border border-[#eee7d8] bg-surface hover:bg-paper transition-colors text-left"
                   >
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm mr-3">
-                      {player.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{player.name}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                        </span>
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                              <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
-                            </svg>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <ArrowLeftRight className="w-4 h-4 text-blue-500 ml-2" />
+                    <span className="chip w-8 h-8 flex-none rounded-full bg-ink text-white font-stat font-bold text-[12px] flex items-center justify-center">{player.arrivalOrder}</span>
+                    <span className="flex-1 font-semibold text-[14px] text-ink truncate">{player.name}</span>
+                    {posBadge(player.position)}
+                    <ArrowLeftRight className="w-4 h-4 text-wine flex-none" />
                   </button>
                 ))
               )}
             </div>
           </div>
 
-          <hr className="border-gray-200" />
-
-          {/* Substituir por jogador da lista de espera */}
           <div>
-            <div className="font-medium mb-3 text-gray-700">Substituir por jogador da lista de espera</div>
-            <div className="space-y-2">
+            <div className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide mb-2">Substituir pela espera</div>
+            <div className="space-y-1.5">
               {waitingPlayers.length === 0 ? (
-                <div className="text-gray-400 text-sm py-2">Nenhum jogador na lista de espera.</div>
+                <div className="text-ink-soft text-sm py-2">Nenhum jogador na lista de espera.</div>
               ) : (
                 waitingPlayers.map((player) => (
-                  <div key={player.id} className="flex items-center w-full p-3 rounded-lg border border-gray-100">
-                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-600 text-sm mr-3">
-                      {player.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{player.name}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                          player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                        </span>
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                              <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
-                            </svg>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 ml-2">
-                      <button
-                        onClick={() => onReplacePlayer(player)}
-                        className="p-2 rounded-lg hover:bg-green-50 transition-colors"
-                        title="Substituir jogador"
-                      >
-                        <ArrowLeftRight className="w-4 h-4 text-green-500" />
-                      </button>
-                      <button
-                        onClick={() => onRemoveFromWaitingList(player)}
-                        className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                        title="Remover da lista de espera"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
+                  <div key={player.id} className="flex items-center gap-3 w-full p-2.5 rounded-xl border border-[#eee7d8] bg-surface">
+                    <span className="chip w-8 h-8 flex-none rounded-full bg-ink text-white font-stat font-bold text-[12px] flex items-center justify-center">{player.arrivalOrder}</span>
+                    <span className="flex-1 font-semibold text-[14px] text-ink truncate">{player.name}</span>
+                    {posBadge(player.position)}
+                    <button onClick={() => onReplacePlayer(player)} title="Substituir" className="p-2 rounded-lg text-state-success hover:bg-state-success/10 transition-colors flex-none">
+                      <ArrowLeftRight className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => onRemoveFromWaitingList(player)} title="Remover da espera" className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors flex-none">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))
               )}
@@ -274,6 +248,7 @@ export function PlayerSwapModal({
 export function GameDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const viewport = useViewport();
   const [game, setGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
@@ -302,7 +277,37 @@ export function GameDetails() {
     };
   }>>([]);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'jogadores' | 'partidas' | 'analises'>('jogadores');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const VALID_SECTIONS: GameSection[] = ['resumo', 'jogadores', 'partidas', 'analises'];
+  const initialTab = searchParams.get('tab') as GameSection | null;
+  const [selectedTab, setSelectedTab] = useState<GameSection>(
+    initialTab && VALID_SECTIONS.includes(initialTab) ? initialTab : 'resumo'
+  );
+  const handleSelectSection = useCallback((key: string) => setSelectedTab(key as GameSection), []);
+
+  // Mantém a aba ativa na URL (?tab=) para sobreviver a refresh.
+  useEffect(() => {
+    if (searchParams.get('tab') === selectedTab) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', selectedTab);
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab]);
+
+  const WEEKDAYS_SHORT = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  usePageNav(
+    game
+      ? {
+          title: `Pelada de ${WEEKDAYS_SHORT[convertTimestampToDate(game.date).getDay()]}`,
+          items: SECTION_NAV_ITEMS,
+          active: selectedTab,
+          onSelect: handleSelectSection,
+          subtitle: `${game.location} · ${game.players.length} confirmados`,
+          live: game.status === 'in_progress',
+        }
+      : null
+  );
+
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [waitingListMatchId, setWaitingListMatchId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -707,12 +712,28 @@ export function GameDetails() {
 
     try {
       const updatedMatches = game.matches.filter(match => match.id !== matchId);
+      const lastMatch = updatedMatches[updatedMatches.length - 1];
+
+      // Reconstrói a lista de espera a partir do estado real: quem NÃO está na
+      // última partida restante entra na fila por ordem de chegada. Sem isso, a
+      // waitingList ficava dessincronizada e duplicava jogadores ao regenerar
+      // (a partir da 2ª partida). Na 1ª não quebrava porque não havia fila anterior.
+      let newWaitingList: string[] = [];
+      if (lastMatch) {
+        const inGame = new Set(lastMatch.teams.flatMap(t => t.players.map(p => p.id)));
+        newWaitingList = [...game.players]
+          .filter(p => !inGame.has(p.id))
+          .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
+          .map(p => p.id);
+      }
+
       if (!id) return;
       const gameRef = doc(db, 'games', id);
       await updateDoc(gameRef, {
         matches: updatedMatches,
         currentMatch: null,
-        status: 'waiting',
+        status: updatedMatches.length === 0 ? 'waiting' : 'in_progress',
+        waitingList: newWaitingList,
         updatedAt: serverTimestamp(),
       });
 
@@ -845,6 +866,7 @@ export function GameDetails() {
           status: 'in_progress',
           createdAt: new Date(),
           updatedAt: new Date(),
+          waitingList: [...waitingList], // snapshot da fila desta partida (ordem preservada)
         };
 
         await updateDoc(doc(db, 'games', id), {
@@ -932,6 +954,7 @@ export function GameDetails() {
           status: 'in_progress',
           createdAt: new Date(),
           updatedAt: new Date(),
+          waitingList: [...waitingList], // snapshot da fila desta partida (ordem preservada)
         };
 
         await updateDoc(doc(db, 'games', id), {
@@ -1055,6 +1078,8 @@ export function GameDetails() {
             ...match,
             status: 'finished',
             winner: winnerTeamId,
+            // Congela a ordem da fila exatamente como estava ao finalizar.
+            waitingList: [...(game.waitingList || [])],
             updatedAt: new Date(),
           };
         }
@@ -1592,22 +1617,20 @@ export function GameDetails() {
 
   // Loading
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <PageLoader label="Carregando pelada…" />;
   }
 
   if (!game) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <span className="text-gray-500 text-lg">Jogo não encontrado</span>
+        <span className="text-ink-soft text-lg">Jogo não encontrado</span>
       </div>
     );
   }
 
   const isGameFull = game.players?.length >= game.maxPlayers;
+  const framed = viewport === 'desktop' || viewport === 'tablet';
+  const canManage = !!(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista');
 
   const formatMatchDate = (date: any) => {
     if (!date) return '';
@@ -1740,12 +1763,29 @@ export function GameDetails() {
     } catch (error) {
       console.error('Erro ao remover da lista de espera:', error);
       setToastMsg({ type: 'error', message: 'Ocorreu um erro ao remover o jogador da lista de espera.' });
-      
+
       // Reverte o estado local em caso de erro
       setGame(prev => prev ? {
         ...prev,
         waitingList: game.waitingList
       } : null);
+    }
+  };
+
+  // Reordena a lista de espera (arrastar). Persiste a nova ordem da fila.
+  const handleReorderWaitingList = async (orderedIds: string[]) => {
+    if (!game || !id) return;
+    const prevList = game.waitingList;
+    setGame(prev => prev ? { ...prev, waitingList: orderedIds } : prev);
+    try {
+      await updateDoc(doc(db, 'games', id), {
+        waitingList: orderedIds,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Erro ao reordenar lista de espera:', error);
+      setToastMsg({ type: 'error', message: 'Ocorreu um erro ao reordenar a lista de espera.' });
+      setGame(prev => prev ? { ...prev, waitingList: prevList } : prev);
     }
   };
 
@@ -1758,11 +1798,24 @@ export function GameDetails() {
     if (!game || !id) return;
 
     try {
+      // Firestore rejeita undefined: monta o timer só com campos definidos.
+      const cleanTimer: {
+        isRunning: boolean;
+        remainingSeconds: number;
+        totalSeconds: number;
+        startedAt?: Date;
+      } = {
+        isRunning: timerData.isRunning,
+        remainingSeconds: timerData.remainingSeconds,
+        totalSeconds: timerData.totalSeconds,
+      };
+      if (timerData.startedAt) cleanTimer.startedAt = timerData.startedAt;
+
       const updatedMatches = game.matches.map(match => {
         if (match.id === matchId) {
           return {
             ...match,
-            timer: timerData,
+            timer: cleanTimer,
             updatedAt: new Date()
           };
         }
@@ -1802,56 +1855,22 @@ export function GameDetails() {
 
   // Layout principal
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className={framed ? 'h-screen flex flex-col overflow-hidden bg-paper' : 'min-h-screen flex flex-col bg-paper'}>
       {toastMsg && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${toastMsg.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>{toastMsg.message}</div>
       )}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Voltar">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Detalhes da Pelada</h1>
-            <p className="text-sm text-gray-500">{game && formatDate(game.date)}</p>
-          </div>
-        </div>
-        <div className="flex gap-3 w-full md:w-auto justify-end">
-          {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-            <>
-              <button
-                onClick={handleFinishGame}
-                className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  game?.status === 'finished'
-                    ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                    : 'bg-green-100 text-green-800 hover:bg-green-200'
-                }`}
-                aria-label={game?.status === 'finished' ? 'Reabrir pelada' : 'Finalizar pelada'}
-              >
-                <Check className="w-4 h-4 mr-2" />
-                {game?.status === 'finished' ? 'Reabrir' : 'Finalizar'}
-              </button>
-              <button
-                onClick={() => navigate(`/game/${game?.id}/edit`)}
-                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                aria-label="Editar pelada"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
-              </button>
-              <button
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
-                aria-label="Excluir pelada"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+
+      {framed && (
+        <GameTopbar
+          game={game}
+          canManage={canManage}
+          onEdit={() => navigate(`/game/${game.id}/edit`)}
+          onToggleFinish={handleFinishGame}
+          onDelete={() => setIsDeleteDialogOpen(true)}
+          centerContent={viewport === 'tablet' ? <SectionNav active={selectedTab} onChange={setSelectedTab} /> : undefined}
+          editInMenu={viewport === 'tablet'}
+        />
+      )}
 
       {/* Modal de confirmação de exclusão */}
       <AnimatePresence>
@@ -1868,16 +1887,16 @@ export function GameDetails() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4"
             >
-              <h2 className="text-lg font-bold text-gray-900 mb-2">
+              <h2 className="font-heading text-lg font-bold text-ink mb-2">
                 Excluir Pelada
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-ink-medium mb-6">
                 Tem certeza que deseja excluir esta pelada? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setIsDeleteDialogOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-ink-medium bg-line-soft rounded-lg hover:bg-line transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1894,156 +1913,84 @@ export function GameDetails() {
         )}
       </AnimatePresence>
 
-      {/* Cards de informações */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
-          <div className="flex items-center gap-2 mb-2">
-            <MapPin className="w-5 h-5 text-green-500" />
-            <span className="font-medium">{game?.location}</span>
+      {/* Conteúdo da pelada */}
+      <div className={framed ? 'flex-1 min-h-0' : 'flex-1 pb-24'}>
+        {selectedTab === 'partidas' ? (
+          <MatchesPanel
+            game={game}
+            user={user}
+            playersPerTeam={playersPerTeam}
+            isPlayersPerTeamOpen={isPlayersPerTeamOpen}
+            setIsPlayersPerTeamOpen={setIsPlayersPerTeamOpen}
+            setPlayersPerTeam={setPlayersPerTeam}
+            isGeneratingTeams={isGeneratingTeams}
+            generateTeams={generateTeams}
+            deleteMatch={deleteMatch}
+            finishMatch={finishMatch}
+            handleFormationChange={handleFormationChange}
+            handleGoalScored={handleGoalScored}
+            handleRemoveGoal={handleRemoveGoal}
+            createTimerUpdateHandler={createTimerUpdateHandler}
+            onOpenSwap={(team, player, match) => {
+              setSelectedTeam(team);
+              setSelectedPlayer(player);
+              setSelectedMatch(match);
+              setIsPlayerSwapOpen(true);
+            }}
+            setWaitingListMatchId={setWaitingListMatchId}
+          />
+        ) : viewport === 'mobile' ? (
+          <>
+            {selectedTab === 'resumo' && (
+              <ResumoMobile
+                game={game}
+                canManage={canManage}
+                onEdit={() => navigate(`/game/${game.id}/edit`)}
+                onToggleFinish={handleFinishGame}
+                onDelete={() => setIsDeleteDialogOpen(true)}
+                onGoToSection={setSelectedTab}
+              />
+            )}
+            {selectedTab === 'jogadores' && (
+              <JogadoresMobile
+                game={game}
+                canManage={canManage}
+                diaristaPayments={diaristaPayments}
+                onDiaristaPayment={handleDiaristaPayment}
+                onOpenPlayerOptions={(player) => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
+                onAddPlayer={() => setShowAddPlayerModal(true)}
+                onSelectPlayer={handleOpenSelectPlayerModal}
+              />
+            )}
+            {selectedTab === 'analises' && <AnalisesMobile game={game} />}
+          </>
+        ) : (
+          <div className={framed ? (selectedTab === 'jogadores' ? 'h-full min-h-0' : 'h-full overflow-y-auto') : ''}>
+            {selectedTab === 'resumo' && (
+              <ResumoPanel game={game} onGoToSection={setSelectedTab} />
+            )}
+            {selectedTab === 'jogadores' && (
+              <JogadoresPanel
+                game={game}
+                canManage={canManage}
+                diaristaPayments={diaristaPayments}
+                onDiaristaPayment={handleDiaristaPayment}
+                onOpenPlayerOptions={(player) => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
+                onAddPlayer={() => setShowAddPlayerModal(true)}
+                onSelectPlayer={handleOpenSelectPlayerModal}
+              />
+            )}
+            {selectedTab === 'analises' && (
+              <AnalisesPanel game={game} />
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-500" />
-            <span className="text-gray-600">{game?.players.length} / {game?.maxPlayers} jogadores</span>
-          </div>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-5 h-5 text-blue-500" />
-            <span className="font-medium">Status</span>
-          </div>
-          <span className={`badge ${game?.status === 'waiting' ? 'badge-waiting' : game?.status === 'in_progress' ? 'badge-in-progress' : 'badge-finished'}`}>{game && getStatusText(game.status)}</span>
-        </motion.div>
+        )}
       </div>
 
-      {/* Observações */}
-      {game?.observations && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card mb-6">
-          <span className="text-gray-600 text-sm">{game.observations}</span>
-        </motion.div>
-      )}
+      {/* Navegação inferior (celular) */}
+      {viewport === 'mobile' && <SectionNav active={selectedTab} onChange={setSelectedTab} />}
 
-                        {/* Lista de Jogadores */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b">
-          <button
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'jogadores' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
-            onClick={() => setSelectedTab('jogadores')}
-          >
-            Jogadores
-          </button>
-          <button
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'partidas' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
-            onClick={() => setSelectedTab('partidas')}
-          >
-            Partidas
-          </button>
-          <button
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${selectedTab === 'analises' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-500'}`}
-            onClick={() => setSelectedTab('analises')}
-          >
-            Análises
-          </button>
-        </div>
-
-        {/* Conteúdo das tabs */}
-        {selectedTab === 'jogadores' && (
-          <>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Jogadores Confirmados</h2>
-              {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowAddPlayerModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                    title="Adicionar Jogador"
-                  >
-                    <Plus className="w-4 h-3" />
-                    <span className="hidden lg:inline">Adicionar Jogador</span>
-                  </button>
-                  <button
-                    onClick={handleOpenSelectPlayerModal}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                    title="Selecionar Jogador"
-                  >
-                    <User className="w-4 h-3" />
-                    <span className="hidden lg:inline">Selecionar Jogador</span>
-                  </button>
-                </div>
-              )}
-            </div>
-                {game.players && game.players.length > 0 ? (
-              <ul className="divide-y divide-gray-100">
-                {game.players
-                  .sort((a, b) => a.arrivalOrder - b.arrivalOrder)
-                  .map((player, idx) => (
-                    <li key={player.id} className="py-2">
-                      <div className="flex flex-row items-center w-full">
-                        {/* Bloco esquerdo: ordem, nome, estrelas, idade */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {/* Ordem */}
-                            <span className="w-7 text-xs text-center font-mono text-gray-400">{String(player.arrivalOrder).padStart(2, '0')}</span>
-                            {/* Nome */}
-                            <span className="font-medium text-gray-800 text-sm truncate max-w-[200px] md:max-w-[250px]">
-                              {player.name}
-                              {/* <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${player.paymentType === 'mensalista' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{player.paymentType === 'mensalista' ? 'Mensalista' : 'Diarista'}</span> */}
-                            </span>
-                            {/* {player.paymentType === 'diarista' && diaristaPayments[player.id] && (
-                              <span className="ml-2 px-2 py-0.5 rounded-lg text-xs font-medium bg-green-100 text-green-800" title={`Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)}`}>
-                                Pago ✓
-                              </span>
-                            )} */}
-                          </div>
-                          <div className="flex gap-2 mt-0.5 ml-7">
-                            {/* Estrelas */}
-                            <span className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                                  <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
-                                </svg>
-                              ))}
-                            </span>
-                            {/* Idade */}
-                            <span className="text-xs text-gray-400">{player.ageGroup} anos</span>
-                            <span className="text-xs text-gray-400 ml-2">{player.arrivalTime ? convertTimestampToDate(player.arrivalTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</span>
-                            {(player.paymentType === 'diarista') && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (                              
-                              <button
-                                onClick={() => handleDiaristaPayment(player.id, player.name)}
-                                className={`ml-2 px-2 py-0.5 rounded-lg text-xs font-medium ${
-                                  diaristaPayments[player.id]
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                } transition-colors`}
-                                title={diaristaPayments[player.id] ? `Pago em ${new Date(diaristaPayments[player.id].date).toLocaleDateString('pt-BR')} - R$ ${diaristaPayments[player.id].value.toFixed(2)} - Registrado por: ${diaristaPayments[player.id].recordBy}` : 'Pagou'}
-                              >
-                                {diaristaPayments[player.id] ? 'Pago ✓' : 'Pagou'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {/* Bloco direito: posição e botão */}
-                        <div className="flex flex-col items-end justify-center gap-1 ml-2">
-                          <span className={`px-1.5 py-0.5 rounded-full font-semibold text-[10px] flex items-center ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-                            {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                          </span>
-                          <button
-                            className="p-2 rounded hover:bg-gray-100 flex items-center justify-center"
-                            onClick={() => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
-                            title="Editar/Remover"
-                            style={{ display: (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' ? 'flex' : 'none' }}
-                          >
-                            <span className="text-lg leading-none">⋮</span>
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-            ) : (
-              <div className="text-gray-500 text-center py-8">Nenhum jogador confirmado ainda.</div>
-            )}
-            {/* Modal de opções do jogador */}
+      {/* Modal de opções do jogador */}
       <PlayerOptionsModal
         isOpen={isPlayerOptionsOpen}
         onClose={() => { setIsPlayerOptionsOpen(false); setSelectedPlayer(null); }}
@@ -2055,8 +2002,8 @@ export function GameDetails() {
         onUpdateAgeGroup={(ageGroup) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { ageGroup }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
         onUpdatePaymentType={(paymentType) => { if (selectedPlayer) { handleUpdatePlayer(selectedPlayer.id, { paymentType }); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
         onRemovePlayer={() => { if (selectedPlayer) { handleRemovePlayer(selectedPlayer.id); setIsPlayerOptionsOpen(false); setSelectedPlayer(null); } }}
-        onDiaristaPayment={() => { 
-          if (selectedPlayer) { 
+        onDiaristaPayment={() => {
+          if (selectedPlayer) {
             if (diaristaPayments[selectedPlayer.id]) {
               if (window.confirm(`Deseja desfazer o pagamento de R$ ${diaristaPayments[selectedPlayer.id].value.toFixed(2)} deste diarista?`)) {
                 handleUndoDiaristaPayment(selectedPlayer.id);
@@ -2071,365 +2018,6 @@ export function GameDetails() {
         }}
         isDiaristaPaid={selectedPlayer ? !!diaristaPayments[selectedPlayer.id] : false}
       />
-                    </>
-                  )}
-
-        {selectedTab === 'partidas' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Partidas</h2>
-              {game.matches && game.matches.length > 0 ? (
-              <ul className="space-y-4">
-                {game.matches.map((match, idx) => {
-                  const isExpanded = expandedMatchId === match.id;
-                  // Função para contar gols e assistências de um jogador
-                  const getPlayerStats = (playerId: string) => {
-                    const goals = match.goals?.filter(g => g.scorerId === playerId && !g.ownGoal).length || 0;
-                    const assists = match.goals?.filter(g => g.assisterId === playerId).length || 0;
-                    return { goals, assists };
-                  };
-                  
-                  // Métricas por time: score, média de idade e média de habilidade
-                  const team0 = match.teams[0];
-                  const team1 = match.teams[1];
-                  const team0Players = (team0?.players || []);
-                  const team1Players = (team1?.players || []);
-                  const average = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-                  const team0AvgAge = average(team0Players.map(p => getAgeValue(p.ageGroup)));
-                  const team0AvgSkill = average(team0Players.map(p => p.skillLevel));
-                  const team1AvgAge = average(team1Players.map(p => getAgeValue(p.ageGroup)));
-                  const team1AvgSkill = average(team1Players.map(p => p.skillLevel));
-                  const team0Score = calculateTeamScore(team0Players);
-                  const team1Score = calculateTeamScore(team1Players);
-                  const { players: waitingList, playersIn, playersOut } = getPlayersNotInNextMatch(match);
-                  return (
-                    <li key={match.id} className="bg-gray-50 rounded-xl p-4 shadow-sm relative">
-                      {/* Cabeçalho fixo da partida */}
-                      <div className="flex flex-col gap-2">
-                        {/* Primeira linha: Status e Ver Detalhes */}
-                        <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${match.status === 'finished' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                              {match.status === 'finished' ? 'Finalizada' : 'Em andamento'}
-                            </span>
-                        </div>
-                        {!isExpanded && (                         
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-700">{match.teams[0]?.name || 'Time A'}</span>
-                            <span className="text-lg font-bold text-blue-600">{match.teams[0]?.score ?? 0}</span>
-                            <span className="text-gray-400">x</span>
-                            <span className="text-lg font-bold text-orange-500">{match.teams[1]?.score ?? 0}</span>
-                            <span className="font-semibold text-gray-700">{match.teams[1]?.name || 'Time B'}</span>
-                          </div>
-                        )}
-                          <button
-                              className="px-3 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 transition"
-                              onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
-                            >
-                              {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
-                            </button>
-                        </div>
-
-                        {/* Botões de ação (só aparecem quando expandido) */}
-                        {isExpanded && (
-                          <div className="flex items-center justify-end gap-2">
-                          <button
-                            className="p-2 rounded-full hover:bg-gray-200 transition"
-                            title="Ver lista de espera"
-                            onClick={() => setWaitingListMatchId(match.id)}
-                          >
-                            <Users className="w-5 h-5 text-blue-500" />
-                          </button>
-                          <button
-                            className="p-2 rounded-full hover:bg-red-100 transition"
-                            title="Excluir partida"
-                            onClick={() => {
-                              if (window.confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) {
-                                deleteMatch(match.id);
-                              }
-                            }}
-                            style={{ display: (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && game.status !== 'finished' ? 'block' : 'none' }}
-                          >
-                            <Trash2 className="w-5 h-5 text-red-500" />
-                          </button>
-                              </div>
-                            )}
-                              </div>
-
-                      {/* Conteúdo expandido */}
-                      <AnimatePresence initial={false}>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden mt-4"
-                          >
-                            <div className="mt-4">
-                              <MatchScore match={match} />
-                            </div>
-                            {/* Campinho, etc... */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                              <TacticalView
-                                team={match.teams[0]}
-                                formation={match.teams[0].formation?.tactical || '4-3-2'}
-                                onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[0].id, newFormation)}
-                                goals={match.goals}
-                                teamColor="#3b82f6"
-                                isHomeTeam={false}
-                              />
-                              <TacticalView
-                                team={match.teams[1]}
-                                formation={match.teams[1].formation?.tactical || '4-3-2'}
-                                onFormationChange={(newFormation) => handleFormationChange(match.id, match.teams[1].id, newFormation)}
-                                    goals={match.goals}
-                                teamColor="#f59e42"
-                                isHomeTeam={false}
-                              />
-                            </div>
-                            {/* MatchTimer apenas para partidas em progresso */}
-                            {match.status === 'in_progress' && (
-                              <MatchTimer
-                                teamA={match.teams[0]}
-                                teamB={match.teams[1]}
-                                isFirstMatch={idx === 0}
-                                onGoalScored={(teamId, scorerId, assisterId, ownGoal) => handleGoalScored(match.id, teamId, scorerId, assisterId, ownGoal)}
-                                onRemoveGoal={(goalId) => handleRemoveGoal(match.id, goalId)}
-                                match={match}
-                                roster={game.players}
-                                onTimerUpdate={createTimerUpdateHandler(match.id)}
-                              />
-                            )}
-
-                            {/* Lista de jogadores dos times - visível em partidas em progresso e finalizadas */}
-                            {(match.status === 'in_progress' || match.status === 'finished') && (
-                              <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                  <div>
-                                    <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[0]?.name}</h3>
-                                    <div className="mb-2 flex flex-wrap gap-2 text-xs">
-                                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700">Score: {team0Score.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média idade: {team0AvgAge.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média habilidade: {team0AvgSkill.toFixed(1)}</span>
-                                    </div>
-                                    <ul className="space-y-2">
-                                      {[...(match.teams[0]?.players || [])]
-                                        .sort((a, b) => {
-                                          const posOrder = { defesa: 0, meio: 1, ataque: 2 };
-                                          return posOrder[a.position] - posOrder[b.position];
-                                        })
-                                        .map((player) => {
-                                          const stats = getPlayerStats(player.id);
-                                          return (
-                                            <li key={player.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
-                                              {/* Avatar */}
-                                              <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
-                                                   style={{ backgroundColor: '#3b82f6' }}>
-                                                {player.name.charAt(0).toUpperCase()}
-                                              </div>
-                                              {/* Nome + posição */}
-                                              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ml-1 ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-                                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                                              </span>
-                                              <span className="font-medium truncate max-w-[200px]">{player.name}</span>
-                                              {/* Gols */}
-                                              {stats.goals > 0 && (
-                                                <span className="flex items-center gap-1 text-blue-600 ml-1">
-                                                  <Target className="w-3 h-3" /> {stats.goals}
-                                                </span>
-                                              )}
-                                              {/* Assistências */}
-                                              {stats.assists > 0 && (
-                                                <span className="flex items-center gap-1 text-green-600 ml-1">
-                                                  <Footprints className="w-3 h-3" /> {stats.assists}
-                                                </span>
-                                              )}
-                                              {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                                                <button
-                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                  title="Trocar jogador"
-                                                  onClick={() => {
-                                                    setIsPlayerSwapOpen(true);
-                                                    setSelectedPlayer(player);
-                                                    setSelectedTeam(match.teams[0]);
-                                                    setSelectedMatch(match);
-                                                  }}
-                                                >
-                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                                </button>
-                                              )}
-                                            </li>
-                                          );
-                                        })}
-                                    </ul>
-                                  </div>
-                                  <div>
-                                    <h3 className="font-semibold text-gray-700 mb-2">Jogadores {match.teams[1]?.name}</h3>
-                                    <div className="mb-2 flex flex-wrap gap-2 text-xs">
-                                      <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700">Score: {team1Score.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média idade: {team1AvgAge.toFixed(1)}</span>
-                                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">Média habilidade: {team1AvgSkill.toFixed(1)}</span>
-                                    </div>
-                                    <ul className="space-y-2">
-                                      {[...(match.teams[1]?.players || [])]
-                                        .sort((a, b) => {
-                                          const posOrder = { defesa: 0, meio: 1, ataque: 2 };
-                                          return posOrder[a.position] - posOrder[b.position];
-                                        })
-                                        .map((player) => {
-                                          const stats = getPlayerStats(player.id);
-                                          return (
-                                            <li key={player.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 py-1.5 shadow-sm">
-                                              {/* Avatar */}
-                                              <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white"
-                                                   style={{ backgroundColor: '#f59e42' }}>
-                                                {player.name.charAt(0).toUpperCase()}
-                                              </div>
-                                              {/* Nome + posição */}
-                                              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ml-1 ${player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' : player.position === 'meio' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-                                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                                              </span>
-                                              <span className="font-medium truncate max-w-[200px]">{player.name}</span>
-                                              {/* Gols */}
-                                              {stats.goals > 0 && (
-                                                <span className="flex items-center gap-1 text-blue-600 ml-1">
-                                                  <Target className="w-3 h-3" /> {stats.goals}
-                                                </span>
-                                              )}
-                                              {/* Assistências */}
-                                              {stats.assists > 0 && (
-                                                <span className="flex items-center gap-1 text-green-600 ml-1">
-                                                  <Footprints className="w-3 h-3" /> {stats.assists}
-                                                </span>
-                                              )}
-                                              {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                                                <button
-                                                  className="p-1.5 rounded-full hover:bg-blue-100 transition ml-auto"
-                                                  title="Trocar jogador"
-                                                  onClick={() => {
-                                                    setIsPlayerSwapOpen(true);
-                                                    setSelectedPlayer(player);
-                                                    setSelectedTeam(match.teams[1]);
-                                                    setSelectedMatch(match);
-                                                  }}
-                                                >
-                                                  <ArrowLeftRight className="w-4 h-4 text-blue-500" />
-                                                </button>
-                                              )}
-                                            </li>
-                                          );
-                                        })}
-                                    </ul>
-                                  </div>
-                                </div>
-
-                                {/* Botões de finalização - apenas para partidas em andamento */}
-                                {match.status === 'in_progress' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                                  <div className="flex flex-col md:flex-row gap-2 mt-4">
-                                    <button
-                                      className="flex-1 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-                                      onClick={() => finishMatch(match.id, match.teams[0].id)}
-                                    >
-                                      {match.teams[0]?.name} Venceu
-                                    </button>
-                                    <button
-                                      className="flex-1 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 transition"
-                                      onClick={() => finishMatch(match.id, match.teams[1].id)}
-                                    >
-                                      {match.teams[1]?.name} Venceu
-                                    </button>
-                                  </div>
-                                )}
-                  </>
-                )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <div className="text-gray-500 text-center py-8">Nenhuma partida registrada ainda.</div>
-            )}
-            {/* Seletor de jogadores por time + Botão Gerar Nova Partida */}
-            {selectedTab === 'partidas' && game.status !== 'finished' && (user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-              <div className="flex flex-col items-center gap-3 mt-8">
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-sm text-gray-500 font-medium">Jogadores por time</span>
-                  <button
-                    onClick={() => setIsPlayersPerTeamOpen(true)}
-                    className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:bg-gray-50 active:bg-gray-100 transition"
-                  >
-                    <span className="text-sm font-semibold text-gray-800">{playersPerTeam}x{playersPerTeam}</span>
-                    <svg className="w-2 h-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Bottom sheet seletor */}
-                {isPlayersPerTeamOpen && (
-                  <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={() => setIsPlayersPerTeamOpen(false)}>
-                    <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100">
-                        <div>
-                          <div className="font-bold text-base text-gray-800">Jogadores por time</div>
-                          <div className="text-xs text-gray-500">Selecione o formato da partida</div>
-                        </div>
-                        <button
-                          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 text-xl font-bold"
-                          onClick={() => setIsPlayersPerTeamOpen(false)}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="p-3 space-y-2">
-                        {[4, 5, 6, 7, 8, 9, 10].map(n => (
-                          <button
-                            key={n}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-left ${
-                              playersPerTeam === n
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-50 hover:bg-blue-50 active:bg-blue-100 text-gray-800'
-                            }`}
-                            onClick={() => { setPlayersPerTeam(n); setIsPlayersPerTeamOpen(false); }}
-                          >
-                            <span className="font-semibold text-base">{n}x{n}</span>
-                            <span className={`text-xs ${playersPerTeam === n ? 'text-blue-100' : 'text-gray-400'}`}>
-                              {n * 2} jogadores em campo
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <button
-                  onClick={generateTeams}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  disabled={isGeneratingTeams || game.players.length < 4 || (game.matches && game.matches.length > 0 && game.matches[game.matches.length - 1].status !== 'finished')}
-                >
-                  {isGeneratingTeams && (
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                  )}
-                  Gerar Nova Partida
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {selectedTab === 'analises' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Análises e Estatísticas</h2>
-            <GameAnalytics game={game} />
-          </div>
-        )}
-      </div>
 
       {/* Modal de adicionar jogador */}
       <AddPlayerModalTailwind
@@ -2467,101 +2055,103 @@ export function GameDetails() {
       />
       {/* Modal de seleção de jogador */}
       {isSelectPlayerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-lg w-full h-full ">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-bold text-lg text-gray-800">Selecionar Jogador</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => { setIsSelectPlayerModalOpen(false); setSearchTerm(''); }}
+        >
+          <div
+            className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-line">
+              <div>
+                <h2 className="font-heading font-bold text-lg text-ink">Selecionar do grupo</h2>
+                <p className="text-[12px] text-ink-soft">Adicione um jogador já cadastrado</p>
+              </div>
               <button
-                className="text-gray-400 hover:text-gray-700 text-xl font-bold"
-                onClick={() => {
-                  setIsSelectPlayerModalOpen(false);
-                  setSearchTerm('');
-                }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-icon hover:text-ink hover:bg-paper transition-colors text-xl"
+                onClick={() => { setIsSelectPlayerModalOpen(false); setSearchTerm(''); }}
                 aria-label="Fechar"
               >
                 ×
               </button>
             </div>
-            
-            {/* Campo de busca */}
-            <div className="p-4 border-b">
-              <div className="relative">
+
+            <div className="p-4 pb-2">
+              <div className="flex items-center gap-2 border border-[#ded8c9] bg-surface rounded-[10px] px-3">
+                <Users className="w-[15px] h-[15px] text-ink-soft" />
                 <input
                   type="text"
-                  placeholder="Buscar por nome ou email..."
+                  placeholder="Buscar por nome ou email"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  //className="w-full px-4 py-2 pl-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  className="w-full px-4 py-2 pl-10 text-base md:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 border-none outline-none bg-transparent text-[14px] md:text-[13px] py-2.5"
                 />
-                <svg
-                  className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
               {isLoadingPlayers ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-wine/30 border-t-wine" />
                 </div>
               ) : filteredPlayers.length > 0 ? (
                 <>
-                  <div className="text-sm text-gray-500 mb-2">
-                    {filteredPlayers.length} jogador{filteredPlayers.length !== 1 ? 'es' : ''} disponível{filteredPlayers.length !== 1 ? 'is' : ''}
+                  <div className="text-[11px] text-ink-soft font-semibold px-1 py-2">
+                    {filteredPlayers.length} disponíve{filteredPlayers.length !== 1 ? 'is' : 'l'}
                   </div>
-                  <ul className="space-y-2">
-                    {filteredPlayers.map((user) => (
-                      <li key={user.id}>
+                  <div className="flex flex-col gap-1.5">
+                    {filteredPlayers.map((u) => {
+                      const pos = u.playerInfo?.position;
+                      const posLabel = pos === 'defesa' ? 'DEF' : pos === 'meio' ? 'MEI' : pos === 'ataque' ? 'ATA' : '—';
+                      const posHex = pos === 'defesa' ? '#d99a1a' : pos === 'meio' ? '#0d7a72' : '#c2560f';
+                      return (
                         <button
-                          onClick={() => handleAddExistingPlayer(user)}
-                          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                          key={u.id}
+                          onClick={() => handleAddExistingPlayer(u)}
+                          className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-[#eee7d8] hover:bg-paper transition-colors text-left"
                         >
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                            {user.playerInfo?.name?.charAt(0).toUpperCase() || '?'}
-                          </div>
+                          <span className="w-9 h-9 flex-none rounded-full bg-wine-tint text-wine font-bold text-sm flex items-center justify-center">
+                            {u.playerInfo?.name?.charAt(0).toUpperCase() || '?'}
+                          </span>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">{user.playerInfo?.name}</div>
-                            <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                            <div className="font-semibold text-[13.5px] text-ink truncate">{u.playerInfo?.name || u.email}</div>
+                            <div className="text-[11px] text-ink-soft truncate">{u.email}</div>
                           </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              user.playerInfo?.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                              user.playerInfo?.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {user.playerInfo?.position?.toUpperCase() || 'N/A'}
+                          <div className="flex flex-col items-end gap-1 flex-none">
+                            <span
+                              className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.04em] px-[7px] py-[3px] rounded-md"
+                              style={{ color: '#5c5647', background: '#ece5d6' }}
+                            >
+                              <span className="w-[5px] h-[5px] rounded-full" style={{ background: posHex }} />
+                              {posLabel}
                             </span>
-                            <div className="flex gap-0.5">
-                              {[...Array(5)].map((_, i) => (
-                                <svg key={i} className={`w-3 h-3 ${i < (user.playerInfo?.skillLevel || 0) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                                  <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
-                                </svg>
+                            <span className="tracking-[0.5px] leading-none text-[11px]">
+                              {[0, 1, 2, 3, 4].map(i => (
+                                <span key={i} style={{ color: i < (u.playerInfo?.skillLevel || 0) ? '#d99a1a' : '#ded8c9' }}>★</span>
                               ))}
-                            </div>
+                            </span>
                           </div>
                         </button>
-                      </li>
-                    ))}
-                  </ul>
+                      );
+                    })}
+                  </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  {searchTerm 
-                    ? 'Nenhum jogador encontrado com esse termo.' 
-                    : 'Nenhum jogador disponível para adicionar.'}
+                <div className="text-center py-10 text-ink-soft text-sm">
+                  {searchTerm ? 'Nenhum jogador encontrado com esse termo.' : 'Nenhum jogador disponível para adicionar.'}
                 </div>
               )}
+            </div>
+
+            <div className="p-3 border-t border-line flex items-center justify-between">
+              <span className="text-[12px] text-ink-soft">Toque para adicionar · a lista some ao confirmar</span>
+              <button
+                onClick={() => { setIsSelectPlayerModalOpen(false); setSearchTerm(''); }}
+                className="bg-wine text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-wine-dark transition-colors"
+              >
+                Concluir
+              </button>
             </div>
           </div>
         </div>
@@ -2569,12 +2159,12 @@ export function GameDetails() {
 
       {/* Modal da Lista de Espera */}
       {waitingListMatchId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] mx-4 relative animate-fade-in flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-bold text-lg text-gray-800">Lista de Espera</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setWaitingListMatchId(null)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-line">
+              <h2 className="font-heading font-bold text-lg text-ink">Lista de espera</h2>
               <button
-                className="text-gray-400 hover:text-gray-700 text-xl font-bold"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl"
                 onClick={() => setWaitingListMatchId(null)}
                 aria-label="Fechar"
               >
@@ -2584,115 +2174,70 @@ export function GameDetails() {
 
             <div className="flex-1 overflow-y-auto p-4">
               {(() => {
+                const POS_LABEL: Record<string, string> = { defesa: 'DEF', meio: 'MEI', ataque: 'ATA' };
+                const POS_HEX: Record<string, string> = { defesa: '#d99a1a', meio: '#0d7a72', ataque: '#c2560f' };
+                const badge = (position: string) => (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.04em] px-[7px] py-[3px] rounded-md flex-none" style={{ color: '#5c5647', background: '#ece5d6' }}>
+                    <span className="w-[5px] h-[5px] rounded-full" style={{ background: POS_HEX[position] }} />
+                    {POS_LABEL[position]}
+                  </span>
+                );
+                const chip = (order: number) => (
+                  <span className="chip w-8 h-8 flex-none rounded-full bg-ink text-white font-stat font-bold text-[12px] flex items-center justify-center">{order}</span>
+                );
+
                 const match = game?.matches.find(m => m.id === waitingListMatchId);
                 if (!match) return null;
+                const canManage2 = user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista';
 
-                // Se a partida está em andamento, mostra a lista de espera
                 if (match.status === 'in_progress') {
-                  // Usa a waitingList do banco de dados em vez de calcular dinamicamente
                   const waitingPlayers = (game.waitingList || [])
                     .map(pid => game.players.find(p => p.id === pid))
                     .filter(Boolean) as Player[];
 
                   if (waitingPlayers.length === 0) {
-                    return <div className="text-gray-400 text-sm">Nenhum jogador na lista de espera.</div>;
+                    return <div className="text-ink-soft text-sm py-4 text-center">Nenhum jogador na lista de espera.</div>;
                   }
 
                   return (
-                    <div className="space-y-2">
-                      {waitingPlayers.map((player) => (
-                        <div key={player.id} className="flex items-center p-3 rounded-lg bg-gray-50 border border-gray-100">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm mr-3">
-                            {player.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">{player.name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                              </span>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <svg key={i} className={`w-3 h-3 ${i < player.skillLevel ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                                    <polygon points="10,1 12,7 18,7 13,11 15,17 10,13 5,17 7,11 2,7 8,7" />
-                                  </svg>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          {(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista') && (
-                            <button
-                              onClick={() => {
-                                handleRemoveFromWaitingList(player);
-                                // Fecha o modal após remover
-                                setTimeout(() => setWaitingListMatchId(null), 500);
-                              }}
-                              className="p-2 rounded-lg hover:bg-red-50 transition-colors ml-2"
-                              title="Remover da lista de espera"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <>
+                      {canManage2 && (
+                        <div className="text-[11px] text-ink-soft mb-2">Arraste (ou use ↑/↓) para mudar a ordem da fila.</div>
+                      )}
+                      <WaitingReorderList
+                        players={waitingPlayers}
+                        canManage={canManage2}
+                        onReorder={handleReorderWaitingList}
+                        onRemove={handleRemoveFromWaitingList}
+                      />
+                    </>
                   );
                 }
 
-                // Se a partida está finalizada, mostra quem entrou e saiu
                 const { playersOut, playersIn } = getPlayersNotInNextMatch(match);
+                const row = (player: Player, tone: 'out' | 'in') => (
+                  <div key={player.id} className="flex items-center gap-3 p-2.5 rounded-xl border border-[#eee7d8] bg-surface">
+                    <span className="w-1.5 h-8 rounded-full flex-none" style={{ background: tone === 'out' ? '#dc2626' : '#1f6b46' }} />
+                    {chip(player.arrivalOrder)}
+                    <span className="flex-1 font-semibold text-[14px] text-ink truncate">{player.name}</span>
+                    {badge(player.position)}
+                  </div>
+                );
                 return (
-                  <>
-                    <div className="mb-6">
-                      <div className="font-medium mb-2">Jogadores que saíram</div>
-                      <div className="space-y-2">
-                        {playersOut.length === 0 ? (
-                          <div className="text-gray-400 text-sm">Nenhum jogador saiu.</div>
-                        ) : (
-                          playersOut.map((player) => (
-                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-red-50">
-                              <User className="w-5 h-5 text-red-400 mr-2" />
-                              <span className="flex-1 text-left">{player.name}</span>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
+                  <div className="space-y-4">
                     <div>
-                      <div className="font-medium mb-2">Jogadores que entraram</div>
-                      <div className="space-y-2">
-                        {playersIn.length === 0 ? (
-                          <div className="text-gray-400 text-sm">Nenhum jogador entrou.</div>
-                        ) : (
-                          playersIn.map((player) => (
-                            <div key={player.id} className="flex items-center p-2 rounded-lg bg-green-50">
-                              <User className="w-5 h-5 text-green-400 mr-2" />
-                              <span className="flex-1 text-left">{player.name}</span>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                player.position === 'defesa' ? 'bg-yellow-100 text-yellow-800' :
-                                player.position === 'meio' ? 'bg-blue-100 text-blue-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {player.position === 'defesa' ? 'DEF' : player.position === 'meio' ? 'MEI' : 'ATA'}
-                              </span>
-                            </div>
-                          ))
-                        )}
+                      <div className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide mb-2">Saíram</div>
+                      <div className="space-y-1.5">
+                        {playersOut.length === 0 ? <div className="text-ink-soft text-sm">Ninguém saiu.</div> : playersOut.map(p => row(p, 'out'))}
                       </div>
                     </div>
-                  </>
+                    <div>
+                      <div className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide mb-2">Entraram</div>
+                      <div className="space-y-1.5">
+                        {playersIn.length === 0 ? <div className="text-ink-soft text-sm">Ninguém entrou.</div> : playersIn.map(p => row(p, 'in'))}
+                      </div>
+                    </div>
+                  </div>
                 );
               })()}
             </div>
@@ -2702,66 +2247,70 @@ export function GameDetails() {
 
       {/* Modal de Pagamento do Diarista */}
       {showDiaristaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in">
-            <button
-              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-gray-700"
-              onClick={() => setShowDiaristaModal(false)}
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-            <h2 className="text-lg font-semibold mb-4">Confirmar Pagamento</h2>
-            <div className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowDiaristaModal(false)}>
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-line">
               <div>
-                <label className="block text-sm font-medium mb-1">Nome do Diarista</label>
+                <h2 className="font-heading font-bold text-lg text-ink">Confirmar pagamento</h2>
+                <p className="text-[12px] text-ink-soft">Diária de {selectedDiarista?.name}</p>
+              </div>
+              <button
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl"
+                onClick={() => setShowDiaristaModal(false)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <label className="block text-[13px] font-medium text-ink-medium mb-1.5">Valor</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat font-semibold">R$</span>
                 <input
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  value={selectedDiarista?.name || ''}
-                  readOnly
-                  placeholder="Nome do diarista"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="w-full border border-line rounded-lg pl-10 pr-3 py-2.5 font-stat text-lg text-ink focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent"
+                  value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setDiaristaPaymentValue(value === '' ? 0 : Number(value));
+                  }}
+                  placeholder="30"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Valor do Pagamento</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    className="w-full border rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      setDiaristaPaymentValue(value === '' ? 0 : Number(value));
-                    }}
-                    placeholder="30"
-                  />
-                </div>
+              <div className="flex flex-wrap gap-2 mt-2.5">
+                {[15, 20, 25, 30].map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setDiaristaPaymentValue(v)}
+                    className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors ${diaristaPaymentValue === v ? 'bg-wine text-white' : 'bg-line-soft text-ink-medium hover:bg-line'}`}
+                  >
+                    R$ {v}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="p-4 border-t border-line flex items-center gap-2">
+              <button
+                onClick={() => setDiaristaFree(true)}
+                className="text-[13px] font-semibold text-state-success bg-state-success/10 px-3.5 py-2 rounded-lg hover:bg-state-success/20 transition-colors disabled:opacity-50"
+                type="button"
+                disabled={!selectedDiarista}
+              >
+                Marcar grátis
+              </button>
               <button
                 onClick={() => setShowDiaristaModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="ml-auto text-[13px] font-semibold text-ink-medium bg-line-soft px-4 py-2 rounded-lg hover:bg-line transition-colors"
                 type="button"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => {              
-                  setDiaristaFree(true);                  
-                }}
-                className="px-4 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
-                type="button"
-                disabled={!selectedDiarista}
-              >
-                Gratis
-              </button>
-              <button
                 onClick={confirmDiaristaPayment}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-[13px] font-semibold text-white bg-wine px-4 py-2 rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
                 disabled={!selectedDiarista}
               >

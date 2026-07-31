@@ -5,7 +5,8 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { User } from '../types/index';
 import { StarRating } from '../components/StarRating';
-import { FaChevronLeft, FaUser, FaEnvelope, FaFutbol, FaStar, FaUserEdit, FaUserShield } from 'react-icons/fa';
+import { Spinner } from '../components/Loader';
+import { ArrowLeft, User as UserIcon, Mail, Shield, Save } from 'lucide-react';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
@@ -13,19 +14,12 @@ type SkillLevel = 1 | 2 | 3 | 4 | 5;
 type Role = 'admin' | 'player';
 type PaymentType = 'mensalista' | 'diarista';
 
-// Mapeamento para exibição visual dos papéis
-const roleDisplayMap = {
-  admin: 'Administrador',
-  player: 'Jogador'
-} as const;
-
 interface FormErrors {
   username?: string;
   email?: string;
   'playerInfo.name'?: string;
 }
 
-// Atualizar tipagem de playerInfo para incluir paymentType
 interface PlayerInfo {
   name: string;
   position: Position;
@@ -33,6 +27,17 @@ interface PlayerInfo {
   skillLevel: SkillLevel;
   paymentType: PaymentType;
 }
+
+const POSITION_HEX: Record<Position, string> = { defesa: '#d99a1a', meio: '#0d7a72', ataque: '#c2560f' };
+const POSITIONS: { key: Position; label: string }[] = [
+  { key: 'defesa', label: 'Defesa' },
+  { key: 'meio', label: 'Meio' },
+  { key: 'ataque', label: 'Ataque' },
+];
+const AGE_GROUPS: AgeGroup[] = ['15-20', '21-30', '31-40', '41-50', '+50'];
+
+const pillBase = 'py-2 rounded-lg text-[13px] font-semibold transition-colors';
+const pillInactive = 'bg-line-soft text-ink-medium hover:bg-line';
 
 export function EditUser() {
   const { userId } = useParams();
@@ -57,7 +62,6 @@ export function EditUser() {
   useEffect(() => {
     const fetchUser = async () => {
       if (!userId) return;
-
       try {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
@@ -79,40 +83,23 @@ export function EditUser() {
         console.error('Erro ao buscar usuário:', error);
       }
     };
-
     fetchUser();
   }, [userId]);
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
-
-    if (!username) {
-      newErrors.username = 'Nome de usuário é obrigatório';
-    }
-
-    if (!email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email inválido';
-    }
-
-    if (!playerInfo.name) {
-      newErrors['playerInfo.name'] = 'Nome do jogador é obrigatório';
-    }
-
+    if (!username) newErrors.username = 'Nome de usuário é obrigatório';
+    if (!email) newErrors.email = 'Email é obrigatório';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email inválido';
+    if (!playerInfo.name) newErrors['playerInfo.name'] = 'Nome do jogador é obrigatório';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm() || !user) return;
-
-    // Verificar permissões
-    if (currentUser?.role !== 'admin' && currentUser?.username !== user.username) {
-      return;
-    }
+    if (currentUser?.role !== 'admin' && currentUser?.username !== user.username) return;
 
     setIsLoading(true);
     try {
@@ -125,7 +112,6 @@ export function EditUser() {
         playerInfo,
         updatedAt: new Date().toISOString(),
       });
-
       navigate(-1);
     } catch (error: any) {
       console.error('Erro ao atualizar usuário:', error);
@@ -134,206 +120,150 @@ export function EditUser() {
     }
   };
 
+  const inputClass =
+    'w-full border border-line rounded-lg px-3 py-2.5 text-ink bg-surface placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors';
+  const labelClass = 'block text-[13px] font-medium text-ink-medium mb-1.5';
+  const sectionLabel = 'text-[12px] font-semibold uppercase tracking-wide text-ink-soft flex items-center gap-1.5';
+
   if (!user) {
     return (
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-        <div className="flex items-center justify-center h-32">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="w-full max-w-lg mx-auto px-4 py-8">
+        <div className="bg-surface border border-line rounded-2xl shadow-sm p-6 sm:p-8 flex items-center justify-center h-40">
+          <Spinner className="w-8 h-8" />
         </div>
       </div>
     );
   }
 
+  const initials = username ? username.slice(0, 2).toUpperCase() : '??';
+
   return (
-    <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-4 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <FaChevronLeft className="w-5 h-5 text-gray-500" />
-        </button>
-        <h1 className="text-xl sm:text-2xl font-bold text-center flex-1">Editar Usuário</h1>
-        <div className="w-8" />
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informações Básicas */}
-        <div className="space-y-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaUser className="w-4 h-4 text-blue-600" />
-            Informações Básicas
-          </h2>
-
-          <div className="space-y-2">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Nome de Usuário
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Digite o nome de usuário"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite o email"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              />
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            </div>
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-
-          {/* Campo de papel (role) visível apenas para administradores */}
-          {currentUser?.role === 'admin' && (
-            <div className="space-y-2">
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                <FaUserShield className="w-4 h-4 text-blue-600" />
-                Papel do Usuário
-              </label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="player">Jogador</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <p className="text-sm text-gray-500 mt-1">
-                Administradores têm acesso a todas as funcionalidades do sistema
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Informações do Jogador */}
-        <div className="space-y-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <FaFutbol className="w-4 h-4 text-blue-600" />
-            Informações do Jogador
-          </h2>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.name" className="block text-sm font-medium text-gray-700">
-              Nome Completo
-            </label>
-            <input
-              type="text"
-              id="playerInfo.name"
-              value={playerInfo.name}
-              onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Digite o nome completo"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            />
-            {errors['playerInfo.name'] && <p className="text-red-500 text-sm mt-1">{errors['playerInfo.name']}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.position" className="block text-sm font-medium text-gray-700">
-                Posição
-              </label>
-              <select
-                id="playerInfo.position"
-                value={playerInfo.position}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, position: e.target.value as Position }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="defesa">Defesa</option>
-                <option value="meio">Meio Campo</option>
-                <option value="ataque">Ataque</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="playerInfo.ageGroup" className="block text-sm font-medium text-gray-700">
-                Faixa Etária
-              </label>
-              <select
-                id="playerInfo.ageGroup"
-                value={playerInfo.ageGroup}
-                onChange={(e) => setPlayerInfo(prev => ({ ...prev, ageGroup: e.target.value as AgeGroup }))}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              >
-                <option value="15-20">15-20 anos</option>
-                <option value="21-30">21-30 anos</option>
-                <option value="31-40">31-40 anos</option>
-                <option value="41-50">41-50 anos</option>
-                <option value="+50">+50 anos</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-              <FaStar className="w-4 h-4 text-yellow-500" />
-              Nível de Habilidade
-            </label>
-            <div className="p-2 bg-gray-50 rounded-lg">
-              <StarRating
-                value={playerInfo.skillLevel}
-                onChange={(value) => setPlayerInfo(prev => ({ ...prev, skillLevel: value as SkillLevel }))}
-                size="lg"
-                showLabel
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="playerInfo.paymentType" className="block text-sm font-medium text-gray-700">
-              Tipo de Pagamento
-            </label>
-            <select
-              id="playerInfo.paymentType"
-              value={playerInfo.paymentType}
-              onChange={e => setPlayerInfo(prev => ({ ...prev, paymentType: e.target.value as PaymentType }))}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            >
-              <option value="mensalista">Mensalista</option>
-              <option value="diarista">Diarista</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="sticky bottom-0 left-0 right-0 bg-white border-t p-4 -mx-4 sm:mx-0 sm:border-0 sm:p-0">
+    <div className="w-full max-w-lg mx-auto px-4 py-8">
+      <form onSubmit={handleSubmit} className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="relative bg-gradient-to-br from-wine to-[#9e2a3d] px-6 pt-5 pb-6 text-center">
           <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-            disabled={isLoading}
+            type="button"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 top-4 p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Voltar"
           >
-            {isLoading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <FaUserEdit className="w-4 h-4" />
-                Salvar Alterações
-              </>
-            )}
+            <ArrowLeft className="w-5 h-5" />
           </button>
+          <div className="w-20 h-20 mx-auto rounded-full bg-white/15 ring-4 ring-white/20 text-white font-heading font-extrabold text-2xl flex items-center justify-center overflow-hidden">
+            {photoURL ? <img src={photoURL} alt={username} className="w-full h-full object-cover" /> : initials}
+          </div>
+          <div className="mt-3 font-heading font-bold text-lg text-white">{username || 'Editar usuário'}</div>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/15 text-white">
+            <Shield className="w-3 h-3" /> {role === 'admin' ? 'Administrador' : 'Jogador'}
+          </span>
+        </div>
+
+        <div className="p-5 sm:p-6 space-y-6">
+          {/* Informações Básicas */}
+          <div className="space-y-4">
+            <h2 className={sectionLabel}><UserIcon className="w-3.5 h-3.5 text-wine" /> Informações básicas</h2>
+
+            <div>
+              <label htmlFor="username" className={labelClass}>Nome de usuário</label>
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+                <input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className={`${inputClass} pl-9`} />
+              </div>
+              {errors.username && <p className="text-state-warning text-xs mt-1">{errors.username}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="email" className={labelClass}>Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
+                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={`${inputClass} pl-9`} />
+              </div>
+              {errors.email && <p className="text-state-warning text-xs mt-1">{errors.email}</p>}
+            </div>
+
+            {currentUser?.role === 'admin' && (
+              <div>
+                <label className={labelClass}>Papel do usuário</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['player', 'admin'] as Role[]).map(r => (
+                    <button key={r} type="button" onClick={() => setRole(r)} className={`${pillBase} ${role === r ? 'bg-wine text-white' : pillInactive}`}>
+                      {r === 'admin' ? 'Administrador' : 'Jogador'}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-ink-soft mt-1.5">Administradores têm acesso a todas as funcionalidades.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Informações do Jogador */}
+          <div className="space-y-4 border-t border-line-soft pt-5">
+            <h2 className={sectionLabel}>⚽ Informações do jogador</h2>
+
+            <div>
+              <label htmlFor="playerName" className={labelClass}>Nome completo</label>
+              <input id="playerName" type="text" value={playerInfo.name} onChange={e => setPlayerInfo(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" className={inputClass} />
+              {errors['playerInfo.name'] && <p className="text-state-warning text-xs mt-1">{errors['playerInfo.name']}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass}>Posição</label>
+              <div className="grid grid-cols-3 gap-2">
+                {POSITIONS.map(pos => (
+                  <button
+                    key={pos.key}
+                    type="button"
+                    onClick={() => setPlayerInfo(p => ({ ...p, position: pos.key }))}
+                    className={`${pillBase} ${playerInfo.position === pos.key ? 'text-white' : pillInactive}`}
+                    style={playerInfo.position === pos.key ? { background: POSITION_HEX[pos.key] } : undefined}
+                  >
+                    {pos.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Faixa etária</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {AGE_GROUPS.map(age => (
+                  <button key={age} type="button" onClick={() => setPlayerInfo(p => ({ ...p, ageGroup: age }))} className={`${pillBase} ${playerInfo.ageGroup === age ? 'bg-wine text-white' : pillInactive}`}>
+                    {age}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Nível de habilidade</label>
+              <div className="p-3 bg-paper border border-line rounded-xl">
+                <StarRating value={playerInfo.skillLevel} onChange={value => setPlayerInfo(p => ({ ...p, skillLevel: value as SkillLevel }))} size="lg" showLabel />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Tipo de pagamento</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['mensalista', 'diarista'] as PaymentType[]).map(t => (
+                  <button key={t} type="button" onClick={() => setPlayerInfo(p => ({ ...p, paymentType: t }))} className={`${pillBase} ${playerInfo.paymentType === t ? 'bg-wine text-white' : pillInactive}`}>
+                    {t === 'mensalista' ? 'Mensalista' : 'Diarista'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2.5 pt-1">
+            <button type="button" onClick={() => navigate(-1)} className="px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium text-sm font-semibold rounded-xl hover:bg-paper transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 bg-wine hover:bg-wine-dark text-white font-semibold text-sm py-2.5 rounded-xl transition-colors disabled:opacity-60">
+              {isLoading ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Salvando…</> : <><Save className="w-4 h-4" /> Salvar alterações</>}
+            </button>
+          </div>
         </div>
       </form>
     </div>
   );
-} 
+}

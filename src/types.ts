@@ -45,6 +45,7 @@ export interface Match {
   updatedAt: Date;
   goals?: Goal[];
   duration?: number; // Duração em minutos
+  waitingList?: string[]; // Snapshot da fila de espera no momento em que esta partida foi gerada (ordem preservada)
   timer?: {
     isRunning: boolean;
     remainingSeconds: number;
