@@ -6,6 +6,7 @@ import { Game, convertTimestampToDate } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../contexts/AuthContext';
+import { useViewport } from '../hooks/useViewport';
 import { PageLoader } from '../components/Loader';
 import { motion } from 'framer-motion';
 import {
@@ -17,13 +18,26 @@ import {
   CalendarPlus,
   Trophy,
   ChevronRight,
+  ChevronLeft,
+  Search,
 } from 'lucide-react';
+
+type StatusFilter = 'all' | 'in_progress' | 'waiting' | 'finished';
+const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
+  { key: 'all', label: 'Todas' },
+  { key: 'in_progress', label: 'Em andamento' },
+  { key: 'finished', label: 'Finalizadas' },
+];
 
 export function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const viewport = useViewport();
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const q = query(
@@ -94,6 +108,24 @@ export function Home() {
   };
 
   const activeGames = games.filter(game => game.status !== 'finished');
+
+  const filteredGames = games.filter(game => {
+    if (statusFilter !== 'all' && game.status !== statusFilter) return false;
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const dateStr = formatDate(convertTimestampToDate(game.date)).toLowerCase();
+    return (game.location || '').toLowerCase().includes(q) || dateStr.includes(q);
+  });
+
+  const pageSize = viewport === 'desktop' ? 6 : 4;
+  const totalPages = Math.max(1, Math.ceil(filteredGames.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedGames = filteredGames.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Volta para a primeira página quando o filtro ou a busca muda.
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, search]);
 
   if (isLoading) {
     return <PageLoader full={false} />;
@@ -222,63 +254,111 @@ export function Home() {
       {/* Todas as Peladas */}
       {games.length > 0 && (
         <section>
-          <h2 className="font-heading font-bold text-[17px] text-ink mb-4">Todas as peladas</h2>
-          <div className="bg-surface border border-line rounded-2xl overflow-hidden">
-            <div className="max-h-[420px] overflow-y-auto overflow-x-auto">
-              <table className="w-full min-w-[560px] border-collapse">
-                <thead className="sticky top-0 z-10 bg-paper">
-                  <tr>
-                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Data</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Local</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Status</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Jogadores</th>
-                    <th className="px-5 py-3 text-left text-[11px] font-bold text-ink-soft uppercase tracking-wide">Partidas</th>
-                    <th className="px-5 py-3 text-right text-[11px] font-bold text-ink-soft uppercase tracking-wide">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line-soft">
-                  {games.map((game) => (
-                    <tr
-                      key={game.id}
-                      className="hover:bg-paper cursor-pointer transition-colors"
-                      onClick={() => navigate(`/game/${game.id}`)}
-                    >
-                      <td className="px-5 py-3.5 whitespace-nowrap text-[13px] font-medium text-ink capitalize">
-                        {formatDate(convertTimestampToDate(game.date))}
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap text-[13px] text-ink-medium">
-                        {game.location}
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${getStatusColor(game.status)}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <div className="flex items-center gap-2.5 sm:mr-auto">
+              <h2 className="font-heading font-bold text-[17px] text-ink">Todas as peladas</h2>
+              <span className="text-[12px] font-bold text-wine bg-wine-tint px-2 py-0.5 rounded-full">
+                {filteredGames.length}
+              </span>
+            </div>
+            <div className="relative sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-icon" strokeWidth={2.2} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar por local ou data"
+                className="w-full pl-9 pr-3 py-2 text-[13px] bg-surface border border-line rounded-xl placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {STATUS_FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`px-3 py-1.5 rounded-full text-[12.5px] font-semibold transition-colors ${
+                  statusFilter === f.key
+                    ? 'bg-wine text-white'
+                    : 'bg-surface border border-line text-ink-medium hover:bg-paper'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredGames.length === 0 ? (
+            <div className="bg-surface border border-line rounded-2xl px-5 py-8 text-center text-[13px] text-ink-soft">
+              Nenhuma pelada encontrada.
+            </div>
+          ) : (
+            <>
+              {/* Cards — todos os dispositivos (2 colunas no desktop) */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                {pagedGames.map(game => (
+                  <button
+                    key={game.id}
+                    onClick={() => navigate(`/game/${game.id}`)}
+                    className="w-full text-left bg-surface border border-line rounded-2xl p-4 flex items-center gap-3 hover:border-[#d8d2c2] hover:shadow-[0_6px_24px_-12px_rgba(27,26,22,0.25)] transition-all"
+                  >
+                    <div className="w-10 h-10 flex-none rounded-xl bg-wine-tint text-wine flex items-center justify-center">
+                      <Calendar className="w-[18px] h-[18px]" strokeWidth={2.2} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-heading font-bold text-[15px] text-ink capitalize leading-tight">
+                          {formatDate(convertTimestampToDate(game.date))}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold ${getStatusColor(game.status)}`}>
                           <span className={`w-[5px] h-[5px] rounded-full ${getStatusDot(game.status)}`} />
                           {getStatusText(game.status)}
                         </span>
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap font-stat text-[13px] text-ink-medium">
-                        {game.players?.length || 0}
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap font-stat text-[13px] text-ink-medium">
-                        {game.matches?.length || 0}
-                      </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/game/${game.id}`);
-                          }}
-                          className="inline-flex items-center gap-1 text-wine hover:text-wine-dark text-[12.5px] font-semibold transition-colors"
-                        >
-                          Ver
-                          <ChevronRight className="w-4 h-4" strokeWidth={2.4} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                      </div>
+                      <div className="flex items-center gap-x-3 gap-y-1 text-[12px] text-ink-soft mt-1 flex-wrap">
+                        <span className="inline-flex items-center gap-1 min-w-0">
+                          <MapPin className="w-3.5 h-3.5 flex-none text-ink-icon" strokeWidth={2.2} />
+                          <span className="truncate">{game.location}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-ink-icon" strokeWidth={2.2} />
+                          <span className="font-stat">{game.players?.length || 0}/{game.maxPlayers}</span>
+                        </span>
+                        <span className="font-stat">
+                          {game.matches?.length || 0} {game.matches?.length === 1 ? 'partida' : 'partidas'}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 flex-none text-ink-icon" strokeWidth={2.2} />
+                  </button>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2.5 mt-4">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-[13px] font-semibold rounded-xl border border-line bg-surface text-ink-medium hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" strokeWidth={2.4} />
+                    Anterior
+                  </button>
+                  <span className="text-[12.5px] text-ink-soft font-medium tabular-nums px-1">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-[13px] font-semibold rounded-xl border border-line bg-surface text-ink-medium hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Próxima
+                    <ChevronRight className="w-4 h-4" strokeWidth={2.4} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </section>
       )}
     </div>
