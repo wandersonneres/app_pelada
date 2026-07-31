@@ -8,6 +8,7 @@ import { RosterPanel } from './RosterPanel';
 import { WaitingPanel } from './WaitingPanel';
 import { GoalsLog } from './GoalsLog';
 import { useFormationLines } from './useFormationLines';
+import { matchOutcome } from '../game-details/gameStats';
 import { MatchesLayoutProps } from './types';
 
 export function MatchesDesktop({
@@ -39,6 +40,7 @@ export function MatchesDesktop({
     && game.players.length >= playersPerTeam * 2
     && (matches.length === 0 || (lastMatch?.status === 'finished' && !!lastMatch?.winner));
 
+  const outcome = matchOutcome(activeMatch);
   const linesTop = useFormationLines(teamB, teamB.formation?.tactical || '3-3-1'); // Laranja no topo
   const linesBottom = useFormationLines(teamA, teamA.formation?.tactical || '3-3-1'); // Azul embaixo
 
@@ -62,7 +64,7 @@ export function MatchesDesktop({
               className={canGenerate ? 'gbtn' : ''}
               onClick={generateTeams}
               disabled={!canGenerate}
-              title={!canGenerate && lastMatch && lastMatch.status !== 'finished' ? 'Encerre a partida atual (defina quem venceu) para gerar a próxima' : undefined}
+              title={!canGenerate && lastMatch && lastMatch.status !== 'finished' ? 'Encerre a partida atual (defina quem continua) para gerar a próxima' : undefined}
               style={{ border: 'none', background: '#6e1a28', color: '#fff', fontWeight: 600, fontSize: 12.5, padding: '9px 15px', borderRadius: 10, cursor: canGenerate ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif', opacity: canGenerate ? 1 : 0.45 }}
             >
               + Gerar próxima
@@ -142,10 +144,9 @@ export function MatchesDesktop({
                 <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <GoalsLog match={activeMatch} roster={game.players} canManage={false} onRemoveGoal={onRemoveGoal} />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#fff', border: '1px solid #e6e1d4', borderRadius: 12, padding: '11px 14px', fontSize: 13, fontWeight: 700, color: '#4b463b' }}>
-                    {(() => {
-                      const w = activeMatch.teams.find(t => t.id === activeMatch.winner);
-                      return w ? `🏆 ${w.name} venceu esta partida` : 'Partida finalizada';
-                    })()}
+                    {outcome.draw
+                      ? `🤝 Empate · ${outcome.scoreA}–${outcome.scoreB}`
+                      : `🏆 ${outcome.winner?.name} venceu · ${outcome.scoreA}–${outcome.scoreB}`}
                   </div>
                 </div>
               )}

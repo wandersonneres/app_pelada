@@ -6,11 +6,12 @@ interface AnalisesPanelProps {
   game: Game;
 }
 
-type Metric = 'goals' | 'assists' | 'victories' | 'losses';
+type Metric = 'goals' | 'assists' | 'victories' | 'draws' | 'losses';
 const METRIC_TABS: { key: Metric; label: string }[] = [
   { key: 'goals', label: 'Gols' },
   { key: 'assists', label: 'Assist.' },
   { key: 'victories', label: 'Vitórias' },
+  { key: 'draws', label: 'Empates' },
   { key: 'losses', label: 'Derrotas' },
 ];
 
@@ -37,10 +38,8 @@ export function AnalisesPanel({ game }: AnalisesPanelProps) {
 
   const ranked = [...stats].sort((a, b) => (b[metric] as number) - (a[metric] as number)).filter(p => (p[metric] as number) > 0).slice(0, 8);
   const maxVal = ranked.length ? (ranked[0][metric] as number) : 1;
+  const isResultMetric = metric === 'victories' || metric === 'draws' || metric === 'losses';
   const maxMatchGoals = Math.max(1, ...scores.map(s => Math.max(s.blue, s.orange)));
-
-  const winTotal = Math.max(1, totals.blueWins + totals.orangeWins);
-  const goalTotal = Math.max(1, totals.blueGoals + totals.orangeGoals);
 
   return (
     <div className="p-5 md:px-[28px] md:py-[22px] flex flex-col gap-4 min-h-full">
@@ -98,9 +97,16 @@ export function AnalisesPanel({ game }: AnalisesPanelProps) {
               <div key={p.id} className={`flex items-center gap-3 py-[9px] ${i > 0 ? 'border-t border-[#f4efe4]' : ''}`}>
                 <span className="font-stat text-[12px] text-[#c8c1b0] w-3.5 text-center">{i + 1}</span>
                 <span className="chip w-7 h-7 flex-none rounded-full bg-ink text-white font-stat text-[11px] flex items-center justify-center">{p.arrivalOrder}</span>
-                <div className="flex items-center gap-1.5 w-[150px] min-w-0">
-                  <span className="w-[5px] h-[5px] rounded-full flex-none" style={{ background: POSITION_HEX[p.position] }} />
-                  <span className="text-[13px] font-semibold text-ink truncate">{p.name}</span>
+                <div className="w-[150px] min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-[5px] h-[5px] rounded-full flex-none" style={{ background: POSITION_HEX[p.position] }} />
+                    <span className="text-[13px] font-semibold text-ink truncate">{p.name}</span>
+                  </div>
+                  {isResultMetric && (
+                    <div className="text-[10px] text-ink-soft mt-0.5 pl-[11px] font-stat">
+                      {p.victories}V · {p.draws}E · {p.losses}D · {p.matches}J
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 h-2 bg-[#f1ece1] rounded-full overflow-hidden">
                   <div className="h-full bg-wine rounded-full" style={{ width: `${Math.round(((p[metric] as number) / maxVal) * 100)}%` }} />
@@ -116,9 +122,14 @@ export function AnalisesPanel({ game }: AnalisesPanelProps) {
           <div className="bg-surface border border-line rounded-2xl p-[18px]">
             <div className="font-heading font-bold text-[14px] mb-3 text-ink">Azul vs Laranja</div>
             <div className="flex flex-col gap-[11px]">
-              <SplitRow label="Vitórias" left={totals.blueWins} right={totals.orangeWins} leftPct={(totals.blueWins / winTotal) * 100} />
-              <SplitRow label="Gols" left={totals.blueGoals} right={totals.orangeGoals} leftPct={(totals.blueGoals / goalTotal) * 100} />
+              <SplitRow label="Vitórias" left={totals.blueWins} right={totals.orangeWins} />
+              <SplitRow label="Gols" left={totals.blueGoals} right={totals.orangeGoals} />
             </div>
+            {totals.draws > 0 && (
+              <div className="text-[11px] text-ink-soft text-center mt-2.5">
+                {totals.draws} {totals.draws > 1 ? 'empates' : 'empate'} (não contam como vitória)
+              </div>
+            )}
           </div>
 
           <div className="bg-surface border border-line rounded-2xl p-[18px]">
@@ -153,14 +164,20 @@ export function AnalisesPanel({ game }: AnalisesPanelProps) {
   );
 }
 
-function SplitRow({ label, left, right, leftPct }: { label: string; left: number; right: number; leftPct: number }) {
+function SplitRow({ label, left, right }: { label: string; left: number; right: number }) {
+  const total = left + right;
+  const leftPct = total > 0 ? (left / total) * 100 : 0;
   return (
     <div className="flex items-center gap-2.5 text-[12px]">
       <span className="w-[54px] font-bold text-team-blue-dark">{label}</span>
       <span className="font-heading w-4 font-extrabold text-center text-ink">{left}</span>
       <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-line-soft">
-        <div style={{ width: `${leftPct}%`, background: '#24499c' }} />
-        <div className="flex-1" style={{ background: '#c2560f' }} />
+        {total > 0 && (
+          <>
+            <div style={{ width: `${leftPct}%`, background: '#24499c' }} />
+            <div className="flex-1" style={{ background: '#c2560f' }} />
+          </>
+        )}
       </div>
       <span className="font-heading w-4 font-extrabold text-center text-ink">{right}</span>
     </div>

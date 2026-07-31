@@ -407,7 +407,8 @@ export function Financeiro() {
     .filter(p => p.status === 'paid')
     .reduce((acc, p) => acc + p.value, 0);
   const totalDiaristasPagos = diaristaPayments.filter(p => p.status === 'paid').length;
-  const saldoMes = arrecadadoMes - custoPelada;
+  // Saldo do mês = mensalidades + diaristas − custo da pelada
+  const saldoMes = arrecadadoMes + arrecadadoDiaristas - custoPelada;
 
   const visibleMensalistas = mensalistas
     .filter(m => {
@@ -483,7 +484,7 @@ export function Financeiro() {
             <p className={`font-heading font-extrabold text-[22px] sm:text-[28px] lg:text-[30px] leading-none mt-2 ${saldoMes < 0 ? 'text-state-live' : 'text-state-success'}`}>
               R$ {saldoMes.toFixed(2)}
             </p>
-            <p className="text-[11px] text-ink-soft mt-1.5">Arrecadado − custo</p>
+            <p className="text-[11px] text-ink-soft mt-1.5">Mensalidades + diaristas − custo</p>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
-import { Match, getGoalTeamId } from '../../types';
+import { Match } from '../../types';
+import { matchOutcome } from '../game-details/gameStats';
 
 interface MatchNavigatorProps {
   matches: Match[];
@@ -7,24 +8,18 @@ interface MatchNavigatorProps {
   compact?: boolean; // true no celular (chips menores)
 }
 
-function matchScore(match: Match) {
-  const teamA = match.teams[0];
-  const teamB = match.teams[1];
-  const scoreA = match.goals?.filter(g => getGoalTeamId(g, match.teams) === teamA?.id).length ?? teamA?.score ?? 0;
-  const scoreB = match.goals?.filter(g => getGoalTeamId(g, match.teams) === teamB?.id).length ?? teamB?.score ?? 0;
-  return { scoreA, scoreB };
-}
-
 export function MatchNavigator({ matches, activeMatchId, onSelect, compact }: MatchNavigatorProps) {
   if (matches.length === 0) return null;
 
   return (
     <div style={{ display: 'flex', gap: compact ? 8 : 10, overflowX: 'auto', paddingBottom: 2 }}>
       {matches.map((match, idx) => {
-        const { scoreA, scoreB } = matchScore(match);
+        const outcome = matchOutcome(match);
+        const { scoreA, scoreB } = outcome;
         const isActive = match.id === activeMatchId;
         const isLive = match.status === 'in_progress';
-        const winnerName = match.status === 'finished' ? match.teams.find(t => t.id === match.winner)?.name : null;
+        // Rótulo do resultado sempre pelo placar (empate ou vencedor por gols).
+        const resultLabel = match.status === 'finished' ? (outcome.draw ? 'Empate' : outcome.winner?.name) : null;
 
         return (
           <button
@@ -73,9 +68,9 @@ export function MatchNavigator({ matches, activeMatchId, onSelect, compact }: Ma
               <span style={{ color: '#1c3576' }}>{scoreA}</span>
               <span style={{ color: '#c8c1b0', fontSize: 13 }}>×</span>
               <span style={{ color: '#9e440a' }}>{scoreB}</span>
-              {!compact && winnerName && (
+              {!compact && resultLabel && (
                 <span style={{ fontSize: 10, color: '#8b8578', marginLeft: 'auto', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-                  {winnerName}
+                  {resultLabel}
                 </span>
               )}
             </div>

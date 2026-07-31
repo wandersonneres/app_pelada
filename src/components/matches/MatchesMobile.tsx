@@ -6,8 +6,8 @@ import { MatchNavigator } from './MatchNavigator';
 import { PitchLines } from './Pin';
 import { GoalsLog } from './GoalsLog';
 import { useFormationLines } from './useFormationLines';
+import { matchOutcome } from '../game-details/gameStats';
 import { MatchesLayoutProps } from './types';
-import { getGoalTeamId } from '../../types';
 
 export function MatchesMobile({
   game,
@@ -38,8 +38,9 @@ export function MatchesMobile({
   const activeTeam = selectedTeam === 'azul' ? teamA : teamB;
   const lines = useFormationLines(activeTeam, activeTeam.formation?.tactical || '3-3-1');
 
-  const scoreA = activeMatch.goals?.filter(g => getGoalTeamId(g, activeMatch.teams) === teamA.id).length ?? teamA.score ?? 0;
-  const scoreB = activeMatch.goals?.filter(g => getGoalTeamId(g, activeMatch.teams) === teamB.id).length ?? teamB.score ?? 0;
+  const outcome = matchOutcome(activeMatch);
+  const scoreA = outcome.scoreA;
+  const scoreB = outcome.scoreB;
 
   return (
     <div style={{ padding: '14px 14px 20px', display: 'flex', flexDirection: 'column', gap: 13 }}>
@@ -100,7 +101,9 @@ export function MatchesMobile({
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#fff', border: '1px solid #e6e1d4', borderRadius: 13, padding: '13px 14px', fontSize: 13, fontWeight: 700, color: '#4b463b' }}>
-              {(() => { const w = activeMatch.teams.find(t => t.id === activeMatch.winner); return w ? `🏆 ${w.name} venceu esta partida` : 'Partida finalizada'; })()}
+              {outcome.draw
+                ? `🤝 Empate · ${outcome.scoreA}–${outcome.scoreB}`
+                : `🏆 ${outcome.winner?.name} venceu · ${outcome.scoreA}–${outcome.scoreB}`}
             </div>
           )}
           <GoalsLog match={activeMatch} roster={game.players} canManage={canManage && isLive} onRemoveGoal={onRemoveGoal} />

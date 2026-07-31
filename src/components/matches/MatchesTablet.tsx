@@ -8,8 +8,8 @@ import { PitchLines } from './Pin';
 import { RosterPanel } from './RosterPanel';
 import { GoalsLog } from './GoalsLog';
 import { useFormationLines } from './useFormationLines';
+import { matchOutcome } from '../game-details/gameStats';
 import { MatchesLayoutProps } from './types';
-import { getGoalTeamId } from '../../types';
 
 export function MatchesTablet({
   game,
@@ -44,8 +44,9 @@ export function MatchesTablet({
   const linesA = useFormationLines(teamA, teamA.formation?.tactical || '3-3-1');
   const linesB = useFormationLines(teamB, teamB.formation?.tactical || '3-3-1');
 
-  const scoreA = activeMatch.goals?.filter(g => getGoalTeamId(g, activeMatch.teams) === teamA.id).length ?? teamA.score ?? 0;
-  const scoreB = activeMatch.goals?.filter(g => getGoalTeamId(g, activeMatch.teams) === teamB.id).length ?? teamB.score ?? 0;
+  const outcome = matchOutcome(activeMatch);
+  const scoreA = outcome.scoreA;
+  const scoreB = outcome.scoreB;
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -67,7 +68,7 @@ export function MatchesTablet({
               className={canGenerate ? 'gbtn' : ''}
               onClick={generateTeams}
               disabled={!canGenerate}
-              title={!canGenerate && lastMatch && lastMatch.status !== 'finished' ? 'Encerre a partida atual (defina quem venceu) para gerar a próxima' : undefined}
+              title={!canGenerate && lastMatch && lastMatch.status !== 'finished' ? 'Encerre a partida atual (defina quem continua) para gerar a próxima' : undefined}
               style={{ border: 'none', background: '#6e1a28', color: '#fff', fontWeight: 600, fontSize: 12, padding: '9px 14px', borderRadius: 10, cursor: canGenerate ? 'pointer' : 'not-allowed', fontFamily: 'Inter, sans-serif', opacity: canGenerate ? 1 : 0.45 }}
             >
               + Gerar próxima
@@ -112,7 +113,9 @@ export function MatchesTablet({
               </div>
             ) : (
               <div style={{ flex: 'none', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#fff', border: '1px solid #e6e1d4', borderRadius: 12, padding: '11px 14px', fontSize: 13, fontWeight: 700, color: '#4b463b' }}>
-                {(() => { const w = activeMatch.teams.find(t => t.id === activeMatch.winner); return w ? `🏆 ${w.name} venceu esta partida` : 'Partida finalizada'; })()}
+                {outcome.draw
+                  ? `🤝 Empate · ${outcome.scoreA}–${outcome.scoreB}`
+                  : `🏆 ${outcome.winner?.name} venceu · ${outcome.scoreA}–${outcome.scoreB}`}
               </div>
             )}
             <div style={{ flex: 'none', marginTop: 10 }}>
