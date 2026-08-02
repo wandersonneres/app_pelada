@@ -1983,7 +1983,6 @@ export function GameDetails() {
                 onDiaristaPayment={handleDiaristaPayment}
                 onOpenPlayerOptions={(player) => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
                 onAddPlayer={() => setShowAddPlayerModal(true)}
-                onSelectPlayer={handleOpenSelectPlayerModal}
                 groupPlayers={groupPlayers}
                 isLoadingGroupPlayers={isLoadingPlayers}
                 onAddGroupPlayer={handleAddExistingPlayer}
