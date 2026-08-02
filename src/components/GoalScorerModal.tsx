@@ -1,5 +1,6 @@
 import { Team } from '../types';
 import { useState, useEffect } from 'react';
+import { Modal } from './ui/Modal';
 
 interface GoalScorerModalProps {
   isOpen: boolean;
@@ -49,7 +50,6 @@ export const GoalScorerModal = ({ isOpen, onClose, team, opponentTeam, onConfirm
   const handleSelectAssister = (assisterId?: string) => { onConfirm(scorerId, assisterId, false); onClose(); };
   const handleSelectOwnGoal = (ownScorerId: string) => { onConfirm(ownScorerId, undefined, true); onClose(); };
 
-  if (!isOpen) return null;
   const scorer = team.players.find(p => p.id === scorerId);
 
   const PlayerRow = ({ p, onClick, hover }: { p: Team['players'][number]; onClick: () => void; hover: string }) => (
@@ -69,12 +69,13 @@ export const GoalScorerModal = ({ isOpen, onClose, team, opponentTeam, onConfirm
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 sm:p-4" onClick={onClose}>
-      <div
-        className="bg-surface rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm max-h-[80vh] flex flex-col animate-fade-in"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-line">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="sm"
+      bodyClassName="p-3 space-y-2"
+      header={
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-line flex-none">
           <div>
             {step === 'scorer' && (
               <>
@@ -96,15 +97,15 @@ export const GoalScorerModal = ({ isOpen, onClose, team, opponentTeam, onConfirm
             )}
           </div>
           <button
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl"
+            className="w-8 h-8 flex-none flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl"
             onClick={onClose}
             aria-label="Fechar"
           >
             ×
           </button>
         </div>
-
-        <div className="overflow-y-auto flex-1 p-3 space-y-2">
+      }
+    >
           {step === 'scorer' && (
             <>
               {sortPlayers(team.players).map(p => (
@@ -145,8 +146,6 @@ export const GoalScorerModal = ({ isOpen, onClose, team, opponentTeam, onConfirm
               ))}
             </>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

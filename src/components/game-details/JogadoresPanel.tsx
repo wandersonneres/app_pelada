@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Plus, Search, UserPlus } from 'lucide-react';
 import { Game, Player } from '../../types';
 import { PlayerCard } from './PlayerCard';
+import { GroupPlayer, GroupPlayersColumn } from './GroupPlayersColumn';
 
 interface JogadoresPanelProps {
   game: Game;
@@ -11,6 +12,10 @@ interface JogadoresPanelProps {
   onOpenPlayerOptions: (player: Player) => void;
   onAddPlayer: () => void;
   onSelectPlayer: () => void;
+  /** Jogadores do grupo ainda não confirmados (coluna da esquerda a partir de lg). */
+  groupPlayers: GroupPlayer[];
+  isLoadingGroupPlayers: boolean;
+  onAddGroupPlayer: (user: GroupPlayer) => void | Promise<void>;
 }
 
 export function JogadoresPanel({
@@ -21,6 +26,9 @@ export function JogadoresPanel({
   onOpenPlayerOptions,
   onAddPlayer,
   onSelectPlayer,
+  groupPlayers,
+  isLoadingGroupPlayers,
+  onAddGroupPlayer,
 }: JogadoresPanelProps) {
   const [search, setSearch] = useState('');
 
@@ -49,7 +57,7 @@ export function JogadoresPanel({
   return (
     <div className="p-5 md:px-[28px] md:py-[22px] flex flex-col gap-4 h-full min-h-0">
       {/* Header */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 flex-none">
         <div className="min-w-0">
           <h2 className="font-heading font-extrabold text-[20px] text-ink">Jogadores confirmados</h2>
           <div className="text-[12.5px] text-ink-soft mt-px">A ordem de chegada define a prioridade para entrar em campo</div>
@@ -66,12 +74,13 @@ export function JogadoresPanel({
           </div>
           {canEdit && (
             <>
+              {/* A partir de lg a coluna "Do grupo" substitui este botão. */}
               <button
                 onClick={onSelectPlayer}
-                className="border border-[#ded8c9] bg-surface text-ink-medium text-[12.5px] font-semibold px-[15px] py-[9px] rounded-[10px] hover:bg-paper transition-colors flex items-center gap-1.5"
+                className="lg:hidden border border-[#ded8c9] bg-surface text-ink-medium text-[12.5px] font-semibold px-[15px] py-[9px] rounded-[10px] hover:bg-paper transition-colors flex items-center gap-1.5"
               >
                 <UserPlus className="w-4 h-4" />
-                <span className="hidden lg:inline">Selecionar do grupo</span>
+                Selecionar do grupo
               </button>
               <button
                 onClick={onAddPlayer}
@@ -84,8 +93,10 @@ export function JogadoresPanel({
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+      {/* Stat cards — 4 colunas fixas a partir de lg: com a coluna do grupo ao
+          lado, a altura é curta (iPad deitado = 768px) e não pode haver quebra
+          para 2x2, que comeria ~80px da lista. */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 flex-none">
         <div className="bg-surface border border-line rounded-[13px] px-4 py-[13px] flex items-center gap-3">
           <span className="chip w-[38px] h-[38px] flex-none rounded-full bg-ink text-white font-stat font-bold text-[15px] flex items-center justify-center">
             {players.length}
@@ -124,37 +135,55 @@ export function JogadoresPanel({
         </div>
       </div>
 
-      {/* Grid */}
-      {players.length > 0 ? (
-        <div
-          className="bg-surface border border-line rounded-2xl p-3.5 grid gap-2.5 content-start flex-1 min-h-0 overflow-y-auto"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
-        >
-          {filtered.map(player => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              canManage={canManage}
-              isDiaristaPaid={!!diaristaPayments[player.id]}
-              onDiaristaPayment={() => onDiaristaPayment(player.id, player.name)}
-              onOpenOptions={() => onOpenPlayerOptions(player)}
-            />
-          ))}
-          {filtered.length === 0 && (
-            <div className="col-span-full text-ink-soft text-center py-8 text-sm">Nenhum jogador encontrado.</div>
-          )}
-          {canEdit && (
-            <button
-              onClick={onAddPlayer}
-              className="flex items-center justify-center gap-2 min-h-[60px] rounded-xl border-[1.5px] border-dashed border-[#d9d2c2] bg-paper text-ink-soft text-[12.5px] font-semibold hover:text-ink transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Adicionar jogador
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-surface border border-line rounded-2xl p-8 text-ink-soft text-center">Nenhum jogador confirmado ainda.</div>
-      )}
+      {/* Duas colunas a partir de lg: grupo à esquerda, confirmados à direita.
+          Sem permissão de edição não há coluna do grupo, então fica coluna única. */}
+      <div
+        className={`flex-1 min-h-0 grid gap-3.5 ${
+          canEdit ? 'lg:grid-cols-[minmax(280px,340px)_1fr]' : 'grid-cols-1'
+        }`}
+      >
+        {canEdit && (
+          <GroupPlayersColumn
+            className="hidden lg:flex"
+            players={groupPlayers}
+            isLoading={isLoadingGroupPlayers}
+            onAdd={onAddGroupPlayer}
+          />
+        )}
+
+        {players.length > 0 ? (
+          <div
+            className="bg-surface border border-line rounded-2xl p-3.5 grid gap-2.5 content-start min-h-0 overflow-y-auto overscroll-contain"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+          >
+            {filtered.map(player => (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                canManage={canManage}
+                isDiaristaPaid={!!diaristaPayments[player.id]}
+                onDiaristaPayment={() => onDiaristaPayment(player.id, player.name)}
+                onOpenOptions={() => onOpenPlayerOptions(player)}
+              />
+            ))}
+            {filtered.length === 0 && (
+              <div className="col-span-full text-ink-soft text-center py-8 text-sm">Nenhum jogador encontrado.</div>
+            )}
+            {canEdit && (
+              <button
+                onClick={onAddPlayer}
+                className="flex items-center justify-center gap-2 min-h-[60px] rounded-xl border-[1.5px] border-dashed border-[#d9d2c2] bg-paper text-ink-soft text-[12.5px] font-semibold hover:text-ink transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Adicionar jogador
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-surface border border-line rounded-2xl p-8 text-ink-soft text-center min-h-0 overflow-y-auto">
+            Nenhum jogador confirmado ainda.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

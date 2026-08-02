@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react';
 import { Player } from '../types';
 import { StarRating } from './StarRating';
+import { Modal } from './ui/Modal';
 
 interface PlayerOptionsModalProps {
   isOpen: boolean;
@@ -47,18 +48,17 @@ export function PlayerOptionsModal({
   onDiaristaPayment,
   isDiaristaPaid,
 }: PlayerOptionsModalProps) {
-  if (!isOpen || !player) return null;
+  if (!player) return null;
 
   const pill = 'py-2 rounded-lg font-semibold text-[13px] transition-colors';
   const inactive = 'bg-line-soft text-ink-medium hover:bg-line';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 sm:p-4" onClick={onClose}>
-      <div
-        className="bg-surface rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[88vh] flex flex-col animate-fade-in"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-line">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      header={
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-line flex-none">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="chip w-9 h-9 flex-none rounded-full bg-ink text-white font-stat font-bold text-sm flex items-center justify-center">
               {player.arrivalOrder}
@@ -68,12 +68,33 @@ export function PlayerOptionsModal({
               <div className="text-[11px] text-ink-soft">Opções do jogador</div>
             </div>
           </div>
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl" onClick={onClose} aria-label="Fechar">
+          <button className="w-8 h-8 flex-none flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl" onClick={onClose} aria-label="Fechar">
             ×
           </button>
         </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      }
+      bodyClassName="space-y-5"
+      footer={
+        <div className="flex gap-2">
+          {player.paymentType === 'diarista' && (
+            <button
+              onClick={onDiaristaPayment}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-[13px] transition ${
+                isDiaristaPaid ? 'bg-state-success/10 text-state-success' : 'bg-wine text-white hover:bg-wine-dark'
+              }`}
+            >
+              {isDiaristaPaid ? 'Pago ✓ (desfazer)' : 'Confirmar pagamento'}
+            </button>
+          )}
+          <button
+            onClick={onRemovePlayer}
+            className={`${player.paymentType !== 'diarista' ? 'flex-1' : ''} flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-red-500 text-red-600 font-semibold text-[13px] hover:bg-red-50 transition`}
+          >
+            <Trash2 className="w-4 h-4" /> Remover
+          </button>
+        </div>
+      }
+    >
           <Section title="Posição">
             <div className="grid grid-cols-3 gap-2">
               {(['defesa', 'meio', 'ataque'] as const).map(pos => (
@@ -139,27 +160,6 @@ export function PlayerOptionsModal({
               ))}
             </div>
           </Section>
-        </div>
-
-        <div className="p-4 border-t border-line flex gap-2">
-          {player.paymentType === 'diarista' && (
-            <button
-              onClick={onDiaristaPayment}
-              className={`flex-1 py-2.5 rounded-lg font-semibold text-[13px] transition ${
-                isDiaristaPaid ? 'bg-state-success/10 text-state-success' : 'bg-wine text-white hover:bg-wine-dark'
-              }`}
-            >
-              {isDiaristaPaid ? 'Pago ✓ (desfazer)' : 'Confirmar pagamento'}
-            </button>
-          )}
-          <button
-            onClick={onRemovePlayer}
-            className={`${player.paymentType !== 'diarista' ? 'flex-1' : ''} flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-red-500 text-red-600 font-semibold text-[13px] hover:bg-red-50 transition`}
-          >
-            <Trash2 className="w-4 h-4" /> Remover
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

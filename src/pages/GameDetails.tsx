@@ -5,6 +5,8 @@ import { db } from '../config/firebase';
 import { Game, Team, Player, Match, convertTimestampToDate } from '../types';
 import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, ArrowLeftRight, User, Plus, Target, Footprints } from 'lucide-react';
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
+import { Modal } from '../components/ui/Modal';
+import { GroupPlayerRow } from '../components/game-details/GroupPlayersColumn';
 import { StarRating } from '../components/StarRating';
 import { MatchesPanel } from '../components/matches/MatchesPanel';
 import { WaitingReorderList } from '../components/matches/WaitingReorderList';
@@ -28,7 +30,6 @@ const SECTION_NAV_ITEMS: PageNavItem[] = [
   { key: 'analises', label: 'Análises', icon: BarChart2 },
 ];
 import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // Novo modal de adicionar jogador com Tailwind
 function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
@@ -57,15 +58,31 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
     setPlayerSkillLevel(value as 1 | 2 | 3 | 4 | 5);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 max-h-screen overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Adicionar Jogador</h2>
-          <button onClick={onClose} className="text-ink-icon hover:text-ink">×</button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Adicionar Jogador"
+      footer={
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-ink-medium bg-line-soft rounded-lg hover:bg-line transition-colors"
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 text-sm font-medium text-white bg-wine rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            disabled={isJoining || !playerName.trim()}
+          >
+            {isJoining ? 'Adicionando...' : 'Adicionar'}
+          </button>
         </div>
+      }
+    >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Nome do Jogador</label>
@@ -126,25 +143,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-ink-medium bg-line-soft rounded-lg hover:bg-line transition-colors"
-            type="button"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-wine rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            type="button"
-            disabled={isJoining || !playerName.trim()}
-          >
-            {isJoining ? 'Adicionando...' : 'Adicionar'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -169,8 +168,6 @@ export function PlayerSwapModal({
   onReplacePlayer,
   onRemoveFromWaitingList,
 }: PlayerSwapModalProps) {
-  if (!isOpen || !currentPlayer) return null;
-
   const SWAP_POS_LABEL: Record<string, string> = { defesa: 'DEF', meio: 'MEI', ataque: 'ATA' };
   const SWAP_POS_HEX: Record<string, string> = { defesa: '#d99a1a', meio: '#0d7a72', ataque: '#c2560f' };
   const posBadge = (position: string) => (
@@ -180,10 +177,14 @@ export function PlayerSwapModal({
     </span>
   );
 
+  if (!currentPlayer) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-line">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      header={
+        <div className="flex items-center justify-between p-4 border-b border-line flex-none">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="chip w-9 h-9 flex-none rounded-full bg-ink text-white font-stat font-bold text-sm flex items-center justify-center">{currentPlayer.arrivalOrder}</span>
             <div className="min-w-0">
@@ -191,10 +192,11 @@ export function PlayerSwapModal({
               <div className="text-[11px] text-ink-soft">Trocar de time ou substituir pela espera</div>
             </div>
           </div>
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl" onClick={onClose} aria-label="Fechar">×</button>
+          <button className="w-8 h-8 flex-none flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl" onClick={onClose} aria-label="Fechar">×</button>
         </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      }
+      bodyClassName="space-y-5"
+    >
           <div>
             <div className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide mb-2">Trocar com o outro time</div>
             <div className="space-y-1.5">
@@ -239,9 +241,7 @@ export function PlayerSwapModal({
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1530,25 +1530,44 @@ export function GameDetails() {
     }
   };
 
-  const handleOpenSelectPlayerModal = async () => {
-    setIsSelectPlayerModalOpen(true);
+  const canManage = !!(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista');
+  const canEditGame = canManage && !!game && game.status !== 'finished';
+
+  // Não filtra por "já confirmado" aqui: essa derivação é feita na renderização,
+  // senão a lista fica velha (o game chega pelo onSnapshot depois do fetch).
+  const loadGroupPlayers = useCallback(async () => {
     setIsLoadingPlayers(true);
     try {
-      const usersRef = collection(db, 'users');
-      const snapshot = await getDocs(usersRef);
-      const playersList = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(user => user.username !== 'admin')
-        // Filtra jogadores que já estão confirmados
-        .filter(user => !game?.players.some(p => p.id === user.id));
-      setAvailablePlayers(playersList);
+      const snapshot = await getDocs(collection(db, 'users'));
+      setAvailablePlayers(
+        snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() } as any))
+          .filter(u => u.username !== 'admin')
+      );
     } catch (error) {
       console.error('Erro ao carregar jogadores:', error);
       setAvailablePlayers([]);
     } finally {
       setIsLoadingPlayers(false);
     }
+  }, []);
+
+  // A coluna "Do grupo" (tablet/desktop) precisa da lista já carregada. Só busca
+  // para quem pode editar — o restante não deve baixar o diretório de usuários.
+  useEffect(() => {
+    if (!canEditGame) return;
+    loadGroupPlayers();
+  }, [canEditGame, loadGroupPlayers]);
+
+  const handleOpenSelectPlayerModal = () => {
+    setIsSelectPlayerModalOpen(true);
+    if (availablePlayers.length === 0) loadGroupPlayers();
   };
+
+  const closeSelectPlayerModal = useCallback(() => {
+    setIsSelectPlayerModalOpen(false);
+    setSearchTerm('');
+  }, []);
 
   const handleAddExistingPlayer = async (user: any) => {
     if (!game || !id) return;
@@ -1630,7 +1649,6 @@ export function GameDetails() {
 
   const isGameFull = game.players?.length >= game.maxPlayers;
   const framed = viewport === 'desktop' || viewport === 'tablet';
-  const canManage = !!(user?.role === 'admin' || user?.playerInfo?.paymentType === 'mensalista');
 
   const formatMatchDate = (date: any) => {
     if (!date) return '';
@@ -1647,16 +1665,16 @@ export function GameDetails() {
     }
   };
 
-  // Função para filtrar jogadores baseado no termo de busca
-  const filteredPlayers = availablePlayers
-    // Primeiro filtra jogadores que já estão confirmados
-    .filter(player => !game?.players.some(p => p.id === player.id))
-    // Depois filtra pelo termo de busca
-    .filter(player => 
+  // Jogadores do grupo ainda não confirmados. Derivado na renderização para que
+  // a linha suma no instante em que o onSnapshot traz o jogador confirmado.
+  const groupPlayers = availablePlayers.filter(u => !game.players.some(p => p.id === u.id));
+
+  // Mesma lista, filtrada pela busca do modal (só usado no celular).
+  const filteredPlayers = groupPlayers
+    .filter(player =>
       player.playerInfo?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.email?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    // Ordena alfabeticamente por nome
     .sort((a, b) => (a.playerInfo?.name || '').localeCompare(b.playerInfo?.name || ''));
 
   const confirmDiaristaPayment = async () => {
@@ -1873,45 +1891,33 @@ export function GameDetails() {
       )}
 
       {/* Modal de confirmação de exclusão */}
-      <AnimatePresence>
-        {isDeleteDialogOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4"
+      <Modal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        title="Excluir Pelada"
+        variant="center"
+        footer={
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-ink-medium bg-line-soft rounded-lg hover:bg-line transition-colors"
             >
-              <h2 className="font-heading text-lg font-bold text-ink mb-2">
-                Excluir Pelada
-              </h2>
-              <p className="text-ink-medium mb-6">
-                Tem certeza que deseja excluir esta pelada? Esta ação não pode ser desfeita.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setIsDeleteDialogOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-ink-medium bg-line-soft rounded-lg hover:bg-line transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDeleteGame}
-                  disabled={isDeleting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDeleting ? 'Excluindo...' : 'Excluir'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Cancelar
+            </button>
+            <button
+              onClick={handleDeleteGame}
+              disabled={isDeleting}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </button>
+          </div>
+        }
+      >
+        <p className="text-ink-medium">
+          Tem certeza que deseja excluir esta pelada? Esta ação não pode ser desfeita.
+        </p>
+      </Modal>
 
       {/* Conteúdo da pelada */}
       <div className={framed ? 'flex-1 min-h-0' : 'flex-1 pb-24'}>
@@ -1978,6 +1984,9 @@ export function GameDetails() {
                 onOpenPlayerOptions={(player) => { setSelectedPlayer(player); setIsPlayerOptionsOpen(true); }}
                 onAddPlayer={() => setShowAddPlayerModal(true)}
                 onSelectPlayer={handleOpenSelectPlayerModal}
+                groupPlayers={groupPlayers}
+                isLoadingGroupPlayers={isLoadingPlayers}
+                onAddGroupPlayer={handleAddExistingPlayer}
               />
             )}
             {selectedTab === 'analises' && (
@@ -2053,126 +2062,81 @@ export function GameDetails() {
           setIsPlayerSwapOpen(false);
         }}
       />
-      {/* Modal de seleção de jogador */}
-      {isSelectPlayerModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => { setIsSelectPlayerModalOpen(false); setSearchTerm(''); }}
-        >
-          <div
-            className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-line">
-              <div>
+      {/* Modal de seleção de jogador — só no celular; no tablet/desktop a
+          JogadoresPanel mostra a coluna "Do grupo" no lugar deste modal. */}
+      <Modal
+        isOpen={isSelectPlayerModalOpen}
+        onClose={closeSelectPlayerModal}
+        header={
+          <div className="flex-none border-b border-line">
+            <div className="flex items-start justify-between gap-3 p-4 pb-3">
+              <div className="min-w-0">
                 <h2 className="font-heading font-bold text-lg text-ink">Selecionar do grupo</h2>
                 <p className="text-[12px] text-ink-soft">Adicione um jogador já cadastrado</p>
               </div>
               <button
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-icon hover:text-ink hover:bg-paper transition-colors text-xl"
-                onClick={() => { setIsSelectPlayerModalOpen(false); setSearchTerm(''); }}
+                className="w-8 h-8 flex-none rounded-lg flex items-center justify-center text-ink-icon hover:text-ink hover:bg-paper transition-colors text-xl leading-none"
+                onClick={closeSelectPlayerModal}
                 aria-label="Fechar"
               >
                 ×
               </button>
             </div>
-
-            <div className="p-4 pb-2">
+            <div className="px-4 pb-3">
               <div className="flex items-center gap-2 border border-[#ded8c9] bg-surface rounded-[10px] px-3">
-                <Users className="w-[15px] h-[15px] text-ink-soft" />
+                <Users className="w-[15px] h-[15px] text-ink-soft flex-none" />
                 <input
                   type="text"
                   placeholder="Buscar por nome ou email"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 border-none outline-none bg-transparent text-[14px] md:text-[13px] py-2.5"
+                  className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] py-2.5"
                 />
               </div>
             </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
-              {isLoadingPlayers ? (
-                <div className="flex justify-center py-10">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-wine/30 border-t-wine" />
-                </div>
-              ) : filteredPlayers.length > 0 ? (
-                <>
-                  <div className="text-[11px] text-ink-soft font-semibold px-1 py-2">
-                    {filteredPlayers.length} disponíve{filteredPlayers.length !== 1 ? 'is' : 'l'}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {filteredPlayers.map((u) => {
-                      const pos = u.playerInfo?.position;
-                      const posLabel = pos === 'defesa' ? 'DEF' : pos === 'meio' ? 'MEI' : pos === 'ataque' ? 'ATA' : '—';
-                      const posHex = pos === 'defesa' ? '#d99a1a' : pos === 'meio' ? '#0d7a72' : '#c2560f';
-                      return (
-                        <button
-                          key={u.id}
-                          onClick={() => handleAddExistingPlayer(u)}
-                          className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-[#eee7d8] hover:bg-paper transition-colors text-left"
-                        >
-                          <span className="w-9 h-9 flex-none rounded-full bg-wine-tint text-wine font-bold text-sm flex items-center justify-center">
-                            {u.playerInfo?.name?.charAt(0).toUpperCase() || '?'}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-[13.5px] text-ink truncate">{u.playerInfo?.name || u.email}</div>
-                            <div className="text-[11px] text-ink-soft truncate">{u.email}</div>
-                          </div>
-                          <div className="flex flex-col items-end gap-1 flex-none">
-                            <span
-                              className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.04em] px-[7px] py-[3px] rounded-md"
-                              style={{ color: '#5c5647', background: '#ece5d6' }}
-                            >
-                              <span className="w-[5px] h-[5px] rounded-full" style={{ background: posHex }} />
-                              {posLabel}
-                            </span>
-                            <span className="tracking-[0.5px] leading-none text-[11px]">
-                              {[0, 1, 2, 3, 4].map(i => (
-                                <span key={i} style={{ color: i < (u.playerInfo?.skillLevel || 0) ? '#d99a1a' : '#ded8c9' }}>★</span>
-                              ))}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-10 text-ink-soft text-sm">
-                  {searchTerm ? 'Nenhum jogador encontrado com esse termo.' : 'Nenhum jogador disponível para adicionar.'}
-                </div>
-              )}
-            </div>
-
-            <div className="p-3 border-t border-line flex items-center justify-between">
-              <span className="text-[12px] text-ink-soft">Toque para adicionar · a lista some ao confirmar</span>
-              <button
-                onClick={() => { setIsSelectPlayerModalOpen(false); setSearchTerm(''); }}
-                className="bg-wine text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-wine-dark transition-colors"
-              >
-                Concluir
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        }
+        bodyClassName="p-3"
+        footer={
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[12px] text-ink-soft">Toque para adicionar</span>
+            <button
+              onClick={closeSelectPlayerModal}
+              className="bg-wine text-white text-[13px] font-semibold px-4 py-2 rounded-[10px] hover:bg-wine-dark transition-colors flex-none"
+            >
+              Concluir
+            </button>
+          </div>
+        }
+      >
+        {isLoadingPlayers ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-wine/30 border-t-wine" />
+          </div>
+        ) : filteredPlayers.length > 0 ? (
+          <>
+            <div className="text-[11px] text-ink-soft font-semibold px-1 pb-2">
+              {filteredPlayers.length} disponíve{filteredPlayers.length !== 1 ? 'is' : 'l'}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {filteredPlayers.map((u) => (
+                <GroupPlayerRow key={u.id} user={u} onAdd={() => handleAddExistingPlayer(u)} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-10 text-ink-soft text-sm">
+            {searchTerm ? 'Nenhum jogador encontrado com esse termo.' : 'Nenhum jogador disponível para adicionar.'}
+          </div>
+        )}
+      </Modal>
 
       {/* Modal da Lista de Espera */}
-      {waitingListMatchId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setWaitingListMatchId(null)}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-line">
-              <h2 className="font-heading font-bold text-lg text-ink">Lista de espera</h2>
-              <button
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl"
-                onClick={() => setWaitingListMatchId(null)}
-                aria-label="Fechar"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
+      <Modal
+        isOpen={!!waitingListMatchId}
+        onClose={() => setWaitingListMatchId(null)}
+        title="Lista de espera"
+      >
               {(() => {
                 const POS_LABEL: Record<string, string> = { defesa: 'DEF', meio: 'MEI', ataque: 'ATA' };
                 const POS_HEX: Record<string, string> = { defesa: '#d99a1a', meio: '#0d7a72', ataque: '#c2560f' };
@@ -2240,29 +2204,43 @@ export function GameDetails() {
                   </div>
                 );
               })()}
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Modal de Pagamento do Diarista */}
-      {showDiaristaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowDiaristaModal(false)}>
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-line">
-              <div>
-                <h2 className="font-heading font-bold text-lg text-ink">Confirmar pagamento</h2>
-                <p className="text-[12px] text-ink-soft">Diária de {selectedDiarista?.name}</p>
-              </div>
-              <button
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-icon hover:text-ink hover:bg-paper text-xl"
-                onClick={() => setShowDiaristaModal(false)}
-                aria-label="Fechar"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-4">
+      <Modal
+        isOpen={showDiaristaModal}
+        onClose={() => setShowDiaristaModal(false)}
+        title="Confirmar pagamento"
+        subtitle={`Diária de ${selectedDiarista?.name ?? ''}`}
+        footer={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDiaristaFree(true)}
+              className="text-[13px] font-semibold text-state-success bg-state-success/10 px-3.5 py-2 rounded-lg hover:bg-state-success/20 transition-colors disabled:opacity-50"
+              type="button"
+              disabled={!selectedDiarista}
+            >
+              Marcar grátis
+            </button>
+            <button
+              onClick={() => setShowDiaristaModal(false)}
+              className="ml-auto text-[13px] font-semibold text-ink-medium bg-line-soft px-4 py-2 rounded-lg hover:bg-line transition-colors"
+              type="button"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDiaristaPayment}
+              className="text-[13px] font-semibold text-white bg-wine px-4 py-2 rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              disabled={!selectedDiarista}
+            >
+              Confirmar
+            </button>
+          </div>
+        }
+      >
+            <div>
               <label className="block text-[13px] font-medium text-ink-medium mb-1.5">Valor</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat font-semibold">R$</span>
@@ -2292,34 +2270,7 @@ export function GameDetails() {
                 ))}
               </div>
             </div>
-            <div className="p-4 border-t border-line flex items-center gap-2">
-              <button
-                onClick={() => setDiaristaFree(true)}
-                className="text-[13px] font-semibold text-state-success bg-state-success/10 px-3.5 py-2 rounded-lg hover:bg-state-success/20 transition-colors disabled:opacity-50"
-                type="button"
-                disabled={!selectedDiarista}
-              >
-                Marcar grátis
-              </button>
-              <button
-                onClick={() => setShowDiaristaModal(false)}
-                className="ml-auto text-[13px] font-semibold text-ink-medium bg-line-soft px-4 py-2 rounded-lg hover:bg-line transition-colors"
-                type="button"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDiaristaPayment}
-                className="text-[13px] font-semibold text-white bg-wine px-4 py-2 rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                type="button"
-                disabled={!selectedDiarista}
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
-} 
+}

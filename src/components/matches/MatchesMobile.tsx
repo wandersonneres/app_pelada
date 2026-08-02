@@ -8,6 +8,7 @@ import { GoalsLog } from './GoalsLog';
 import { useFormationLines } from './useFormationLines';
 import { matchOutcome } from '../game-details/gameStats';
 import { MatchesLayoutProps } from './types';
+import { Modal } from '../ui/Modal';
 
 export function MatchesMobile({
   game,
@@ -149,13 +150,13 @@ export function MatchesMobile({
         </div>
       )}
 
-      {sheetOpen && (
-        <div className="fixed inset-0 z-50" onClick={() => setSheetOpen(false)}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,18,22,.42)' }} />
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', borderRadius: '26px 26px 0 0', padding: '10px 16px 30px' }}
-          >
+      <Modal
+        isOpen={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        size="lg"
+        panelClassName="bg-white rounded-t-[26px]"
+        bodyClassName="px-4 pt-2.5 pb-7"
+      >
             <div style={{ width: 40, height: 5, borderRadius: 99, background: '#e0dccf', margin: '6px auto 14px' }} />
 
             {isLive ? (
@@ -204,9 +205,7 @@ export function MatchesMobile({
                 </button>
               </>
             )}
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { Calendar, Copy, Check, ChevronDown, Wallet, Users, Receipt, Scale, TrendingUp, X, History, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from '../components/Loader';
+import { Modal } from '../components/ui/Modal';
 
 interface Payment {
   userId: string;
@@ -896,127 +897,123 @@ export function Financeiro() {
       </div>
 
       {/* Modal Mensalista */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-surface rounded-2xl shadow-xl border border-line p-6 w-full max-w-sm mx-auto animate-fade-in">
-            <h3 className="text-lg font-heading font-bold text-ink mb-6">Confirmar pagamento</h3>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-ink-medium mb-2">
-                Valor do pagamento
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
-                <input
-                  type="number"
-                  value={paymentValue}
-                  onChange={(e) => setPaymentValue(Number(e.target.value))}
-                  className="w-full pl-12 pr-3 py-2.5 bg-paper border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine text-lg font-stat text-ink"
-                  min="0"
-                  step="10"
-                  onBlur={(e) => {
-                    const value = Number(e.target.value);
-                    if (!isNaN(value)) {
-                      setPaymentValue(Number(value.toFixed(2)));
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setSelectedMensalista(null);
-                }}
-                className="flex-1 px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper rounded-xl text-sm font-semibold transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmPayment}
-                className="flex-1 px-4 py-2.5 bg-wine text-white rounded-xl hover:bg-wine-dark text-sm font-semibold transition-colors"
-              >
-                Confirmar
-              </button>
-            </div>
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedMensalista(null);
+        }}
+        title="Confirmar pagamento"
+        size="sm"
+        footer={
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowPaymentModal(false);
+                setSelectedMensalista(null);
+              }}
+              className="flex-1 px-4 py-2.5 border border-[#ded8c9] bg-surface text-ink-medium hover:bg-paper rounded-xl text-sm font-semibold transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmPayment}
+              className="flex-1 px-4 py-2.5 bg-wine text-white rounded-xl hover:bg-wine-dark text-sm font-semibold transition-colors"
+            >
+              Confirmar
+            </button>
           </div>
+        }
+      >
+        <label className="block text-sm font-medium text-ink-medium mb-2">
+          Valor do pagamento
+        </label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
+          <input
+            type="number"
+            value={paymentValue}
+            onChange={(e) => setPaymentValue(Number(e.target.value))}
+            className="w-full pl-12 pr-3 py-2.5 bg-paper border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine text-lg font-stat text-ink"
+            min="0"
+            step="10"
+            onBlur={(e) => {
+              const value = Number(e.target.value);
+              if (!isNaN(value)) {
+                setPaymentValue(Number(value.toFixed(2)));
+              }
+            }}
+          />
         </div>
-      )}
+      </Modal>
 
       {/* Modal de Pagamento do Diarista */}
-      {showDiaristaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fade-in border border-line">
+      <Modal
+        isOpen={showDiaristaModal}
+        onClose={() => setShowDiaristaModal(false)}
+        title="Confirmar pagamento"
+        bodyClassName="space-y-4"
+        footer={
+          <div className="flex justify-end gap-2">
             <button
-              className="absolute top-4 right-4 text-ink-icon hover:text-ink transition-colors"
               onClick={() => setShowDiaristaModal(false)}
-              aria-label="Fechar"
+              className="px-4 py-2.5 text-sm font-semibold text-ink-medium border border-[#ded8c9] bg-surface rounded-xl hover:bg-paper transition-colors"
+              type="button"
             >
-              <X className="w-5 h-5" />
+              Cancelar
             </button>
-            <h2 className="text-lg font-heading font-bold text-ink mb-4">Confirmar pagamento</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-ink-medium mb-1.5">Nome do diarista</label>
-                <input
-                  className="w-full border border-line rounded-xl px-3 py-2.5 text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
-                  value={selectedDiarista?.name || ''}
-                  readOnly
-                  placeholder="Nome do diarista"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-ink-medium mb-1.5">Valor do pagamento</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    className="w-full border border-line rounded-xl pl-9 pr-3 py-2.5 text-ink font-stat bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
-                    value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      setDiaristaPaymentValue(value === '' ? 0 : Number(value));
-                    }}
-                    placeholder="30"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => setShowDiaristaModal(false)}
-                className="px-4 py-2.5 text-sm font-semibold text-ink-medium border border-[#ded8c9] bg-surface rounded-xl hover:bg-paper transition-colors"
-                type="button"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  setDiaristaPaymentValue(0);
-                  setTimeout(() => {
-                    confirmDiaristaPayment();
-                  }, 0);
-                }}
-                className="px-4 py-2.5 text-sm font-semibold text-state-success bg-state-success/10 rounded-xl hover:bg-state-success/20 transition-colors"
-                type="button"
-                disabled={!selectedDiarista}
-              >
-                Grátis
-              </button>
-              <button
-                onClick={confirmDiaristaPayment}
-                className="px-4 py-2.5 text-sm font-semibold text-white bg-wine rounded-xl hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                type="button"
-                disabled={!selectedDiarista}
-              >
-                Confirmar
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setDiaristaPaymentValue(0);
+                setTimeout(() => {
+                  confirmDiaristaPayment();
+                }, 0);
+              }}
+              className="px-4 py-2.5 text-sm font-semibold text-state-success bg-state-success/10 rounded-xl hover:bg-state-success/20 transition-colors"
+              type="button"
+              disabled={!selectedDiarista}
+            >
+              Grátis
+            </button>
+            <button
+              onClick={confirmDiaristaPayment}
+              className="px-4 py-2.5 text-sm font-semibold text-white bg-wine rounded-xl hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              disabled={!selectedDiarista}
+            >
+              Confirmar
+            </button>
+          </div>
+        }
+      >
+        <div>
+          <label className="block text-sm font-medium text-ink-medium mb-1.5">Nome do diarista</label>
+          <input
+            className="w-full border border-line rounded-xl px-3 py-2.5 text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
+            value={selectedDiarista?.name || ''}
+            readOnly
+            placeholder="Nome do diarista"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-ink-medium mb-1.5">Valor do pagamento</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className="w-full border border-line rounded-xl pl-9 pr-3 py-2.5 text-ink font-stat bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
+              value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                setDiaristaPaymentValue(value === '' ? 0 : Number(value));
+              }}
+              placeholder="30"
+            />
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
