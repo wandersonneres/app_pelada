@@ -7,7 +7,7 @@ import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, ArrowLeftRight
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { Modal } from '../components/ui/Modal';
 import { GroupPlayerRow } from '../components/game-details/GroupPlayersColumn';
-import { moneyInputProps, personNameProps, searchInputProps } from '../lib/inputProps';
+import { blurOnEnter, moneyInputProps, personNameProps, searchInputProps } from '../lib/inputProps';
 import { StarRating } from '../components/StarRating';
 import { MatchesPanel } from '../components/matches/MatchesPanel';
 import { WaitingReorderList } from '../components/matches/WaitingReorderList';
@@ -64,8 +64,10 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
       isOpen={isOpen}
       onClose={onClose}
       title="Adicionar Jogador"
-      onSubmit={handleSubmit}
-      submitDisabled={isJoining || !playerName.trim()}
+      // Sem onSubmit de propósito: o nome é só o primeiro de cinco campos
+      // (posição, nível, faixa etária, pagamento vêm depois). Enviar no Enter
+      // cadastraria o jogador antes de você escolher o resto — a tecla de ação
+      // só fecha o teclado, via blurOnEnter no campo.
       footer={
         <div className="flex justify-end gap-2">
           <button
@@ -91,8 +93,7 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
             <label className="block text-sm font-medium mb-1">Nome do Jogador</label>
             <input
               {...personNameProps}
-              // "send" e não "done": o modal segue aberto para cadastrar o próximo.
-              enterKeyHint="send"
+              onKeyDown={blurOnEnter}
               className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wine"
               value={playerName}
               onChange={e => setPlayerName(e.target.value)}
@@ -2083,9 +2084,6 @@ export function GameDetails() {
       <Modal
         isOpen={isSelectPlayerModalOpen}
         onClose={closeSelectPlayerModal}
-        // Único modal sem teclado automático: aqui você normalmente quer rolar
-        // e tocar num nome, e o teclado cobriria justamente a lista.
-        autoFocus={false}
         header={
           <div className="flex-none border-b border-line">
             <div className="flex items-start justify-between gap-3 p-4 pb-3">

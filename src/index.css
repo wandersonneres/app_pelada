@@ -3,6 +3,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Reforça o desligamento do zoom por duplo toque (ver a meta viewport no
+ * index.html). Vale também no iOS, que ignora `user-scalable=no` de propósito.
+ * `manipulation` mantém rolagem e pinça normais — só mata o duplo toque —, e
+ * de quebra remove o atraso de ~300ms no toque.
+ */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* ===== Scrollbar moderna (paleta do app) ===== */
 * {
   scrollbar-width: thin;

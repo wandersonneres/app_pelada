@@ -59,7 +59,11 @@ export interface ModalProps {
   onSubmit?: () => void;
   /** Bloqueia o envio por Enter — use a mesma condição do `disabled` do botão principal. */
   submitDisabled?: boolean;
-  /** Foca o primeiro campo editável ao abrir (levanta o teclado). Padrão: true. */
+  /**
+   * Foca o primeiro campo editável ao abrir, o que levanta o teclado virtual.
+   * Padrão: false — num tablet/celular o teclado cobre metade da tela antes de
+   * você decidir se ia digitar, e atrapalha mais do que ajuda.
+   */
   autoFocus?: boolean;
 }
 
@@ -78,7 +82,7 @@ export function Modal({
   panelClassName,
   onSubmit,
   submitDisabled = false,
-  autoFocus = true,
+  autoFocus = false,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);

@@ -72,7 +72,7 @@ export function NewGame() {
           <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-soft mb-4">
               Detalhes da pelada
-            </h2>
+            </h2>''
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center gap-3 rounded-xl bg-paper/60 border border-line-soft px-3.5 py-3">
                 <span className="w-9 h-9 flex-none rounded-lg bg-wine-tint text-wine flex items-center justify-center">

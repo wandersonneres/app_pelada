@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { blurOnEnter } from '../lib/inputProps';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -423,6 +424,8 @@ export function Ranking() {
                             enterKeyHint="done"
                             autoCorrect="off"
                             spellCheck={false}
+                            // Fora de <form>: sem isto o "OK" do teclado não faz nada.
+                            onKeyDown={blurOnEnter}
                             value={weightsRaw[key] ?? String(editConfig[key])}
                             onFocus={e => e.target.select()}
                             onChange={e => {

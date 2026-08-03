@@ -1,3 +1,5 @@
+import type React from 'react';
+
 /**
  * Presets de atributos de teclado para campos de formulário.
  *
@@ -17,6 +19,17 @@
  * lugar nenhum no app) — pertencem ao sistema operacional.
  */
 
+/**
+ * Fecha o teclado no Enter / tecla de ação, em vez de não fazer nada.
+ * Sem isto, num campo fora de <form> a tecla "Buscar" do teclado virtual é
+ * inerte e o teclado fica aberto por cima do resultado que você quer ver.
+ */
+export function blurOnEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  e.currentTarget.blur();
+}
+
 /** Busca com filtro ao vivo: Enter não envia nada, só fecha o teclado. */
 export const searchInputProps = {
   type: 'search',
@@ -24,6 +37,7 @@ export const searchInputProps = {
   autoCapitalize: 'none',
   autoCorrect: 'off',
   spellCheck: false,
+  onKeyDown: blurOnEnter,
 } as const;
 
 /** Valores em reais, inteiros. Abre o teclado numérico. */
