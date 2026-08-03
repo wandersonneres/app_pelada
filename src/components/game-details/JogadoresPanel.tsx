@@ -3,6 +3,7 @@ import { Plus, Search } from 'lucide-react';
 import { Game, Player } from '../../types';
 import { PlayerCard } from './PlayerCard';
 import { GroupPlayer, GroupPlayersColumn } from './GroupPlayersColumn';
+import { searchInputProps } from '../../lib/inputProps';
 
 interface JogadoresPanelProps {
   game: Game;
@@ -64,10 +65,11 @@ export function JogadoresPanel({
           <div className="flex items-center gap-2 border border-[#ded8c9] bg-surface rounded-[10px] px-3">
             <Search className="w-[15px] h-[15px] text-ink-soft" strokeWidth={2} />
             <input
+              {...searchInputProps}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar jogador"
-              className="border-none outline-none bg-transparent text-[13px] py-[9px] w-[130px] xl:w-[150px]"
+              className="border-none outline-none bg-transparent text-[13px] py-[9px] w-[130px] xl:w-[150px] appearance-none [&::-webkit-search-cancel-button]:appearance-none"
             />
           </div>
           {/* Sem botão "Selecionar do grupo": aqui (tablet/desktop) a coluna da

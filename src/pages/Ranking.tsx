@@ -420,6 +420,9 @@ export function Ranking() {
                           <Input
                             type="text"
                             inputMode="numeric"
+                            enterKeyHint="done"
+                            autoCorrect="off"
+                            spellCheck={false}
                             value={weightsRaw[key] ?? String(editConfig[key])}
                             onFocus={e => e.target.select()}
                             onChange={e => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { collection, getDocs, doc, updateDoc, setDoc, getDoc, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { Calendar, Copy, Check, ChevronDown, Wallet, Users, Receipt, Scale, Tren
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from '../components/Loader';
 import { Modal } from '../components/ui/Modal';
+import { moneyInputProps, searchInputProps } from '../lib/inputProps';
 
 interface Payment {
   userId: string;
@@ -62,6 +63,10 @@ export function Financeiro() {
   const [selectedDiarista, setSelectedDiarista] = useState<{id: string, name: string} | null>(null);
   const [diaristaPaymentValue, setDiaristaPaymentValue] = useState(30);
   const [realGames, setRealGames] = useState<any[]>([]);
+  // Ref além do state: o state só chega no próximo render, e dois Enters
+  // seguidos acontecem dentro do mesmo — a ref é quem trava de verdade.
+  const [isSavingDiarista, setIsSavingDiarista] = useState(false);
+  const isSavingDiaristaRef = useRef(false);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
@@ -213,6 +218,11 @@ export function Financeiro() {
 
   const confirmDiaristaPayment = async () => {
     if (!selectedDiarista || !user) return;
+    // Id de documento aleatório: dois envios gerariam dois pagamentos. Com o
+    // Enter habilitado isso ficou fácil de disparar sem querer.
+    if (isSavingDiaristaRef.current) return;
+    isSavingDiaristaRef.current = true;
+    setIsSavingDiarista(true);
 
     try {
       const paymentRef = doc(collection(db, 'diaristaPayments'));
@@ -236,6 +246,9 @@ export function Financeiro() {
       setDiaristaPaymentValue(30);
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error);
+    } finally {
+      isSavingDiaristaRef.current = false;
+      setIsSavingDiarista(false);
     }
   };
 
@@ -592,10 +605,11 @@ export function Financeiro() {
               <div className="mt-3 flex items-center gap-2 border border-line rounded-xl px-3 bg-paper focus-within:ring-2 focus-within:ring-wine/30 focus-within:border-wine transition-colors">
                 <Search className="w-4 h-4 text-ink-soft flex-none" />
                 <input
+                  {...searchInputProps}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder="Buscar jogador"
-                  className="flex-1 bg-transparent outline-none text-sm text-ink py-2.5 min-w-0"
+                  className="flex-1 bg-transparent outline-none text-sm text-ink py-2.5 min-w-0 appearance-none [&::-webkit-search-cancel-button]:appearance-none"
                 />
                 {searchTerm && (
                   <button onClick={() => setSearchTerm('')} className="text-ink-icon hover:text-ink flex-none" aria-label="Limpar busca">
@@ -905,9 +919,11 @@ export function Financeiro() {
         }}
         title="Confirmar pagamento"
         size="sm"
+        onSubmit={confirmPayment}
         footer={
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={() => {
                 setShowPaymentModal(false);
                 setSelectedMensalista(null);
@@ -917,6 +933,7 @@ export function Financeiro() {
               Cancelar
             </button>
             <button
+              type="button"
               onClick={confirmPayment}
               className="flex-1 px-4 py-2.5 bg-wine text-white rounded-xl hover:bg-wine-dark text-sm font-semibold transition-colors"
             >
@@ -932,6 +949,11 @@ export function Financeiro() {
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
           <input
             type="number"
+            // Mantido como number (aceita centavos, e as setinhas andam de 10 em
+            // 10). O step="10" tornaria R$ 25 inválido no envio — por isso o
+            // <form> do Modal usa noValidate.
+            inputMode="decimal"
+            enterKeyHint="done"
             value={paymentValue}
             onChange={(e) => setPaymentValue(Number(e.target.value))}
             className="w-full pl-12 pr-3 py-2.5 bg-paper border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine text-lg font-stat text-ink"
@@ -953,6 +975,8 @@ export function Financeiro() {
         onClose={() => setShowDiaristaModal(false)}
         title="Confirmar pagamento"
         bodyClassName="space-y-4"
+        onSubmit={confirmDiaristaPayment}
+        submitDisabled={!selectedDiarista || isSavingDiarista}
         footer={
           <div className="flex justify-end gap-2">
             <button
@@ -979,9 +1003,9 @@ export function Financeiro() {
               onClick={confirmDiaristaPayment}
               className="px-4 py-2.5 text-sm font-semibold text-white bg-wine rounded-xl hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               type="button"
-              disabled={!selectedDiarista}
+              disabled={!selectedDiarista || isSavingDiarista}
             >
-              Confirmar
+              {isSavingDiarista ? 'Salvando...' : 'Confirmar'}
             </button>
           </div>
         }
@@ -1000,9 +1024,7 @@ export function Financeiro() {
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat">R$</span>
             <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+              {...moneyInputProps}
               className="w-full border border-line rounded-xl pl-9 pr-3 py-2.5 text-ink font-stat bg-paper focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine"
               value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
               onChange={(e) => {

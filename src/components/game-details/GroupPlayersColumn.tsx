@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { searchInputProps } from '../../lib/inputProps';
 
 export interface GroupPlayer {
   id: string;
@@ -129,10 +130,11 @@ export function GroupPlayersColumn({ players, isLoading, onAdd, className }: Gro
         <div className="flex items-center gap-2 border border-[#ded8c9] bg-surface rounded-[10px] px-3 mt-2">
           <Search className="w-[15px] h-[15px] text-ink-soft flex-none" strokeWidth={2} />
           <input
+            {...searchInputProps}
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nome ou email"
-            className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] py-[9px]"
+            className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] py-[9px] appearance-none [&::-webkit-search-cancel-button]:appearance-none"
           />
         </div>
       </div>

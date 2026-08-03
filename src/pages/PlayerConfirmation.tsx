@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { StarRating } from '../components/StarRating';
 import { Timestamp } from 'firebase/firestore';
+import { personNameProps } from '../lib/inputProps';
 
 export function PlayerConfirmation() {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +82,7 @@ export function PlayerConfirmation() {
         <div>
           <label className="block text-sm font-medium text-ink-medium mb-1.5">Seu nome</label>
           <input
+            {...personNameProps}
             className="w-full border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-icon focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors"
             value={playerName}
             onChange={e => setPlayerName(e.target.value)}

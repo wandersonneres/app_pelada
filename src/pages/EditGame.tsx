@@ -139,6 +139,9 @@ export function EditGame() {
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1">Local</label>
           <input
+            type="text"
+            autoCapitalize="words"
+            enterKeyHint="next"
             className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine text-ink"
             value={formData.location}
             onChange={e => setFormData({ ...formData, location: e.target.value })}
@@ -148,6 +151,7 @@ export function EditGame() {
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wide text-ink-soft mb-1">Observações</label>
           <textarea
+            autoCapitalize="sentences"
             className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine min-h-[80px] text-ink"
             value={formData.observations}
             onChange={e => setFormData({ ...formData, observations: e.target.value })}

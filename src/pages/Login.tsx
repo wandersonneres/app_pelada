@@ -75,6 +75,10 @@ export function Login() {
               id="username"
               type="text"
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="next"
               placeholder="Seu usuário"
               value={username}
               onChange={e => {
@@ -101,6 +105,10 @@ export function Login() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
                 placeholder="Sua senha"
                 value={password}
                 onChange={e => {

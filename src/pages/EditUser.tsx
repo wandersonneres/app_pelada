@@ -7,6 +7,7 @@ import { User } from '../types/index';
 import { StarRating } from '../components/StarRating';
 import { Spinner } from '../components/Loader';
 import { ArrowLeft, User as UserIcon, Mail, Shield, Save } from 'lucide-react';
+import { emailInputProps, personNameProps, usernameInputProps } from '../lib/inputProps';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
@@ -168,7 +169,7 @@ export function EditUser() {
               <label htmlFor="username" className={labelClass}>Nome de usuário</label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
-                <input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className={`${inputClass} pl-9`} />
+                <input id="username" {...usernameInputProps} enterKeyHint="next" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className={`${inputClass} pl-9`} />
               </div>
               {errors.username && <p className="text-state-warning text-xs mt-1">{errors.username}</p>}
             </div>
@@ -177,7 +178,7 @@ export function EditUser() {
               <label htmlFor="email" className={labelClass}>Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
-                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={`${inputClass} pl-9`} />
+                <input id="email" {...emailInputProps} enterKeyHint="next" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={`${inputClass} pl-9`} />
               </div>
               {errors.email && <p className="text-state-warning text-xs mt-1">{errors.email}</p>}
             </div>
@@ -203,7 +204,7 @@ export function EditUser() {
 
             <div>
               <label htmlFor="playerName" className={labelClass}>Nome completo</label>
-              <input id="playerName" type="text" value={playerInfo.name} onChange={e => setPlayerInfo(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" className={inputClass} />
+              <input id="playerName" {...personNameProps} value={playerInfo.name} onChange={e => setPlayerInfo(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" className={inputClass} />
               {errors['playerInfo.name'] && <p className="text-state-warning text-xs mt-1">{errors['playerInfo.name']}</p>}
             </div>
 

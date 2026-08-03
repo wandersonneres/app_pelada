@@ -5,6 +5,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { StarRating } from '../components/StarRating';
 import { FaChevronLeft, FaUser, FaEnvelope, FaFutbol, FaStar, FaUserEdit, FaCamera } from 'react-icons/fa';
+import { emailInputProps, personNameProps, usernameInputProps } from '../lib/inputProps';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
@@ -146,7 +147,8 @@ export function Profile() {
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  {...usernameInputProps}
+                  enterKeyHint="next"
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -164,7 +166,8 @@ export function Profile() {
               </label>
               <div className="relative">
                 <input
-                  type="email"
+                  {...emailInputProps}
+                  enterKeyHint="next"
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -189,7 +192,7 @@ export function Profile() {
                 Nome Completo
               </label>
               <input
-                type="text"
+                {...personNameProps}
                 id="playerInfo.name"
                 value={playerInfo.name}
                 onChange={(e) => setPlayerInfo(prev => ({ ...prev, name: e.target.value }))}

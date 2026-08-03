@@ -117,6 +117,7 @@ export function NewGame() {
             <textarea
               id="observations"
               rows={4}
+              autoCapitalize="sentences"
               className="w-full border border-line rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-ink-icon resize-none focus:outline-none focus:ring-2 focus:ring-wine focus:border-wine transition"
               value={observations}
               onChange={e => setObservations(e.target.value)}

@@ -7,6 +7,7 @@ import { ArrowLeft, User as UserIcon, Mail, Lock, UserPlus } from 'lucide-react'
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseConfig } from '../config/firebase';
+import { emailInputProps, personNameProps, usernameInputProps } from '../lib/inputProps';
 
 type Position = 'defesa' | 'meio' | 'ataque';
 type AgeGroup = '15-20' | '21-30' | '31-40' | '41-50' | '+50';
@@ -160,7 +161,7 @@ export function Register() {
               <label htmlFor="username" className={labelClass}>Nome de usuário</label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
-                <input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className={`${inputClass} pl-9`} />
+                <input id="username" {...usernameInputProps} enterKeyHint="next" value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className={`${inputClass} pl-9`} />
               </div>
               {errors.username && <p className="text-state-warning text-xs mt-1">{errors.username}</p>}
             </div>
@@ -169,7 +170,7 @@ export function Register() {
               <label htmlFor="email" className={labelClass}>Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
-                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={`${inputClass} pl-9`} />
+                <input id="email" {...emailInputProps} enterKeyHint="next" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className={`${inputClass} pl-9`} />
               </div>
               {errors.email && <p className="text-state-warning text-xs mt-1">{errors.email}</p>}
             </div>
@@ -178,7 +179,7 @@ export function Register() {
               <label htmlFor="password" className={labelClass}>Senha</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4" />
-                <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" className={`${inputClass} pl-9`} />
+                <input id="password" type="password" autoComplete="new-password" enterKeyHint="next" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" className={`${inputClass} pl-9`} />
               </div>
               {errors.password && <p className="text-state-warning text-xs mt-1">{errors.password}</p>}
             </div>
@@ -202,7 +203,7 @@ export function Register() {
 
             <div>
               <label htmlFor="playerName" className={labelClass}>Nome completo</label>
-              <input id="playerName" type="text" value={playerInfo.name} onChange={e => setPlayerInfo(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" className={inputClass} />
+              <input id="playerName" {...personNameProps} value={playerInfo.name} onChange={e => setPlayerInfo(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" className={inputClass} />
               {errors['playerInfo.name'] && <p className="text-state-warning text-xs mt-1">{errors['playerInfo.name']}</p>}
             </div>
 

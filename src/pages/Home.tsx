@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../contexts/AuthContext';
 import { useViewport } from '../hooks/useViewport';
 import { PageLoader } from '../components/Loader';
+import { searchInputProps } from '../lib/inputProps';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -264,10 +265,11 @@ export function Home() {
             <div className="relative sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-icon" strokeWidth={2.2} />
               <input
+                {...searchInputProps}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por local ou data"
-                className="w-full pl-9 pr-3 py-2 text-[13px] bg-surface border border-line rounded-xl placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors"
+                className="w-full pl-9 pr-3 py-2 text-[13px] bg-surface border border-line rounded-xl placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine/30 focus:border-wine transition-colors appearance-none [&::-webkit-search-cancel-button]:appearance-none"
               />
             </div>
           </div>

@@ -3,6 +3,7 @@ import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { User } from '../types/index';
 import { FaUserPlus, FaEdit, FaTrash, FaSearch, FaUsers, FaUserClock, FaUserCheck } from 'react-icons/fa';
+import { searchInputProps } from '../lib/inputProps';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PageLoader } from '../components/Loader';
@@ -175,11 +176,11 @@ export function Players() {
           <div className="relative flex-1">
             <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-icon w-4 h-4 pointer-events-none" />
             <input
-              type="text"
+              {...searchInputProps}
               placeholder="Buscar jogador por nome ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-20 py-2.5 text-sm border border-line rounded-xl bg-surface text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-colors"
+              className="w-full pl-10 pr-20 py-2.5 text-sm border border-line rounded-xl bg-surface text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent transition-colors appearance-none [&::-webkit-search-cancel-button]:appearance-none"
             />
             {searchTerm && (
               <button

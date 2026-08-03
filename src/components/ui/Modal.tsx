@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 import { useVisualViewportVars } from '../../hooks/useVisualViewport';
+import { useModalFieldFocus } from '../../hooks/useModalFieldFocus';
 
 let openModalCount = 0;
 
@@ -50,6 +51,16 @@ export interface ModalProps {
   /** Classes extras para a área rolável. */
   bodyClassName?: string;
   panelClassName?: string;
+  /**
+   * Ativa Enter-para-enviar: embrulha corpo+rodapé num <form>, então a tecla de
+   * ação do teclado virtual (Go/Enviar) dispara esta função. Os botões do
+   * rodapé continuam precisando de type="button" e do próprio onClick.
+   */
+  onSubmit?: () => void;
+  /** Bloqueia o envio por Enter — use a mesma condição do `disabled` do botão principal. */
+  submitDisabled?: boolean;
+  /** Foca o primeiro campo editável ao abrir (levanta o teclado). Padrão: true. */
+  autoFocus?: boolean;
 }
 
 export function Modal({
@@ -65,13 +76,43 @@ export function Modal({
   closeOnBackdrop = true,
   bodyClassName,
   panelClassName,
+  onSubmit,
+  submitDisabled = false,
+  autoFocus = true,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const backdropArmed = useRef(false);
   const titleId = useId();
 
   useVisualViewportVars(isOpen);
   useBodyScrollLock(isOpen);
+  useModalFieldFocus({ isOpen, panelRef, bodyRef, autoFocus });
+
+  // Um <button> sem type dentro de um form vira submit e sequestra o Enter.
+  // Avisa em desenvolvimento para isso não voltar despercebido.
+  useEffect(() => {
+    if (!import.meta.env.DEV || !isOpen || !onSubmit) return;
+    const loose = formRef.current?.querySelectorAll('button:not([type])');
+    if (loose?.length) {
+      console.warn(
+        '[Modal] Botões sem type="button" dentro de um form vão disparar o submit no Enter:',
+        loose
+      );
+    }
+  }, [isOpen, onSubmit]);
+
+  const handleFormSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      // Checagem em JS, não via `disabled` do botão: quando o Blink pula um
+      // submit desabilitado ele cai no caminho "sem botão padrão" e envia igual.
+      if (submitDisabled) return;
+      onSubmit?.();
+    },
+    [submitDisabled, onSubmit]
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,6 +144,18 @@ export function Modal({
   if (!isOpen) return null;
 
   const showHeader = header !== undefined || title !== undefined;
+
+  const body = (
+    <>
+      <div
+        ref={bodyRef}
+        className={cn('flex-1 min-h-0 overflow-y-auto overscroll-contain p-4', bodyClassName)}
+      >
+        {children}
+      </div>
+      {footer && <div className="flex-none border-t border-line p-3">{footer}</div>}
+    </>
+  );
 
   return createPortal(
     <div
@@ -150,11 +203,26 @@ export function Modal({
             </div>
           ))}
 
-        <div className={cn('flex-1 min-h-0 overflow-y-auto overscroll-contain p-4', bodyClassName)}>
-          {children}
-        </div>
-
-        {footer && <div className="flex-none border-t border-line p-3">{footer}</div>}
+        {onSubmit ? (
+          // noValidate NÃO é precaução: o campo de mensalista é
+          // type="number" step="10", então R$ 25 vira stepMismatch e o Chromium
+          // bloqueia o envio em silêncio, com um balão que cai fora da tela
+          // quando o teclado ocupa metade da viewport. Os pattern="[0-9]*" têm
+          // o mesmo problema. Não remover.
+          <form
+            ref={formRef}
+            onSubmit={handleFormSubmit}
+            noValidate
+            className="flex-1 min-h-0 flex flex-col"
+          >
+            {/* Primeiro filho de propósito: garante que ESTE seja o botão padrão
+                do form mesmo que alguém adicione depois um <button> sem type. */}
+            <button type="submit" tabIndex={-1} aria-hidden="true" className="sr-only" />
+            {body}
+          </form>
+        ) : (
+          body
+        )}
       </div>
     </div>,
     document.body

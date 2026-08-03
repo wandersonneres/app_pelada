@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, arrayUnion, serverTimestamp, deleteDoc, Timestamp, getDocs, collection, setDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Check, ArrowLeftRight
 import { PlayerOptionsModal } from '../components/PlayerOptionsModal';
 import { Modal } from '../components/ui/Modal';
 import { GroupPlayerRow } from '../components/game-details/GroupPlayersColumn';
+import { moneyInputProps, personNameProps, searchInputProps } from '../lib/inputProps';
 import { StarRating } from '../components/StarRating';
 import { MatchesPanel } from '../components/matches/MatchesPanel';
 import { WaitingReorderList } from '../components/matches/WaitingReorderList';
@@ -63,6 +64,8 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
       isOpen={isOpen}
       onClose={onClose}
       title="Adicionar Jogador"
+      onSubmit={handleSubmit}
+      submitDisabled={isJoining || !playerName.trim()}
       footer={
         <div className="flex justify-end gap-2">
           <button
@@ -87,11 +90,14 @@ function AddPlayerModalTailwind({ isOpen, onClose, onAddPlayer, isJoining }: {
           <div>
             <label className="block text-sm font-medium mb-1">Nome do Jogador</label>
             <input
+              {...personNameProps}
+              // "send" e não "done": o modal segue aberto para cadastrar o próximo.
+              enterKeyHint="send"
               className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wine"
-                value={playerName}
+              value={playerName}
               onChange={e => setPlayerName(e.target.value)}
-                placeholder="Digite o nome do jogador"
-              />
+              placeholder="Digite o nome do jogador"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Posição</label>
@@ -316,6 +322,10 @@ export function GameDetails() {
   const [selectedDiarista, setSelectedDiarista] = useState<{id: string, name: string} | null>(null);
   const [diaristaPaymentValue, setDiaristaPaymentValue] = useState(30);
   const [diaristaFree, setDiaristaFree] = useState(false);
+  // Ref além do state: o state só chega no próximo render e dois Enters
+  // seguidos acontecem dentro do mesmo, então a ref é quem trava de verdade.
+  const [isSavingDiarista, setIsSavingDiarista] = useState(false);
+  const isSavingDiaristaRef = useRef(false);
   const [diaristaPayments, setDiaristaPayments] = useState<Record<string, { 
     value: number; 
     date: string;
@@ -1679,7 +1689,12 @@ export function GameDetails() {
 
   const confirmDiaristaPayment = async () => {
     if (!selectedDiarista || !id) return;
-    
+    // O id do documento é aleatório, então dois envios geram dois pagamentos.
+    // Com Enter isso ficou fácil de disparar sem querer — daí a trava.
+    if (isSavingDiaristaRef.current) return;
+    isSavingDiaristaRef.current = true;
+    setIsSavingDiarista(true);
+
     try {
       const paymentRef = doc(collection(db, 'diaristaPayments'));
       const currentMatch = game?.matches?.find(m => m.status === 'in_progress');
@@ -1716,6 +1731,8 @@ export function GameDetails() {
       console.error('Erro ao registrar pagamento:', error);
       setToastMsg({ type: 'error', message: 'Ocorreu um erro ao registrar o pagamento.' });
     } finally {
+      isSavingDiaristaRef.current = false;
+      setIsSavingDiarista(false);
       setShowDiaristaModal(false);
       setSelectedDiarista(null);
     }
@@ -2066,6 +2083,9 @@ export function GameDetails() {
       <Modal
         isOpen={isSelectPlayerModalOpen}
         onClose={closeSelectPlayerModal}
+        // Único modal sem teclado automático: aqui você normalmente quer rolar
+        // e tocar num nome, e o teclado cobriria justamente a lista.
+        autoFocus={false}
         header={
           <div className="flex-none border-b border-line">
             <div className="flex items-start justify-between gap-3 p-4 pb-3">
@@ -2085,11 +2105,11 @@ export function GameDetails() {
               <div className="flex items-center gap-2 border border-[#ded8c9] bg-surface rounded-[10px] px-3">
                 <Users className="w-[15px] h-[15px] text-ink-soft flex-none" />
                 <input
-                  type="text"
+                  {...searchInputProps}
                   placeholder="Buscar por nome ou email"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] py-2.5"
+                  className="flex-1 min-w-0 border-none outline-none bg-transparent text-[13px] py-2.5 appearance-none [&::-webkit-search-cancel-button]:appearance-none"
                 />
               </div>
             </div>
@@ -2211,6 +2231,8 @@ export function GameDetails() {
         onClose={() => setShowDiaristaModal(false)}
         title="Confirmar pagamento"
         subtitle={`Diária de ${selectedDiarista?.name ?? ''}`}
+        onSubmit={confirmDiaristaPayment}
+        submitDisabled={!selectedDiarista || isSavingDiarista}
         footer={
           <div className="flex items-center gap-2">
             <button
@@ -2232,9 +2254,9 @@ export function GameDetails() {
               onClick={confirmDiaristaPayment}
               className="text-[13px] font-semibold text-white bg-wine px-4 py-2 rounded-lg hover:bg-wine-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               type="button"
-              disabled={!selectedDiarista}
+              disabled={!selectedDiarista || isSavingDiarista}
             >
-              Confirmar
+              {isSavingDiarista ? 'Salvando...' : 'Confirmar'}
             </button>
           </div>
         }
@@ -2244,9 +2266,7 @@ export function GameDetails() {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft font-stat font-semibold">R$</span>
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  {...moneyInputProps}
                   className="w-full border border-line rounded-lg pl-10 pr-3 py-2.5 font-stat text-lg text-ink focus:outline-none focus:ring-2 focus:ring-wine focus:border-transparent"
                   value={diaristaPaymentValue === 0 ? '' : diaristaPaymentValue}
                   onChange={(e) => {
